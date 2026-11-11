@@ -18,6 +18,7 @@ pnpm typecheck && pnpm deps:check && npx vitest run test/kb-sources.test.ts
 |---|---|
 | `src/features/kb/` | Knowledge rail panel, kb-rag HTTP client, source kinds, own zh/en strings |
 | `test/kb-sources.test.ts` | Vault-path mapping and source classification |
+| `src-tauri/tauri.kb.conf.json` | Local build overlay: separate app name/identifier (installs beside the official app), no updater artifacts (no signing key needed). Use `pnpm tauri build --config src-tauri/tauri.kb.conf.json` |
 | `KB_PATCHES.md` | This file |
 
 ## Upstream touch points (check these on every rebase)
@@ -25,6 +26,12 @@ pnpm typecheck && pnpm deps:check && npx vitest run test/kb-sources.test.ts
 | File | Change |
 |---|---|
 | `src/components/shell/right-sidebar.tsx` | Import from `@/features/kb`; wrap the rail in a column with `KbRailSwitch`; hide the Agent panel and render `KbPanel` when the rail view is `kb` |
+
+## Updates
+
+The built-in updater still points at the official `poco-ai/Agentero` releases. Installing an
+update from inside the fork build replaces it with the official app (without the KB panel).
+Ignore the in-app update prompt; update by pulling upstream and rebuilding.
 
 ## Design constraints
 
