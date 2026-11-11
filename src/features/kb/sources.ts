@@ -36,8 +36,16 @@ export const SOURCE_STYLE: Record<SourceKind, { dot: string; chip: string }> = {
 	},
 };
 
+/**
+ * Slash-normalize and fold WSL mounts onto drive letters, so a hit path from
+ * kb-rag running in WSL (`/mnt/d/Vault/…`) matches a Windows vault (`D:\\Vault`).
+ */
 function norm(p: string): string {
-	return p.replace(/\\/g, "/").replace(/\/+$/, "");
+	return p
+		.replace(/\\/g, "/")
+		.replace(/^\/\/\?\//, "")
+		.replace(/^\/mnt\/([a-z])(?=\/|$)/i, "$1:")
+		.replace(/\/+$/, "");
 }
 
 /** Absolute path → vault-relative path, or null when outside the vault. */

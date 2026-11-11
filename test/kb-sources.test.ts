@@ -10,6 +10,13 @@ describe("kb sources", () => {
 			"kb/T/raw/x.md",
 		);
 		expect(toVaultRel("/v/ResearchOld/kb/a.md", "/v/Research")).toBeNull();
+		// kb-rag in WSL, Agentero on Windows
+		expect(toVaultRel("/mnt/d/Vault/kb/T/raw/x.md", "D:\\Vault")).toBe(
+			"kb/T/raw/x.md",
+		);
+		expect(toVaultRel("/mnt/d/Vault/kb/a.md", "\\\\?\\D:\\Vault")).toBe(
+			"kb/a.md",
+		);
 	});
 
 	it("classifies the four source kinds by location", () => {
