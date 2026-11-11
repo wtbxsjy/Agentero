@@ -41,5 +41,5 @@ pnpm typecheck && pnpm deps:check && npx vitest run test/kb-sources.test.ts
 |---|---|---|
 | Paper | `papers/` | blue |
 | Raw | `kb/<topic>/raw/` | grey |
-| Wiki | `kb/<topic>/wiki/` | green |
-| Evidence | `kb/<topic>/wiki/evidence/` | amber |
+| Wiki | `kb/<topic>/wiki_<name>/` | green |
+| Evidence | `kb/<topic>/wiki_<name>/evidence/` | amber |

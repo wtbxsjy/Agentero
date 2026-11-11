@@ -17,6 +17,9 @@ describe("kb sources", () => {
 		expect(sourceKindOfVaultPath("kb/T/raw/r1.md")).toBe("raw");
 		expect(sourceKindOfVaultPath("kb/T/wiki/attention.md")).toBe("wiki");
 		expect(sourceKindOfVaultPath("kb/T/wiki/evidence/e1.md")).toBe("evidence");
+		expect(sourceKindOfVaultPath("kb/T/wiki_Demo/evidence/e1.md")).toBe(
+			"evidence",
+		);
 		expect(sourceKindOfVaultPath("notes/idea.md")).toBe("other");
 	});
 });

@@ -57,9 +57,10 @@ export function toVaultRel(
 export function sourceKindOfVaultPath(rel: string): SourceKind {
 	const parts = norm(rel).split("/");
 	if (parts[0] === "papers") return "paper";
+	// kb/<topic>/<raw>|<wiki_显示名>/…; kb_init names the wiki dir `wiki_<name>`.
 	if (parts[0] === "kb" && parts.length > 2) {
 		if (parts[2] === "raw") return "raw";
-		if (parts[2] === "wiki")
+		if (parts[2].startsWith("wiki"))
 			return parts[3] === "evidence" ? "evidence" : "wiki";
 	}
 	return "other";
