@@ -5,6 +5,7 @@
 
 import { lazy, Suspense, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { KbPanel, KbRailSwitch, useKbRailView } from "@/features/kb";
 import {
 	useLibraryStore,
 	useSettings,
@@ -39,6 +40,7 @@ export function RightSidebar() {
 	const rightSidebarTab = useUiStore((s) => s.rightSidebarTab);
 	const agentPanelMounted = useUiStore((s) => s.agentPanelMounted);
 	const featurePoppedOut = useUiStore((s) => s.featurePoppedOut);
+	const kbView = useKbRailView();
 	const vaultPath = useVaultStore((s) => s.vaultPath);
 	const vaultMdFiles = useVaultStore((s) => s.vaultMdFiles);
 	const vaultDirPaths = useVaultStore((s) => s.vaultDirPaths);
@@ -67,37 +69,54 @@ export function RightSidebar() {
 	const agentInWindow = Boolean(featurePoppedOut.agent);
 
 	return (
-		<>
-			{/* Keep AgentPanel alive when switching rail tabs, but never while
+		<div className="flex h-full min-h-0 flex-col">
+			<KbRailSwitch />
+			<div className="min-h-0 flex-1">
+				{/* Keep AgentPanel alive when switching rail tabs, but never while
 			    the agent singleton window is open. */}
-			{!agentInWindow &&
-				(agentPanelMounted ||
-					(rightSidebarOpen && rightSidebarTab === "agent")) && (
-					<div
-						className={cn(
-							"h-full min-h-0",
-							(!rightSidebarOpen || rightSidebarTab !== "agent") && "hidden",
-						)}
-					>
-						<Suspense fallback={null}>
-							<AgentPanel
-								vaultPath={vaultPath}
-								selectedPath={selectedPath}
-								selectedPaperTitle={selectedPaperTitle}
-								vaultMarkdownPaths={vaultMdFiles}
-								vaultDirectoryPaths={vaultDirPaths}
-								vaultPaperPaths={vaultPaperPaths}
-								paperMetaByRelPath={paperMetaByRelPath}
-								paperTreeLabelMode={paperTreeLabelMode}
-								className="min-h-0 h-full"
-								title={t("labels.agent")}
-								autoFocus={rightSidebarOpen && rightSidebarTab === "agent"}
-								onOpenAgentSettings={onOpenAgentSettings}
-								onOpenSource={handleAgentOpenSource}
-							/>
-						</Suspense>
-					</div>
+				{!agentInWindow &&
+					(agentPanelMounted ||
+						(rightSidebarOpen && rightSidebarTab === "agent")) && (
+						<div
+							className={cn(
+								"h-full min-h-0",
+								(!rightSidebarOpen ||
+									rightSidebarTab !== "agent" ||
+									kbView === "kb") &&
+									"hidden",
+							)}
+						>
+							<Suspense fallback={null}>
+								<AgentPanel
+									vaultPath={vaultPath}
+									selectedPath={selectedPath}
+									selectedPaperTitle={selectedPaperTitle}
+									vaultMarkdownPaths={vaultMdFiles}
+									vaultDirectoryPaths={vaultDirPaths}
+									vaultPaperPaths={vaultPaperPaths}
+									paperMetaByRelPath={paperMetaByRelPath}
+									paperTreeLabelMode={paperTreeLabelMode}
+									className="min-h-0 h-full"
+									title={t("labels.agent")}
+									autoFocus={
+										rightSidebarOpen &&
+										rightSidebarTab === "agent" &&
+										kbView === "agent"
+									}
+									onOpenAgentSettings={onOpenAgentSettings}
+									onOpenSource={handleAgentOpenSource}
+								/>
+							</Suspense>
+						</div>
+					)}
+				{rightSidebarOpen && kbView === "kb" && (
+					<KbPanel
+						vaultPath={vaultPath}
+						paperTitle={selectedPaperTitle}
+						className="h-full"
+					/>
 				)}
-		</>
+			</div>
+		</div>
 	);
 }
