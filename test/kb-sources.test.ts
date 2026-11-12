@@ -29,4 +29,27 @@ describe("kb sources", () => {
 		);
 		expect(sourceKindOfVaultPath("notes/idea.md")).toBe("other");
 	});
+
+	it("maps a WSL knowledge base onto a WSL vault opened via UNC", () => {
+		const plain = String.raw`\\wsl.localhost\Ubuntu-24.04\home\u\Vault`;
+		expect(toVaultRel("/home/u/Vault/kb/T/raw/x.md", plain)).toBe(
+			"kb/T/raw/x.md",
+		);
+		const verbatim = String.raw`\\?\UNC\wsl.localhost\Ubuntu-24.04\home\u\Vault`;
+		expect(toVaultRel("/home/u/Vault/kb/T/wiki/a.md", verbatim)).toBe(
+			"kb/T/wiki/a.md",
+		);
+		const wslDollar = String.raw`\\wsl$\Ubuntu-24.04\home\u\Vault`;
+		expect(toVaultRel("/home/u/Vault/kb/a.md", wslDollar)).toBe("kb/a.md");
+	});
+
+	it("classifies flat topic layouts (KB dir opened as the vault)", () => {
+		expect(sourceKindOfVaultPath("JamesZou/raw/mineru/x.md")).toBe("raw");
+		expect(sourceKindOfVaultPath("JamesZou/wiki_jzou/entities/x.md")).toBe(
+			"wiki",
+		);
+		expect(sourceKindOfVaultPath("JamesZou/wiki_jzou/evidence/e.md")).toBe(
+			"evidence",
+		);
+	});
 });

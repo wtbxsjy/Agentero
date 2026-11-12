@@ -13,6 +13,7 @@
 //! iOS: `Library/Application Support` / `Library/Caches` — the container root
 //! itself is not writable, so `~/.config` would fail with EPERM).
 
+use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 
 /// Resolve XDG config home (`$XDG_CONFIG_HOME` or platform default).
@@ -83,6 +84,61 @@ pub fn usage_db_path() -> PathBuf {
 /// Plaza feed subscriptions + item cache: `…/agentero/feeds.sqlite`.
 pub fn feeds_db_path() -> PathBuf {
     agentero_data_dir().join("feeds.sqlite")
+}
+
+/// True when `path` names a vault on a network share rather than a local disk.
+///
+/// On Windows this is a UNC path (`\\server\share\…`, which includes
+/// `\\wsl.localhost\<distro>\…` and the canonical `\\?\UNC\…` form). Vaults on
+/// such shares can't host SQLite: the 9p/SMB server does not implement the
+/// byte-range locks SQLite relies on, so opening the catalog fails with
+/// `pragma: database is locked`. Other platforms report false — their
+/// network mounts are transparent to SQLite.
+pub fn is_network_vault_path(path: &Path) -> bool {
+    #[cfg(windows)]
+    {
+        let text = path.to_string_lossy();
+        // `\\?\C:\…` (verbatim local drive) is still a local disk.
+        for prefix in [r"\\?\", "//?/"] {
+            if let Some(rest) = text.strip_prefix(prefix) {
+                return rest.starts_with("UNC\\") || rest.starts_with("UNC/");
+            }
+        }
+        text.starts_with(r"\\") || text.starts_with("//")
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = path;
+        false
+    }
+}
+
+/// Stable, filesystem-safe key for a vault path (canonical, case-folded).
+fn vault_state_key(vault_root: &Path) -> String {
+    let identity = crate::fs::canonicalize_best_effort(vault_root)
+        .to_string_lossy()
+        .replace('\\', "/")
+        .to_lowercase();
+    let digest = Sha256::digest(identity.as_bytes());
+    hex::encode(digest)[..16].to_string()
+}
+
+/// Directory holding one vault's machine-local state (`catalog.sqlite`,
+/// `writing-cloud.sqlite`, …).
+///
+/// Local vaults keep it at `<vault>/.agentero` so the state travels with the
+/// vault. Network vaults (see [`is_network_vault_path`]) move it to
+/// `…/agentero/vault-state/<hash>` on the local disk — content stays on the
+/// share, only the SQLite state is local. The hash keys the canonical path so
+/// the same share mapped under another spelling reuses one state dir.
+pub fn vault_state_dir(vault_root: &Path) -> PathBuf {
+    if is_network_vault_path(vault_root) {
+        agentero_data_dir()
+            .join("vault-state")
+            .join(vault_state_key(vault_root))
+    } else {
+        vault_root.join(".agentero")
+    }
 }
 
 /// ONNX / other large assets: `$XDG_CACHE_HOME/agentero/models`.
@@ -324,5 +380,36 @@ mod tests {
         let p = feeds_db_path();
         assert_eq!(p.file_name().and_then(|s| s.to_str()), Some("feeds.sqlite"));
         assert_eq!(p.parent(), Some(agentero_data_dir().as_path()));
+    }
+
+    #[test]
+    fn local_vault_state_dir_stays_inside_the_vault() {
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(vault_state_dir(dir.path()), dir.path().join(".agentero"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn network_vault_state_dir_moves_to_the_local_data_dir() {
+        let unc = Path::new(r"\\wsl.localhost\Ubuntu-24.04\home\u\Vault");
+        assert!(is_network_vault_path(unc));
+        let state = vault_state_dir(unc);
+        assert!(state.starts_with(agentero_data_dir().join("vault-state")));
+        // Stable across calls so reopening the vault reuses its catalog.
+        assert_eq!(state, vault_state_dir(unc));
+        assert_eq!(
+            state.file_name().and_then(|s| s.to_str()).unwrap().len(),
+            16
+        );
+
+        let verbatim = Path::new(r"\\?\UNC\wsl.localhost\Ubuntu-24.04\home\u\Vault");
+        assert!(is_network_vault_path(verbatim));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn local_drive_paths_are_not_network_vaults() {
+        assert!(!is_network_vault_path(Path::new(r"C:\Vaults\Research")));
+        assert!(!is_network_vault_path(Path::new(r"\\?\C:\Vaults\Research")));
     }
 }

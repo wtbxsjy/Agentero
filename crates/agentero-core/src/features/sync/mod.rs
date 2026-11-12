@@ -23,7 +23,7 @@ mod store;
 mod webdav;
 
 pub fn writing_cloud_database(vault: &std::path::Path) -> std::path::PathBuf {
-    vault.join(".agentero").join("writing-cloud.sqlite")
+    crate::paths::vault_state_dir(vault).join("writing-cloud.sqlite")
 }
 
 pub fn ensure_vault_sync_available(vault: &std::path::Path) -> Result<(), crate::error::AppError> {

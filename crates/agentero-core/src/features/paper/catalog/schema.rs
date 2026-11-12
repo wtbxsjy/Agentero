@@ -200,15 +200,25 @@ CREATE TRIGGER IF NOT EXISTS paper_sidecar_delete AFTER DELETE ON papers BEGIN
 END;
 "#;
 
-/// Absolute path to `{vault}/.agentero/catalog.sqlite`.
+/// Absolute path to the vault catalog.
+///
+/// Local vaults keep it at `{vault}/.agentero/catalog.sqlite`. Vaults on a
+/// network share (Windows UNC — e.g. `\\wsl.localhost\…`) cannot host SQLite:
+/// the 9p/SMB server does not implement the byte-range locks SQLite needs and
+/// every open fails with `pragma: database is locked`. Their catalog therefore
+/// lives in the machine-local data dir instead; see
+/// [`crate::paths::vault_state_dir`].
 pub fn catalog_db_path(vault_root: &Path) -> std::path::PathBuf {
-    vault_root.join(".agentero").join("catalog.sqlite")
+    crate::paths::vault_state_dir(vault_root).join("catalog.sqlite")
 }
 
-/// Ensure `.agentero/` exists, create/open catalog.sqlite, apply migrations.
+/// Ensure the metadata dir exists, create/open catalog.sqlite, apply migrations.
 pub fn ensure_catalog(vault_root: &Path) -> Result<Connection, AppError> {
-    let agentero_dir = vault_root.join(".agentero");
-    fs::create_dir_all(&agentero_dir)?;
+    let state_dir = crate::paths::vault_state_dir(vault_root);
+    fs::create_dir_all(&state_dir)?;
+    // `.agentero/` still holds the vault-local files (properties, doctor,
+    // trash) even when the catalog itself is machine-local.
+    fs::create_dir_all(vault_root.join(".agentero"))?;
 
     let db_path = catalog_db_path(vault_root);
     let conn = crate::sqlite::open_standard(&db_path, crate::sqlite::DbMsgs::CATALOG)?;

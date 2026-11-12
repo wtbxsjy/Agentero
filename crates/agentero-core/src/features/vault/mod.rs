@@ -284,12 +284,14 @@ pub fn ensure_vault(path: &Path, locale: &str) -> Result<CreateVaultResult, AppE
         seed_file_if_missing(path, "thesis/main.tex", THESIS_MAIN_TEX, &mut created)?;
     }
 
-    // Catalog: always ensure schema (may create catalog.sqlite)
+    // Catalog: always ensure schema (may create catalog.sqlite). Network vaults
+    // keep the catalog in the machine-local state dir, so only announce it when
+    // it actually landed inside the vault tree.
     let db_path = catalog::catalog_db_path(path);
     let db_existed = db_path.exists();
     let conn = catalog::ensure_catalog(path)?;
     drop(conn);
-    if !db_existed && db_path.exists() {
+    if !db_existed && db_path.exists() && db_path.starts_with(path) {
         created.push(".agentero/catalog.sqlite".into());
     }
 
