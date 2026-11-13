@@ -6,6 +6,7 @@ import { notifyError } from "@/lib/core/notify";
 import { isTauri } from "@/lib/core/tauri";
 import { notifyReleaseDownloadError } from "@/lib/settings/download-error";
 import { ensureSettingsLoaded } from "@/lib/settings/store";
+import { surfaces } from "@/lib/surfaces";
 import type { UpdateSnapshot } from "@/lib/update/types";
 
 const UNSUPPORTED: UpdateSnapshot = { phase: "unsupported" };
@@ -19,7 +20,7 @@ let installPromise: Promise<UpdateSnapshot> | null = null;
 const listeners = new Set<(next: UpdateSnapshot) => void>();
 
 function isUpdaterSupported(): boolean {
-	return isTauri() && !import.meta.env.DEV;
+	return surfaces.updater && isTauri() && !import.meta.env.DEV;
 }
 
 /**

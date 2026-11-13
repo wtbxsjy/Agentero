@@ -14,6 +14,7 @@ import {
 } from "platejs";
 import { COLUMN_GROUP_KEY, COLUMN_KEY } from "@/lib/markdown/columns";
 import { insertEditorLinkTemplate } from "@/lib/markdown/editor-context-menu";
+import { surfaces } from "@/lib/surfaces";
 import { findWikiCompletionTrigger } from "@/lib/wiki/completion";
 
 export type SlashCommandId =
@@ -183,6 +184,9 @@ export function filterSlashCommands(
 ): SlashCommand[] {
 	const normalized = query.trim().toLocaleLowerCase();
 	return SLASH_COMMANDS.filter((command) => {
+		if (command.id === "researchTable" && !surfaces.researchTable) {
+			return false;
+		}
 		if (command.id === "callout" && options.allowCallout === false) {
 			return false;
 		}

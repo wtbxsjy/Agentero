@@ -1,7 +1,0 @@
-{
-	"productName": "Agentero KB",
-	"identifier": "com.wtbxsjy.agentero.kb",
-	"bundle": {
-		"createUpdaterArtifacts": false
-	}
-}

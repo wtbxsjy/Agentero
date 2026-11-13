@@ -38,6 +38,7 @@ import { errorText } from "@/lib/core/error";
 import { notifyError } from "@/lib/core/notify";
 import { isTauri } from "@/lib/core/tauri";
 import type { AppSettings } from "@/lib/settings";
+import { surfaces } from "@/lib/surfaces";
 import { remoteAgentOpenInstallTerminal } from "@/lib/vault/remote/remote-vault";
 
 export function AgentPane({
@@ -225,10 +226,12 @@ export function AgentPane({
 					onOpenCli={onOpenCli}
 					onEditCustom={handleAddCustom}
 				/>
-				<ZhihuAgentRow
-					savedSecret={settings.zhihuAccessSecret}
-					onCommit={(value) => patch({ zhihuAccessSecret: value })}
-				/>
+				{surfaces.zhihu ? (
+					<ZhihuAgentRow
+						savedSecret={settings.zhihuAccessSecret}
+						onCommit={(value) => patch({ zhihuAccessSecret: value })}
+					/>
+				) : null}
 				<AgentCustomForm busy={loading} onSubmit={handleAddCustom} />
 			</SettingsGroup>
 			<p className="mt-2 mb-3 px-0.5 text-muted-foreground text-xs leading-relaxed">

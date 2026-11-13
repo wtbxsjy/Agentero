@@ -64,6 +64,7 @@ import {
 	withPaperTagColor,
 } from "@/lib/paper/tags";
 import { venueInfo } from "@/lib/paper/venue-info";
+import { surfaces } from "@/lib/surfaces";
 import { type TagColorId, tagSwatchStyle } from "@/lib/ui/tag-colors";
 import { isRemoteVaultHandle } from "@/lib/vault/remote/remote-vault";
 import { getVaultPath } from "@/lib/vault/store";
@@ -827,63 +828,65 @@ export function PaperInfoPanel({
 											}
 										/>
 									) : null}
-									<Popover
-										open={zhihuDraftOpen && Boolean(zhihuDraft)}
-										onOpenChange={setZhihuDraftOpen}
-									>
-										<PopoverTrigger asChild>
-											<ServiceActionChip
-												label={t("paperInfo.zhihu")}
-												title={t("paperInfo.zhihuAskHint")}
-												onClick={() => void askOnZhihu()}
-												disabled={zhihuBusy}
-												icon={
-													zhihuBusy ? (
-														<Loader2
-															className="size-3.5 shrink-0 animate-spin"
-															aria-hidden
-														/>
-													) : (
-														<SiZhihu
-															className="size-3.5 shrink-0 text-[#0084FF]"
-															aria-hidden
-														/>
-													)
-												}
-											/>
-										</PopoverTrigger>
-										<PopoverContent
-											side="top"
-											align="start"
-											className="w-80 gap-2 p-3"
+									{surfaces.zhihu ? (
+										<Popover
+											open={zhihuDraftOpen && Boolean(zhihuDraft)}
+											onOpenChange={setZhihuDraftOpen}
 										>
-											{zhihuDraft ? (
-												<div className="flex flex-col gap-2">
-													<div className="text-xs font-medium text-muted-foreground">
-														{t("paperInfo.zhihuDraftHeading")}
-													</div>
-													<div className="rounded-md border bg-muted/40 p-2">
-														<div className="break-words font-medium text-foreground text-xs">
-															{zhihuDraft.title}
+											<PopoverTrigger asChild>
+												<ServiceActionChip
+													label={t("paperInfo.zhihu")}
+													title={t("paperInfo.zhihuAskHint")}
+													onClick={() => void askOnZhihu()}
+													disabled={zhihuBusy}
+													icon={
+														zhihuBusy ? (
+															<Loader2
+																className="size-3.5 shrink-0 animate-spin"
+																aria-hidden
+															/>
+														) : (
+															<SiZhihu
+																className="size-3.5 shrink-0 text-[#0084FF]"
+																aria-hidden
+															/>
+														)
+													}
+												/>
+											</PopoverTrigger>
+											<PopoverContent
+												side="top"
+												align="start"
+												className="w-80 gap-2 p-3"
+											>
+												{zhihuDraft ? (
+													<div className="flex flex-col gap-2">
+														<div className="text-xs font-medium text-muted-foreground">
+															{t("paperInfo.zhihuDraftHeading")}
 														</div>
-														<div className="agentero-scroll mt-1.5 max-h-52 overflow-y-auto whitespace-pre-wrap break-words text-caption text-muted-foreground">
-															{zhihuDraft.body}
+														<div className="rounded-md border bg-muted/40 p-2">
+															<div className="break-words font-medium text-foreground text-xs">
+																{zhihuDraft.title}
+															</div>
+															<div className="agentero-scroll mt-1.5 max-h-52 overflow-y-auto whitespace-pre-wrap break-words text-caption text-muted-foreground">
+																{zhihuDraft.body}
+															</div>
+														</div>
+														<div>
+															<Button
+																type="button"
+																variant="outline"
+																size="xs"
+																onClick={() => void copyZhihuDraft(zhihuDraft)}
+															>
+																{t("paperInfo.zhihuDraftCopy")}
+															</Button>
 														</div>
 													</div>
-													<div>
-														<Button
-															type="button"
-															variant="outline"
-															size="xs"
-															onClick={() => void copyZhihuDraft(zhihuDraft)}
-														>
-															{t("paperInfo.zhihuDraftCopy")}
-														</Button>
-													</div>
-												</div>
-											) : null}
-										</PopoverContent>
-									</Popover>
+												) : null}
+											</PopoverContent>
+										</Popover>
+									) : null}
 								</div>
 								{codeRepo || huggingFaceUrl || openreviewUrl ? (
 									<div className="flex flex-nowrap items-center gap-1.5 overflow-hidden">

@@ -1,7 +1,7 @@
 /**
  * Knowledge-base integration (kb-template wiki + kb-rag retrieval).
  * Self-contained: upstream files only import from here. Touch points are
- * listed in KB_PATCHES.md at the repo root.
+ * described in FORK.md at the repo root.
  */
 
 export { KbPanel } from "./kb-panel";
