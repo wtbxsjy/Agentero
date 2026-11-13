@@ -51,6 +51,7 @@ import {
 	type PaperReaderSettings,
 	type PdfAskSettings,
 } from "@/lib/settings/types";
+import { surfaces } from "@/lib/surfaces";
 import { DEFAULT_TRANSLATE_SETTINGS } from "@/lib/translate/defaults";
 import { stripUnknownTranslatePlaceholders } from "@/lib/translate/prompt";
 import {
@@ -425,6 +426,7 @@ function normalizePartial(
 	if (typeof parsed.plazaEnabled !== "boolean") {
 		merged.plazaEnabled = DEFAULT_SETTINGS.plazaEnabled;
 	}
+	if (!surfaces.plaza) merged.plazaEnabled = false;
 	if (!Array.isArray(parsed.plazaHiddenSources)) {
 		merged.plazaHiddenSources = DEFAULT_SETTINGS.plazaHiddenSources;
 	} else {

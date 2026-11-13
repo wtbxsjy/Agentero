@@ -19,6 +19,7 @@ import {
 import { TRASH_VIRTUAL_PATH } from "@/lib/paper/api";
 import { PLAZA_SOURCES, PLAZA_VIRTUAL_PATH } from "@/lib/plaza";
 import { getSettings, patchSettings } from "@/lib/settings/react-store";
+import { surfaces } from "@/lib/surfaces";
 import {
 	type FileNode,
 	resolveCreateParent,
@@ -320,7 +321,7 @@ export function useTreeContextMenu({
 					}
 				: undefined,
 		onNewTable:
-			onStartCreate && vaultPath
+			surfaces.researchTable && onStartCreate && vaultPath
 				? () => {
 						const parent = resolveCreateParent(vaultPath, menu.path, nodes);
 						setMenu(null);
@@ -328,7 +329,7 @@ export function useTreeContextMenu({
 					}
 				: undefined,
 		onNewExperiment:
-			onStartCreate && vaultPath
+			surfaces.researchTable && onStartCreate && vaultPath
 				? () => {
 						const parent = resolveCreateParent(vaultPath, menu.path, nodes);
 						setMenu(null);

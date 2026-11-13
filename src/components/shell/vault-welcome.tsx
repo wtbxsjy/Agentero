@@ -17,6 +17,7 @@ import { accountSurfaceEnabled } from "@/features/account/visibility";
 import { displayPath } from "@/lib/core/path";
 import { cn } from "@/lib/core/utils";
 import { openSettingsWindow } from "@/lib/shell/settings-window";
+import { surfaces } from "@/lib/surfaces";
 import { vaultDisplayName } from "@/lib/vault";
 import {
 	getRecentRemoteVaults,
@@ -106,7 +107,7 @@ export function VaultWelcome({
 	const [remoteOpen, setRemoteOpen] = useState(false);
 	const [connecting, setConnecting] = useState(false);
 	const [recentRemotes, setRecentRemotes] = useState<RecentRemoteVault[]>(() =>
-		getRecentRemoteVaults(),
+		surfaces.remoteVault ? getRecentRemoteVaults() : [],
 	);
 
 	const runRemoteConnect = async (args: OpenRemoteVaultArgs) => {
@@ -162,16 +163,18 @@ export function VaultWelcome({
 						<FolderOpen className="size-3.5" />
 						{t("app:vault.openVaultButton")}
 					</Button>
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						disabled={busy}
-						onClick={() => setRemoteOpen(true)}
-					>
-						<Server className="size-3.5" />
-						{t("app:vault.openRemoteVaultButton")}
-					</Button>
+					{surfaces.remoteVault ? (
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							disabled={busy}
+							onClick={() => setRemoteOpen(true)}
+						>
+							<Server className="size-3.5" />
+							{t("app:vault.openRemoteVaultButton")}
+						</Button>
+					) : null}
 					<Button
 						type="button"
 						variant="outline"

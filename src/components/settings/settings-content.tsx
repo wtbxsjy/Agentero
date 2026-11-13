@@ -45,6 +45,7 @@ import {
 import { pluginsSurfaceEnabled } from "@/lib/plugins/visibility";
 import type { AppSettings } from "@/lib/settings";
 import { closeSettingsWindow } from "@/lib/shell/settings-window";
+import { surfaces } from "@/lib/surfaces";
 import {
 	getRemoteSessionMeta,
 	isRemoteVaultHandle,
@@ -80,6 +81,8 @@ const PANE_LOADERS = {
 function sectionVisible(id: SettingsSection): boolean {
 	if (!pluginsSurfaceEnabled && id === "plugins") return false;
 	if (!accountSurfaceEnabled && id === "account") return false;
+	if (!surfaces.sync && id === "sync") return false;
+	if (!surfaces.remoteAccess && id === "remote-access") return false;
 	return true;
 }
 

@@ -39,6 +39,7 @@ import {
 	setZoteroOpen,
 	setZoteroSyncOpen,
 } from "@/lib/shell/ui-store";
+import { surfaces } from "@/lib/surfaces";
 import { joinVaultPath } from "@/lib/vault";
 import { refreshAll } from "@/lib/vault/actions";
 import { openPaper, openVaultRel } from "@/lib/workspace/actions";
@@ -58,7 +59,7 @@ export function AppDialogs() {
 
 	return (
 		<>
-			<WordCitationDialog />
+			{surfaces.wordCitation ? <WordCitationDialog /> : null}
 			<ZoteroMigrateDialog
 				open={zoteroOpen}
 				onOpenChange={setZoteroOpen}

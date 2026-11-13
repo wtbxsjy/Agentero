@@ -55,6 +55,7 @@ import {
 	rescanLibraryPapers,
 } from "@/lib/paper/library-actions";
 import { setZoteroOpen, setZoteroSyncOpen } from "@/lib/shell/ui-store";
+import { surfaces } from "@/lib/surfaces";
 import {
 	joinVaultPath,
 	treeFindNode,
@@ -153,7 +154,7 @@ export function VaultSidebar() {
 	const vaultPath = useVaultStore((s) => s.vaultPath);
 	const tree = useVaultStore((s) => s.tree);
 	const treeWithWriting = useMemo(() => {
-		if (!vaultPath) return tree;
+		if (!vaultPath || !surfaces.writing) return tree;
 		const path = joinVaultPath(vaultPath, "thesis");
 		if (
 			tree.some(
@@ -314,7 +315,9 @@ export function VaultSidebar() {
 					onRemoveRecent={removeRecent}
 					onOpenVault={onOpenVaultClick}
 					onCreateVault={onCreateVaultClick}
-					onOpenRemoteVault={onOpenRemoteVaultClick}
+					onOpenRemoteVault={
+						surfaces.remoteVault ? onOpenRemoteVaultClick : undefined
+					}
 					onMigrateZotero={onMigrateZotero}
 					onSyncZotero={onSyncZotero}
 				/>
@@ -373,7 +376,7 @@ export function VaultSidebar() {
 					/>
 				</div>
 			</div>
-			{texProjectPath ? (
+			{surfaces.writing && texProjectPath ? (
 				<div className="flex h-[35%] min-h-32 shrink-0 flex-col">
 					<WritingOutline texPath={texProjectPath} />
 				</div>

@@ -45,6 +45,7 @@ import {
 	type PlazaSource,
 	plazaSourceLabel,
 } from "@/lib/plaza";
+import { surfaces } from "@/lib/surfaces";
 import type { FileNode } from "@/lib/vault";
 import {
 	isVaultAgentRoot,
@@ -317,7 +318,7 @@ export function NodeTreeRow({
 						) : undefined
 					}
 					actions={
-						vaultPath && project ? (
+						!surfaces.writing ? undefined : vaultPath && project ? (
 							<ProjectSettingsButton vault={vaultPath} project={project} />
 						) : vaultPath &&
 							(rootFace === "thesis" ||

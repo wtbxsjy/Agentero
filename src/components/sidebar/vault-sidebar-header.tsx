@@ -56,6 +56,7 @@ import { callApiResult } from "@/lib/core/ipc";
 import { displayPath } from "@/lib/core/path";
 import { isTauri } from "@/lib/core/tauri";
 import { inferLookupSource } from "@/lib/paper/import-actions";
+import { surfaces } from "@/lib/surfaces";
 import { vaultDisplayName } from "@/lib/vault";
 import {
 	getRecentRemoteVaults,
@@ -146,7 +147,7 @@ export const VaultSidebarHeader = memo(function VaultSidebarHeader({
 	const { isBlockedByIme, compositionProps } = useImeGuard();
 	const [remoteDialogOpen, setRemoteDialogOpen] = useState(false);
 	const [recentRemotes, setRecentRemotes] = useState<RecentRemoteVault[]>(() =>
-		getRecentRemoteVaults(),
+		surfaces.remoteVault ? getRecentRemoteVaults() : [],
 	);
 
 	const refreshRecentRemotes = useCallback(() => {

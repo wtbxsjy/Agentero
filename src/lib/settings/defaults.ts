@@ -196,7 +196,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
 	zoteroSyncDir: "",
 	batchImportConcurrency: 5,
 	telemetryEnabled: true,
-	plazaEnabled: true,
+	plazaEnabled: false,
 	plazaHiddenSources: [],
 	onboardingDone: false,
 	featureTourDone: false,
