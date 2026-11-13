@@ -60,8 +60,7 @@
     "externalBin": ["binaries/agentero-plugin-host"],
     "resources": [
       "pdfium/*",
-      "adapters/**/*",
-      "rtex/tex/**/*"
+      "adapters/**/*"
     ],
     "icon": [
       "icons/32x32.png",

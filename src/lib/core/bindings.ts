@@ -726,87 +726,8 @@ export const commands = {
 	 *  only paths under it. Closing the vault revokes the token.
 	 */
 	htmlPreviewGrant: (args: HtmlPreviewGrantArgs) => typedError<ApiResult<HtmlPreviewGrant>, string>(__TAURI_INVOKE("html_preview_grant", { args })),
-	/**
-	 *  Detect available LaTeX engines on the system.
-	 *  Returns the engines that can actually compile — latexmk (the orchestrator)
-	 *  and the engine binary must both exist. Engines not present on the host are
-	 *  omitted (not greyed out); without latexmk the list is empty and the compile
-	 *  button stays hidden.
-	 */
-	detectLatexEngines: () => __TAURI_INVOKE<ApiResult<LatexEngine[]>>("detect_latex_engines"),
-	rtexStatus: () => __TAURI_INVOKE<ApiResult<RtexStatus>>("rtex_status"),
-	rtexStart: (texPath: string, vaultPath: string, fresh: boolean) => __TAURI_INVOKE<ApiResult<RtexStartResult>>("rtex_start", { texPath, vaultPath, fresh }),
-	rtexEdit: (sessionId: string, path: string, start: number, end: number, text: string) => __TAURI_INVOKE<ApiResult<null>>("rtex_edit", { sessionId, path, start, end, text }),
-	rtexSetDocument: (sessionId: string, path: string, text: string) => __TAURI_INVOKE<ApiResult<null>>("rtex_set_document", { sessionId, path, text }),
-	rtexRequestLayout: (sessionId: string) => __TAURI_INVOKE<ApiResult<null>>("rtex_request_layout", { sessionId }),
-	rtexPauseBackground: (sessionId: string, paused: boolean) => __TAURI_INVOKE<ApiResult<null>>("rtex_pause_background", { sessionId, paused }),
-	rtexStop: (sessionId: string) => __TAURI_INVOKE<ApiResult<null>>("rtex_stop", { sessionId }),
-	/**
-	 *  `kpsewhich <name>` through the same TeX Live bin resolution as the rest of
-	 *  the app. Resolved files are added to the session's read allow-list.
-	 */
-	rtexKpsewhich: (sessionId: string, name: string) => __TAURI_INVOKE<ApiResult<string | null>>("rtex_kpsewhich", { sessionId, name }),
-	/**
-	 *  Read a font/image/layout file for the renderer. Only files resolved by
-	 *  `kpsewhich`, or under the project/build roots, are readable — this command
-	 *  must never become a general filesystem read for the WebView.
-	 */
-	rtexReadTexFile: (sessionId: string, path: string) => __TAURI_INVOKE<ApiResult<string>>("rtex_read_tex_file", { sessionId, path }),
-	/**
-	 *  Clean the regenerable LaTeX intermediates for one source (`latexmk -c`):
-	 *  drops `.aux` / `.log` / `.fls` / `.fdb_latexmk` / … while keeping the PDF.
-	 * 
-	 *  This is the escape hatch for latexmk's stuck state after a failed run:
-	 *  its fingerprint database (`*.fdb_latexmk`) records the failure, and with
-	 *  an unchanged source it then refuses to recompile — "Nothing to do …
-	 *  pdflatex gave an error in previous invocation". Clearing the
-	 *  intermediates resets that database so the next compile is a full run.
-	 */
-	cleanLatexAuxFiles: (texPath: string) => __TAURI_INVOKE<ApiResult<null>>("clean_latex_aux_files", { texPath }),
-	/**
-	 *  Lint the in-memory TeX buffer with chktex — the rule set Overleaf and VS
-	 *  Code's LaTeX Workshop run. Content goes in via stdin (`-I0`), so findings
-	 *  track the live editor buffer rather than the last autosaved snapshot, and
-	 *  chktex does not follow `\input`s (every open file lints itself). Returns an
-	 *  empty list when chktex is absent: linting degrades to the language pack's
-	 *  built-in checks instead of erroring on every keystroke.
-	 */
-	chktexLint: (texPath: string, content: string) => __TAURI_INVOKE<ApiResult<LatexLintDiagnostic[]>>("chktex_lint", { texPath, content }),
-	resolveLatexRoot: (texPath: string, vaultPath: string) => __TAURI_INVOKE<ApiResult<LatexRoot>>("resolve_latex_root", { texPath, vaultPath }),
-	latexBuildArtifacts: (rootPath: string, build: {
-	recipe: LatexRecipe | null,
-	outDir: string | null,
-	auxDir: string | null,
-	jobname: string | null,
-	force?: boolean,
-	clean?: boolean,
-} | null) => __TAURI_INVOKE<ApiResult<LatexArtifacts>>("latex_build_artifacts", { rootPath, build }),
-	latexProjectInspect: (texPath: string, vaultPath: string, rootPath: string | null, build: {
-	recipe: LatexRecipe | null,
-	outDir: string | null,
-	auxDir: string | null,
-	jobname: string | null,
-	force?: boolean,
-	clean?: boolean,
-} | null) => __TAURI_INVOKE<ApiResult<LatexProjectInfo>>("latex_project_inspect", { texPath, vaultPath, rootPath, build }),
-	latexSynctexForward: (pdfPath: string, texPath: string, line: number, column: number) => __TAURI_INVOKE<ApiResult<SyncTexLocation[]>>("latex_synctex_forward", { pdfPath, texPath, line, column }),
-	latexSynctexBackward: (pdfPath: string, page: number, x: number | null, y: number | null) => __TAURI_INVOKE<ApiResult<SyncTexSource | null>>("latex_synctex_backward", { pdfPath, page, x, y }),
-	latexClean: (rootPath: string, build: {
-	recipe: LatexRecipe | null,
-	outDir: string | null,
-	auxDir: string | null,
-	jobname: string | null,
-	force?: boolean,
-	clean?: boolean,
-} | null) => __TAURI_INVOKE<ApiResult<null>>("latex_clean", { rootPath, build }),
-	jobLatexCompileEnqueue: (args: JobLatexCompileEnqueueArgs) => typedError<ApiResult<JobSnapshot>, string>(__TAURI_INVOKE("job_latex_compile_enqueue", { args })),
 	jobJevSmartHighlightsEnqueue: (args: JobEnqueueArgs) => typedError<ApiResult<JobSnapshot>, string>(__TAURI_INVOKE("job_jev_smart_highlights_enqueue", { args })),
 	jevProbeHealth: () => typedError<ApiResult<null>, string>(__TAURI_INVOKE("jev_probe_health")),
-	writingCloudState: (vaultPath: string, projectId: string, checkpoint: string | null) => __TAURI_INVOKE<ApiResult<string | null>>("writing_cloud_state", { vaultPath, projectId, checkpoint }),
-	writingSyncProject: (projectDir: string, remote: string, branch: string) => __TAURI_INVOKE<ApiResult<WritingSyncReport>>("writing_sync_project", { projectDir, remote, branch }),
-	writingGitLog: (projectDir: string) => __TAURI_INVOKE<ApiResult<WritingGitLog>>("writing_git_log", { projectDir }),
-	writingGitDiff: (projectDir: string, commit: string) => __TAURI_INVOKE<ApiResult<WritingGitDiff>>("writing_git_diff", { projectDir, commit }),
-	writingGitRestore: (projectDir: string, commit: string) => __TAURI_INVOKE<ApiResult<WritingSyncReport>>("writing_git_restore", { projectDir, commit }),
 };
 
 /** Events */
@@ -831,8 +752,6 @@ export const events = {
 	agentUsage: makeEvent<AgentUsageEvt>("agent:usage"),
 	bridgeHostStatus: makeEvent<BridgeHostStatusEvent>("bridge:host-status"),
 	bridgePairRequest: makeEvent<BridgePairRequestEvent>("bridge:pair-request"),
-	compileFinished: makeEvent<LatexCompileResult>("compile:finished"),
-	compileLog: makeEvent<CompileLogEvent>("compile:log"),
 	connectorError: makeEvent<ConnectorErrorEvent>("connector:error"),
 	connectorItemSaved: makeEvent<ConnectorItemSavedEvent>("connector:item-saved"),
 	connectorProgress: makeEvent<ConnectorProgressEvent>("connector:progress"),
@@ -851,7 +770,6 @@ export const events = {
 	paperRenamed: makeEvent<PaperRenamedEventPayload>("paper:renamed"),
 	pluginsChanged: makeEvent<PluginsChangedEvent>("plugins:changed"),
 	pluginsDataChanged: makeEvent<PluginsDataChangedEvent>("plugins:data-changed"),
-	rtexEvent: makeEvent<RtexEventEvt>("rtex:event"),
 	settingsChanged: makeEvent<SettingsChangedEvent_Deserialize>("settings:changed"),
 	settingsSectionRequested: makeEvent<SettingsSectionRequestedEvent>("settings:section-requested"),
 	settingsVaultRequested: makeEvent<SettingsVaultRequestedEvent>("settings:vault-requested"),
@@ -2643,13 +2561,6 @@ export type CommitStatus =
 /**  `{parent}/{id}` already holds a paper (dir + NOTES or catalog row). */
 "skipped";
 
-/**  Mirror of the inline `json!({ "line" })` in `features::compile::compile_tex`. */
-export type CompileLogEvent = {
-	jobId: string,
-	rootPath: string,
-	line: string,
-};
-
 /**
  *  Mirror of the inline `json!({ "message", "sessionId" })` in
  *  `integration::connector::state::emit_error`.
@@ -3544,20 +3455,9 @@ export type JobImportEnqueueArgs = {
 	params?: Json | null,
 };
 
-export type JobKind = "parseRefs" | "parseBody" | "layoutAnalyze" | "layoutTranslate" | "downloadAssets" | "pageCount" | "wikiReindex" | "recognizeMetadata" | "import" | "connectorSync" | "modelDownload" | "citingScan" | "libraryIo" | "metadataRefresh" | "latexCompile" | "jevSmartHighlights";
+export type JobKind = "parseRefs" | "parseBody" | "layoutAnalyze" | "layoutTranslate" | "downloadAssets" | "pageCount" | "wikiReindex" | "recognizeMetadata" | "import" | "connectorSync" | "modelDownload" | "citingScan" | "libraryIo" | "metadataRefresh" | "jevSmartHighlights";
 
 export type JobLane = "focus" | "normal" | "idle";
-
-export type JobLatexCompileEnqueueArgs = {
-	vaultPath: string,
-	/**  Absolute, or vault-relative .tex source path. */
-	texPath: string,
-	/**  Engine id from the picker (pdflatex / xelatex / lualatex). */
-	engine: string,
-	lane?: JobLane | null,
-	force?: boolean,
-	build?: LatexBuildOptions | null,
-};
 
 /**
  *  `layoutAnalyze` enqueue args. `auto_translate` marks import / download
@@ -3740,105 +3640,6 @@ string |
 Json[] | 
 /**  JSON object. */
 { [key in string]: Json };
-
-export type LatexArtifacts = {
-	pdfPath: string,
-	logPath: string,
-	synctexPath: string,
-	flsPath: string,
-	outDir: string,
-	auxDir: string,
-};
-
-export type LatexBuildOptions = {
-	recipe: LatexRecipe | null,
-	outDir: string | null,
-	auxDir: string | null,
-	jobname: string | null,
-	force?: boolean,
-	clean?: boolean,
-};
-
-export type LatexCompileResult = {
-	jobId: string,
-	rootPath: string,
-	success: boolean,
-	pdfPath: string,
-	logPath: string,
-	synctexPath: string,
-	dependencies: string[],
-	diagnostics: LatexDiagnostic[],
-};
-
-export type LatexDiagnostic = {
-	path: string,
-	line: number,
-	column: number,
-	severity: string,
-	message: string,
-	source: string,
-};
-
-/**  A detected LaTeX rendering engine. */
-export type LatexEngine = {
-	id: string,
-	label: string,
-	path: string | null,
-};
-
-/**
- *  One chktex finding, mapped to editor coordinates (1-based line/column plus
- *  match length). `code` is chktex's warning number — suppress one inline with
- *  a `%chktex <n>` comment on the offending line.
- */
-export type LatexLintDiagnostic = {
-	line: number,
-	column: number,
-	length: number,
-	/**  Mapped chktex kind: "error" | "warning" | "info" (its "Message" level). */
-	severity: string,
-	code: number,
-	message: string,
-};
-
-export type LatexProjectInfo = {
-	rootPath: string,
-	candidates: string[],
-	texFiles: string[],
-	bibFiles: string[],
-	dependencies: string[],
-};
-
-export type LatexRecipe = {
-	name: string,
-	tools: LatexTool[],
-};
-
-export type LatexRoot = {
-	rootPath: string,
-	source: LatexRootSource,
-};
-
-/**
- *  How the compile root was determined — for logs/debugging only; the compile
- *  pipeline treats every variant identically.
- */
-export type LatexRootSource = 
-/**  `% !TEX root = …` magic-comment chain (loop detection included). */
-"magicComment" | 
-/**  The file itself carries `\documentclass` / `\begin{document}`. */
-"selfIndicator" | 
-/**  Vault scan found a root whose input/include closure contains the file. */
-"vaultScan" | 
-/**  Nothing found — the file compiles itself. */
-"fallbackSelf" | "subfileParent";
-
-export type LatexTool = {
-	command: string,
-	args?: string[],
-	env: { [key in string]: string } | null,
-	cwd: string | null,
-};
 
 export type LayoutModelStatus = {
 	ready: boolean,
@@ -5184,36 +4985,6 @@ export type ResolvedLink_Serialize = {
 	candidates?: string[],
 };
 
-export type RtexEventEvt = RtexEventPayload;
-
-/**
- *  Owned mirror of `features::rtex::RtexEventPayload`. The real payload lives
- *  in a desktop-only module, but the event contract must also compile for
- *  mobile targets, so the shape is mirrored here (pinned by the shape test
- *  below). `event` is rtex's own tagged JSON.
- */
-export type RtexEventPayload = {
-	sessionId: string,
-	/**
-	 *  Specta's built-in `serde_json::Value` shape is inline-recursive and
-	 *  cannot be expanded by the TS exporter; use the named `Json` union.
-	 */
-	event: Json,
-};
-
-export type RtexStartResult = {
-	sessionId: string,
-	projectRoot: string,
-	mainFile: string,
-};
-
-export type RtexStatus = {
-	available: boolean,
-	lualatex: string | null,
-	texdir: string | null,
-	error: string | null,
-};
-
 export type RunOnceAccepted = {
 	sessionId: string,
 	messageId: string,
@@ -5708,20 +5479,6 @@ export type SyncStatus_Serialize = {
 	running: boolean,
 	lastSyncAt?: string | null,
 	lastVersion: number,
-};
-
-export type SyncTexLocation = {
-	page: number,
-	x: number | null,
-	y: number | null,
-	width: number | null,
-	height: number | null,
-};
-
-export type SyncTexSource = {
-	path: string,
-	line: number,
-	column: number,
 };
 
 export type SyncVaultArgs = {
@@ -6562,38 +6319,6 @@ export type WordSubmit = {
 	selected: string[],
 	locator: string,
 	style: string,
-};
-
-export type WritingGitCommit = {
-	id: string,
-	at: number,
-	summary: string,
-	files: WritingGitFile[],
-};
-
-export type WritingGitDiff = {
-	code: string,
-	patch: string,
-	truncated: boolean,
-};
-
-export type WritingGitFile = {
-	path: string,
-	added: number,
-	removed: number,
-};
-
-export type WritingGitLog = {
-	code: string,
-	commits: WritingGitCommit[],
-};
-
-export type WritingSyncReport = {
-	committed: boolean,
-	pushed: boolean,
-	remote: boolean,
-	code: string,
-	detail: string,
 };
 
 /**  交给用户发布（或复制到剪贴板）的知乎提问草稿。 */

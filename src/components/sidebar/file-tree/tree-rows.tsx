@@ -1,5 +1,4 @@
 import {
-	BookOpen,
 	Bot,
 	ChevronRight,
 	Database,
@@ -31,11 +30,6 @@ import {
 } from "@/components/sidebar/file-tree/file-tree-primitives";
 import { TreeRowActionButton } from "@/components/sidebar/tree-row-action-button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { NewProjectButton } from "@/components/writing/new-project-button";
-import { ProjectSettingsButton } from "@/components/writing/project-settings-button";
-import { WritingCloudDownloadButton } from "@/components/writing/writing-cloud-controls";
-import { accountSurfaceEnabled } from "@/features/account/visibility";
-import { useWritingProject } from "@/hooks/use-writing-project";
 import { contextPathIcon } from "@/lib/agent/context-path-icon";
 import { cn } from "@/lib/core/utils";
 import { isPapersRoot } from "@/lib/paper";
@@ -45,7 +39,6 @@ import {
 	type PlazaSource,
 	plazaSourceLabel,
 } from "@/lib/plaza";
-import { surfaces } from "@/lib/surfaces";
 import type { FileNode } from "@/lib/vault";
 import {
 	isVaultAgentRoot,
@@ -54,11 +47,6 @@ import {
 	skillDescriptionTooltip,
 } from "@/lib/vault/agent-tree";
 import { normalizePathKey } from "@/lib/vault/path";
-import {
-	sameWritingDirectory,
-	writingLibraryRelative,
-} from "@/lib/writing/project-manifest";
-import type { TexCompileActions as TexCompileHookActions } from "./hooks/use-tex-compile";
 import {
 	DOWNLOAD_REASON_KEYS,
 	fileTreeDisplayName,
@@ -224,7 +212,6 @@ type NodeTreeRowProps = {
 	isCut: boolean;
 	pendingLoad: boolean;
 	expanded: boolean;
-	texCompile?: TexCompileHookActions;
 	vaultPath?: string | null;
 	skillLabels?: ReadonlyMap<string, SkillTreeLabel>;
 };
@@ -239,11 +226,6 @@ export function NodeTreeRow({
 	skillLabels,
 }: NodeTreeRowProps) {
 	const { t } = useTranslation("sidebar");
-	const lookup = useWritingProject(
-		vaultPath,
-		node.kind === "directory" ? node.path : null,
-		true,
-	);
 	if (
 		node.kind === "directory" &&
 		isVaultSkillDirectory(vaultPath, node.path)
@@ -269,12 +251,6 @@ export function NodeTreeRow({
 		const isAgentRoot = isVaultAgentRoot(vaultPath, node.path);
 		const rootFace =
 			isLibraryRoot || isAgentRoot ? null : vaultRootFace(vaultPath, node.path);
-		const rel = vaultPath ? writingLibraryRelative(vaultPath, node.path) : null;
-		const owningProject = lookup.status === "ready" ? lookup.project : null;
-		const project =
-			owningProject && sameWritingDirectory(owningProject.directory, node.path)
-				? owningProject
-				: null;
 		return (
 			<div
 				className={cn(
@@ -284,13 +260,8 @@ export function NodeTreeRow({
 				{...(isLibraryRoot ? { "data-library-row": "" } : {})}
 				{...(isAgentRoot ? { "data-vault-root": "agents" } : {})}
 				{...(rootFace ? { "data-vault-root": rootFace } : {})}
-				{...(project
-					? { "data-writing-project": project.manifest.projectId }
-					: {})}
 			>
 				<FileTreeFolderRow
-					openOnLabel={Boolean(project || (rel && lookup.status === "error"))}
-					expandOnOpen={Boolean(project)}
 					path={node.path}
 					style={treeRowIndentStyle(depth)}
 					name={
@@ -299,12 +270,8 @@ export function NodeTreeRow({
 							: isAgentRoot
 								? t("fileTree.vaultRoot.agents")
 								: rootFace
-									? t(
-											rootFace === "thesis"
-												? "writing.write"
-												: VAULT_ROOT_LABEL_KEY[rootFace],
-										)
-									: (project?.manifest.name ?? node.name)
+									? t(VAULT_ROOT_LABEL_KEY[rootFace])
+									: node.name
 					}
 					icon={
 						isLibraryRoot ? (
@@ -313,25 +280,6 @@ export function NodeTreeRow({
 							<Bot className="size-4 text-muted-foreground" aria-hidden />
 						) : rootFace ? (
 							<VaultRootIcon face={rootFace} />
-						) : project ? (
-							<BookOpen className="size-4 text-muted-foreground" aria-hidden />
-						) : undefined
-					}
-					actions={
-						!surfaces.writing ? undefined : vaultPath && project ? (
-							<ProjectSettingsButton vault={vaultPath} project={project} />
-						) : vaultPath &&
-							(rootFace === "thesis" ||
-								(rel && lookup.status === "ready" && !owningProject)) ? (
-							<>
-								<NewProjectButton vaultPath={vaultPath} parent={node.path} />
-								{accountSurfaceEnabled && (
-									<WritingCloudDownloadButton
-										vault={vaultPath}
-										collection={node.path}
-									/>
-								)}
-							</>
 						) : undefined
 					}
 				/>

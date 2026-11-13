@@ -8,7 +8,6 @@ import {
 import { callApiResult } from "@/lib/core/ipc";
 import { normalizeRelPath, toVaultRelative } from "@/lib/core/path";
 import { isTauri } from "@/lib/core/tauri";
-import { prepareWritingPathMove } from "@/lib/writing/project-manifest";
 
 export { normalizeRelPath as normalizeVaultRel, toVaultRelative };
 
@@ -330,16 +329,10 @@ export async function moveVaultPath(
 	toRel: string,
 	dirtyPaths: string[],
 ): Promise<WikiRenameResult> {
-	const rollback = await prepareWritingPathMove(vaultPath, fromRel, toRel);
-	try {
-		return await callApiResult(
-			() => commands.wikiMove({ vaultPath, fromRel, toRel, dirtyPaths }),
-			WIKI_CALL_OPTS,
-		);
-	} catch (error) {
-		await rollback?.();
-		throw error;
-	}
+	return callApiResult(
+		() => commands.wikiMove({ vaultPath, fromRel, toRel, dirtyPaths }),
+		WIKI_CALL_OPTS,
+	);
 }
 
 /** Explicitly rename one saved heading and repair resolved heading fragments. */

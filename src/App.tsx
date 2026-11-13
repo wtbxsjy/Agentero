@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/resizable";
 import { resolveActivePdfHandle } from "@/components/viewer";
 import { WorkspaceHost } from "@/components/workspace/workspace-host";
-import { WritingDialogs } from "@/components/writing/writing-dialogs";
 import { useAgentCatalogPrefetch } from "@/hooks/use-agent-catalog-prefetch";
 import { useAppBootstrap } from "@/hooks/use-app-bootstrap";
 import { useAppShortcuts } from "@/hooks/use-app-shortcuts";
@@ -583,7 +582,6 @@ export default function App() {
 									) : (
 										<div className="relative h-full min-h-0 flex-1 overflow-hidden">
 											<WorkspaceHost />
-											<WritingDialogs />
 										</div>
 									)}
 								</div>

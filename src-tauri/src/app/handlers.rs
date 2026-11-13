@@ -287,41 +287,6 @@ pub fn attach_handlers(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<ta
             crate::features::pdf::bookmarks::pdf_save_bookmarks,
             crate::features::web::commands::web_proxy_allow_host,
             crate::features::web::commands::html_preview_grant,
-            crate::features::compile::detect_latex_engines,
-            crate::features::compile::clean_latex_aux_files,
-            crate::features::compile::chktex_lint,
-            crate::features::compile::root::resolve_latex_root,
-            crate::features::compile::types::latex_build_artifacts,
-            crate::features::compile::project::latex_project_inspect,
-            crate::features::compile::tools::latex_synctex_forward,
-            crate::features::compile::tools::latex_synctex_backward,
-            crate::features::compile::tools::latex_clean,
-            crate::features::writing::cloud::writing_cloud_state,
-            crate::features::writing::sync::writing_sync_project,
-            crate::features::writing::sync::writing_git_log,
-            crate::features::writing::sync::writing_git_diff,
-            crate::features::writing::sync::writing_git_restore,
-            // Real-time preview shells out to LuaLaTeX and is desktop-only
-            // (see `features::rtex`'s cfg gate).
-            #[cfg(not(any(target_os = "ios", target_os = "android")))]
-            crate::features::rtex::rtex_status,
-            #[cfg(not(any(target_os = "ios", target_os = "android")))]
-            crate::features::rtex::rtex_start,
-            #[cfg(not(any(target_os = "ios", target_os = "android")))]
-            crate::features::rtex::rtex_edit,
-            #[cfg(not(any(target_os = "ios", target_os = "android")))]
-            crate::features::rtex::rtex_set_document,
-            #[cfg(not(any(target_os = "ios", target_os = "android")))]
-            crate::features::rtex::rtex_request_layout,
-            #[cfg(not(any(target_os = "ios", target_os = "android")))]
-            crate::features::rtex::rtex_pause_background,
-            #[cfg(not(any(target_os = "ios", target_os = "android")))]
-            crate::features::rtex::rtex_stop,
-            #[cfg(not(any(target_os = "ios", target_os = "android")))]
-            crate::features::rtex::rtex_kpsewhich,
-            #[cfg(not(any(target_os = "ios", target_os = "android")))]
-            crate::features::rtex::rtex_read_tex_file,
-            crate::features::jobs::commands::job_latex_compile_enqueue,
             // jEV smart highlights need the desktop PDFium stack (see
             // `features::jev`), so they are absent on mobile targets.
             #[cfg(not(any(target_os = "ios", target_os = "android")))]

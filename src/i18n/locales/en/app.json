@@ -1,5 +1,7 @@
 {
-	"navigator": { "hintTargets": "{{count}} keyboard targets" },
+	"navigator": {
+		"hintTargets": "{{count}} keyboard targets"
+	},
 	"labels": {
 		"agent": "Agent",
 		"notes": "Notes",
@@ -99,8 +101,6 @@
 		"close": "Close {{title}}",
 		"showHtml": "Show HTML version",
 		"showPdf": "Show PDF version",
-		"openTexPdf": "Open PDF",
-		"texCompiling": "Compiling…",
 		"contextCopyPath": "Copy path",
 		"copiedPath": "Path copied",
 		"copyPathFailed": "Could not copy path",
@@ -252,7 +252,6 @@
 		"parseRefs": "Parse references",
 		"openLayoutSettings": "Open analysis settings",
 		"openTranslateSettings": "Open translation settings",
-		"latexCompile": "Compile LaTeX",
 		"jevSmartHighlights": "jEV smart highlights",
 		"downloadBytes": "{{phase}} · {{downloaded}} / {{total}}",
 		"downloadBytesUnknown": "{{phase}} · {{downloaded}}",

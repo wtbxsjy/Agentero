@@ -23,7 +23,6 @@ import {
 	type SkillTreeLabel,
 } from "@/lib/vault/agent-tree";
 import { toVaultRelative } from "@/lib/wiki";
-import { isWritingProjectMetadataPath } from "@/lib/writing/project-manifest";
 import {
 	isVirtualTreePath,
 	pathKey,
@@ -274,8 +273,6 @@ export function useTreeRows({
 		}
 		const walk = (list: FileNode[], depth: number) => {
 			for (const n of list) {
-				if (vaultPath && isWritingProjectMetadataPath(vaultPath, n.path))
-					continue;
 				const paper =
 					n.kind === "directory" && isPaperDirectory(n.path, n.children);
 				out.push({

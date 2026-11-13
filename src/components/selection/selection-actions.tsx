@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { AskPopover } from "@/components/viewer/pdf/cards/ask-popover";
 import { TranslateCard } from "@/components/viewer/pdf/cards/translate-card";
@@ -17,16 +16,11 @@ import { isVaultSelection } from "@/lib/agent/selection-source-kind";
 import type { SelectionContext } from "@/lib/agent/selection-store";
 import { copyTextToClipboard } from "@/lib/core/clipboard";
 import { openSettingsWindow } from "@/lib/shell/settings-window";
-import {
-	isCommentableTexPath,
-	TEX_ADD_COMMENT_EVENT,
-} from "@/lib/tex/comments";
 import { vaultStore } from "@/lib/vault/store";
 import { workspaceStore } from "@/lib/workspace/store";
 import { addSelectionToChat } from "./add-selection-to-chat";
 import { SelectionActionMenu } from "./selection-action-menu";
 import { SelectionSourceButton } from "./selection-source-button";
-import { SelectionToolbarAction } from "./selection-toolbar";
 import { createSelectionAskThread, useSelectionAsk } from "./use-selection-ask";
 import { useSelectionQuickChat } from "./use-selection-quick-chat";
 import { useSelectionTranslation } from "./use-selection-translation";
@@ -37,7 +31,6 @@ export function SelectionActions({
 }: {
 	draft: SelectionChatDraft | null;
 }) {
-	const { t: texLabel } = useTranslation("latexLanguage");
 	const menu = draft;
 	const menuRef = useRef(menu);
 	menuRef.current = menu;
@@ -142,22 +135,6 @@ export function SelectionActions({
 					screen={menu.screen}
 					onAsk={openAsk}
 					onAddToChat={addMenuSelectionToChat}
-					beforeActions={
-						isCommentableTexPath(menu.selection.sourcePath) ? (
-							<SelectionToolbarAction
-								label={texLabel("addComment")}
-								shortcut="N"
-								onClick={() => {
-									window.dispatchEvent(
-										new CustomEvent(TEX_ADD_COMMENT_EVENT, {
-											detail: { path: menu.selection.sourcePath },
-										}),
-									);
-									dismissSelectionChat();
-								}}
-							/>
-						) : null
-					}
 					onCopy={() => copyTextToClipboard(menu.selection.text)}
 					onTranslate={() => {
 						translation.translate(menu.selection, menu.screen);

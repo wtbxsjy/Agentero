@@ -21,16 +21,6 @@
 		"sync": "Sync",
 		"plugins": "Plugins"
 	},
-	"writing": {
-		"uploadMode": "When to upload",
-		"uploadManual": "Manually",
-		"uploadOnCompile": "After each compile",
-		"uploadInterval": "On a timer",
-		"uploadEvery": "Interval",
-		"uploadMinutes": "{{count}} min",
-		"save": "Save",
-		"saved": "Saved"
-	},
 	"remoteAccess": {
 		"title": "Mobile access",
 		"localVaultRequired": "Open a local Vault to provide mobile access.",

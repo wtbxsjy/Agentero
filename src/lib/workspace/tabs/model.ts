@@ -95,9 +95,6 @@ export function remapTabsUnderPath(
 		const imageUrl = tab.imageUrl
 			? remapPathUnder(tab.imageUrl, from, to)
 			: null;
-		const writingRoot = tab.writingRoot
-			? remapPathUnder(tab.writingRoot, from, to)
-			: undefined;
 		const paperMeta = tab.paperMeta;
 		let nextPaperMeta = paperMeta;
 		if (paperMeta) {
@@ -111,7 +108,6 @@ export function remapTabsUnderPath(
 			notesPath === tab.notesPath &&
 			pdfUrl === tab.pdfUrl &&
 			imageUrl === tab.imageUrl &&
-			writingRoot === tab.writingRoot &&
 			nextPaperMeta === paperMeta
 		) {
 			return tab;
@@ -123,7 +119,6 @@ export function remapTabsUnderPath(
 			notesPath,
 			pdfUrl,
 			imageUrl,
-			writingRoot,
 			paperMeta: nextPaperMeta,
 		};
 	});

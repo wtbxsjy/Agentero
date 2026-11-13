@@ -130,16 +130,8 @@ export type PdfViewerProps = {
 	 * writing preview opts in so its PDF chrome matches the reading layout.
 	 */
 	showBottomBar?: boolean;
-	/** Canonical TeX source and actual output path for compiled-document SyncTeX. */
-	texRootPath?: string | null;
+	/** Actual path of the PDF on disk. */
 	pdfPath?: string | null;
-	/** Keep forward search on the writing preview instead of a reading tab. */
-	syncTexScope?: "writing";
-	cloudSyncBackward?: (
-		page: number,
-		x: number,
-		y: number,
-	) => Promise<{ path: string; line: number; column: number } | null>;
 	/**
 	 * Identifier used by the "Import to library" action for remote papers.
 	 * Usually the arXiv abs/source URL.

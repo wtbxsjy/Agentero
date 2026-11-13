@@ -329,34 +329,6 @@ pub struct PaperRenamedEventPayload {
     pub timestamp: i64,
 }
 
-/// Mirror of the inline `json!({ "line" })` in `features::compile::compile_tex`.
-#[derive(serde::Serialize, specta::Type, tauri_specta::Event)]
-#[serde(rename_all = "camelCase")]
-#[tauri_specta(event_name = "compile:log")]
-pub struct CompileLogEvent {
-    pub job_id: String,
-    pub root_path: String,
-    pub line: String,
-}
-
-/// Owned mirror of `features::rtex::RtexEventPayload`. The real payload lives
-/// in a desktop-only module, but the event contract must also compile for
-/// mobile targets, so the shape is mirrored here (pinned by the shape test
-/// below). `event` is rtex's own tagged JSON.
-#[derive(serde::Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct RtexEventPayload {
-    pub session_id: String,
-    /// Specta's built-in `serde_json::Value` shape is inline-recursive and
-    /// cannot be expanded by the TS exporter; use the named `Json` union.
-    #[specta(type = crate::core::json::Json)]
-    pub event: serde_json::Value,
-}
-
-#[derive(specta::Type, tauri_specta::Event)]
-#[tauri_specta(event_name = "rtex:event")]
-pub struct RtexEventEvt(pub RtexEventPayload);
-
 /// Anti-drift: event names registered here must equal the literals/constants
 /// used by the emit sites.
 #[test]
@@ -412,11 +384,6 @@ fn event_names_match_emit_literals() {
         McpTunnelStatusEvent::NAME,
         crate::integration::mcp::tunnel::MCP_TUNNEL_STATUS_EVENT
     );
-    #[cfg(all(
-        feature = "desktop",
-        not(any(target_os = "ios", target_os = "android"))
-    ))]
-    assert_eq!(RtexEventEvt::NAME, crate::features::rtex::RTEX_EVENT);
 }
 
 // ---------------------------------------------------------------------------
@@ -458,7 +425,7 @@ use std::path::{Path, PathBuf};
 /// Every event name registered in this file (the desktop contract surface).
 fn registered_event_names() -> BTreeSet<String> {
     use tauri_specta::Event as _;
-    let mut names: Vec<&str> = vec![
+    let names: Vec<&str> = vec![
         JobOfferEvent::NAME,
         JobChangedEvent::NAME,
         JobCompletedEvent::NAME,
@@ -508,10 +475,7 @@ fn registered_event_names() -> BTreeSet<String> {
         PaperImportedEvent::NAME,
         PaperAssetsReadyEvent::NAME,
         PaperRenamedEventPayload::NAME,
-        CompileLogEvent::NAME,
-        crate::features::compile::types::LatexCompileResult::NAME,
     ];
-    names.push(RtexEventEvt::NAME);
     let set: BTreeSet<String> = names.iter().map(|n| n.to_string()).collect();
     assert_eq!(set.len(), names.len(), "duplicate NAME in registered list");
     set
@@ -1336,29 +1300,6 @@ fn paper_renamed_mirror_matches_core_emit_shape() {
         "PaperRenamedEventPayload mirror drifted from the flattened core envelope \
          (vaultId + PaperRenamedEvent + timestamp, camelCase)"
     );
-}
-
-#[test]
-fn rtex_event_mirror_matches_emit_shape() {
-    #[cfg(all(
-        feature = "desktop",
-        not(any(target_os = "ios", target_os = "android"))
-    ))]
-    {
-        let actual = crate::features::rtex::RtexEventPayload {
-            session_id: "session".to_string(),
-            event: serde_json::json!({ "kind": "page", "page": 1 }),
-        };
-        let mirror = RtexEventPayload {
-            session_id: actual.session_id.clone(),
-            event: actual.event.clone(),
-        };
-        assert_eq!(
-            key_paths(&serde_json::to_value(actual).unwrap()),
-            key_paths(&serde_json::to_value(mirror).unwrap()),
-            "RtexEventPayload mirror drifted from the features::rtex emit shape"
-        );
-    }
 }
 
 #[derive(specta::Type, tauri_specta::Event)]

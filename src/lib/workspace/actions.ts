@@ -48,17 +48,11 @@ export {
 	persistTextFile,
 } from "./persistence";
 export {
-	closeTexLive,
-	compileTexOnManualSave,
-	compileTexOnSave,
-	compileTexProject,
 	isLocalHtmlLink,
 	navigateWiki,
 	openCitation,
 	openGraphPath,
 	openHtmlPreviewLink,
-	openTexLive,
-	openTexPdf,
 	openTranslationTab,
 	openVaultRel,
 	scheduleCitationJump,

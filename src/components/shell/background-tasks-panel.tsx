@@ -75,7 +75,6 @@ const KIND_ICONS: Partial<Record<BackgroundTaskKind, BackgroundTaskIcon>> = {
 	layoutTranslate: "translate",
 	connectorSync: "plug",
 	recognizeMetadata: "scan",
-	latexCompile: "fileCode",
 	paperRead: "read",
 	nodeInstall: "download",
 };

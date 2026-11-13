@@ -1,5 +1,7 @@
 {
-	"navigator": { "hintTargets": "{{count}} 个键盘目标" },
+	"navigator": {
+		"hintTargets": "{{count}} 个键盘目标"
+	},
 	"labels": {
 		"agent": "Agent",
 		"notes": "笔记",
@@ -99,8 +101,6 @@
 		"close": "关闭 {{title}}",
 		"showHtml": "显示 HTML 版本",
 		"showPdf": "显示 PDF 版本",
-		"openTexPdf": "打开 PDF",
-		"texCompiling": "正在编译…",
 		"contextCopyPath": "复制路径",
 		"copiedPath": "已复制路径",
 		"copyPathFailed": "复制路径失败",
@@ -252,7 +252,6 @@
 		"parseRefs": "解析参考文献",
 		"openLayoutSettings": "打开解析设置",
 		"openTranslateSettings": "打开翻译设置",
-		"latexCompile": "编译 LaTeX",
 		"jevSmartHighlights": "jEV 智能高亮",
 		"downloadBytes": "{{phase}} · {{downloaded}} / {{total}}",
 		"downloadBytesUnknown": "{{phase}} · {{downloaded}}",

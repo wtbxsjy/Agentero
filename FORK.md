@@ -26,7 +26,6 @@ directories, Rust commands, `bindings.ts` types, settings, i18n).
 | Switch | Module | Step 1 entry points hidden |
 |---|---|---|
 | `plaza` | Plaza (Cool Papers, arXiv recs, RSS, CCF) | `plazaEnabled` forced off in settings normalisation; Settings → General toggle |
-| `writing` | Writing desk, TeX projects, LaTeX compile | Virtual `thesis` tree root, writing row actions, TeX outline pane |
 | `researchTable` | Research tables, experiment notes | `/` command, "New table" / "New experiment" in the tree menu |
 | `zhihu` | Zhihu agent and paper action | Settings → Agent row, paper info "Zhihu" chip |
 | `remoteVault` | SSH/SFTP vaults | Welcome button, recent remotes, vault switcher entry |
@@ -34,6 +33,13 @@ directories, Rust commands, `bindings.ts` types, settings, i18n).
 | `remoteAccess` | Mobile pairing | Settings → Remote access |
 | `wordCitation` | Word add-in citations | Citation dialog not mounted |
 | `updater` | In-app updater (points at official releases) | Update check reports unsupported |
+
+Deleted in step 2 so far:
+
+- **Writing / TeX** (switch removed): writing desk and cloud writing, TeX projects, LaTeX compile
+  and SyncTeX, realtime-tex live preview (`rtex-core` dependency and `src-tauri/rtex/` resources),
+  the `latexCompile` job kind, and their i18n namespaces. `.tex` / `.bib` files still open in the
+  plain text editor with syntax highlighting.
 
 Already hidden upstream: plugins (`src/lib/plugins/visibility.ts`) and account / cloud writing
 (`src/features/account/visibility.ts`). The mobile app only ships in iOS builds.

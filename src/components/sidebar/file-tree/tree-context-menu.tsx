@@ -77,8 +77,6 @@ export type TreeContextMenuPortalProps = {
 	onDownloadAllMissing?: () => void;
 	onEmptyTrash?: () => void;
 	onOpenNotes?: () => void;
-	/** .tex row: open (or compile then open) the compiled PDF beside it. */
-	onOpenTexPdf?: () => void;
 	/** Paper row: open the catalog metadata editor. */
 	onEditMeta?: () => void;
 	/** Add the right-clicked file/paper to the Agent chat as a context chip. */
@@ -119,7 +117,6 @@ export function TreeContextMenuPortal({
 	onDownloadAllMissing,
 	onEmptyTrash,
 	onOpenNotes,
-	onOpenTexPdf,
 	onEditMeta,
 	onAddToChat,
 	onNewFile,
@@ -299,12 +296,6 @@ export function TreeContextMenuPortal({
 					{menuCount === 1 && isPaperMenu && onOpenNotes ? (
 						<FloatingMenuItem onClick={onOpenNotes}>
 							<span>{t("fileTree.openNotes")}</span>
-							<FloatingMenuShortcut>{splitPaneShortcut}</FloatingMenuShortcut>
-						</FloatingMenuItem>
-					) : null}
-					{menuCount === 1 && onOpenTexPdf ? (
-						<FloatingMenuItem onClick={onOpenTexPdf}>
-							<span>{t("fileTree.openTexPdf")}</span>
 							<FloatingMenuShortcut>{splitPaneShortcut}</FloatingMenuShortcut>
 						</FloatingMenuItem>
 					) : null}

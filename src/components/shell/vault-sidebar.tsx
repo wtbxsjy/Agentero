@@ -4,14 +4,7 @@
  * tree updates no longer re-render the whole App.
  */
 
-import {
-	useCallback,
-	useEffect,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { registerFileTreeHandle } from "@/components/shell/file-tree-registry";
 import {
@@ -20,8 +13,6 @@ import {
 	VaultSidebarHeader,
 } from "@/components/sidebar/file-tree";
 import { PaperInfoPanel } from "@/components/sidebar/paper-info-panel";
-import { useTexProject } from "@/components/sidebar/use-tex-project";
-import { WritingOutline } from "@/components/writing/writing-outline";
 import {
 	useLibraryStore,
 	useSettings,
@@ -91,7 +82,6 @@ import {
 	selectLibrary,
 	selectTrash,
 } from "@/lib/workspace/actions";
-import { bindWritingVault } from "@/lib/writing/store";
 
 // Stable callbacks so the memoized header / tree bail out on unrelated renders.
 // The wand returns as soon as its inputs are queued; the background task HUD
@@ -153,28 +143,6 @@ export function VaultSidebar() {
 	const { t } = useTranslation(["app", "sidebar"]);
 	const vaultPath = useVaultStore((s) => s.vaultPath);
 	const tree = useVaultStore((s) => s.tree);
-	const treeWithWriting = useMemo(() => {
-		if (!vaultPath || !surfaces.writing) return tree;
-		const path = joinVaultPath(vaultPath, "thesis");
-		if (
-			tree.some(
-				(node) =>
-					node.path.replaceAll("\\", "/").toLowerCase() ===
-					path.replaceAll("\\", "/").toLowerCase(),
-			)
-		)
-			return tree;
-		return [
-			...tree,
-			{
-				id: path,
-				path,
-				name: "thesis",
-				kind: "directory" as const,
-				children: [],
-			},
-		];
-	}, [tree, vaultPath]);
 	const treeLoading = useVaultStore((s) => s.treeLoading);
 	const treeSelectedPath = useVaultStore((s) => s.treeSelectedPath);
 	const paperFolders = useVaultStore((s) => s.paperFolders);
@@ -195,14 +163,6 @@ export function VaultSidebar() {
 		(s) => s.tabs.find((tab) => tab.id === s.activeTabId) ?? null,
 	);
 	const paperMeta = activeTab?.paperMeta ?? null;
-	const texProjectPath = useTexProject(
-		vaultPath,
-		activeTab?.path ?? null,
-		activeTab?.writingRoot ?? activeTab?.texRoot,
-	);
-	useLayoutEffect(() => {
-		bindWritingVault(vaultPath);
-	}, [vaultPath]);
 
 	// While a paper / note tab hydrates, its own `paperMeta` is still null.
 	// Resolve the owning paper from the tree/path so Paper Info does not
@@ -326,7 +286,7 @@ export function VaultSidebar() {
 				<div className="flex min-h-0 flex-1 flex-col pl-1">
 					<FileTree
 						ref={fileTreeRef}
-						nodes={treeWithWriting}
+						nodes={tree}
 						loading={treeLoading}
 						selectedPath={treeSelectedPath}
 						vaultPath={vaultPath}
@@ -376,11 +336,7 @@ export function VaultSidebar() {
 					/>
 				</div>
 			</div>
-			{surfaces.writing && texProjectPath ? (
-				<div className="flex h-[35%] min-h-32 shrink-0 flex-col">
-					<WritingOutline texPath={texProjectPath} />
-				</div>
-			) : !displayedPaperMeta ? null : (
+			{!displayedPaperMeta ? null : (
 				<PaperInfoPanel
 					meta={displayedPaperMeta}
 					onTagsChange={onPaperTagsChange}
