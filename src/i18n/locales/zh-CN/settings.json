@@ -21,16 +21,6 @@
 		"sync": "同步",
 		"plugins": "插件"
 	},
-	"writing": {
-		"uploadMode": "何时上传",
-		"uploadManual": "手动",
-		"uploadOnCompile": "每次编译后",
-		"uploadInterval": "定时",
-		"uploadEvery": "间隔",
-		"uploadMinutes": "{{count}} 分钟",
-		"save": "保存",
-		"saved": "已保存"
-	},
 	"remoteAccess": {
 		"title": "移动端访问",
 		"localVaultRequired": "请打开本地 Vault 后再提供移动端访问。",

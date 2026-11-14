@@ -121,8 +121,6 @@ import { selectionsPromptBlock } from "@/lib/agent/selection-prompt";
 import { terminalToolData } from "@/lib/agent/terminal-tool";
 import { cn } from "@/lib/core/utils";
 import type { PaperMetadata } from "@/lib/paper";
-import { workspaceStore } from "@/lib/workspace/store";
-import { isTexPath } from "@/lib/workspace/viewer";
 
 /** Compact note: interactive form is docked below, not inside the tool card. */
 function AskUserToolPendingNote() {
@@ -1261,11 +1259,7 @@ export const ChatTranscript = memo(function ChatTranscript({
 		editCompositionProps,
 	};
 	const hasOpenSource = Boolean(onOpenSource);
-	const writing = useStore(workspaceStore, (state) => {
-		const tab = state.tabs.find((tab) => tab.id === state.activeTabId);
-		return Boolean(tab && (tab.texRoot || isTexPath(tab.path)));
-	});
-	const suggestions = suggestionItems(writing);
+	const suggestions = suggestionItems();
 	const rowHandlers = useMemo<RowHandlers>(
 		() => ({
 			isEditBlockedByIme: (event) =>
@@ -1318,9 +1312,7 @@ export const ChatTranscript = memo(function ChatTranscript({
 							<ConversationEmptyState
 								className={zhihuEmpty ? "px-2 py-8" : undefined}
 								title={t("empty.title")}
-								description={t(
-									writing ? "empty.writingDescription" : "empty.description",
-								)}
+								description={t("empty.description")}
 							>
 								{zhihuEmpty ? (
 									<ZhihuDiscussions paper={paper} />

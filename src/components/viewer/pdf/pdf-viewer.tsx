@@ -90,7 +90,6 @@ import { usePdfSelectionTranslate } from "@/components/viewer/pdf/hooks/use-pdf-
 import { useSentenceGlyphRects } from "@/components/viewer/pdf/hooks/use-pdf-sentence-glyph-rects";
 import { usePdfSidebarPanels } from "@/components/viewer/pdf/hooks/use-pdf-sidebar-panels";
 import { usePdfSmartHighlights } from "@/components/viewer/pdf/hooks/use-pdf-smart-highlights";
-import { usePdfSyncTex } from "@/components/viewer/pdf/hooks/use-pdf-synctex";
 import { usePdfTextSelection } from "@/components/viewer/pdf/hooks/use-pdf-text-selection";
 import { usePdfTranslationSelection } from "@/components/viewer/pdf/hooks/use-pdf-translation-selection";
 import { usePdfViewerHandle } from "@/components/viewer/pdf/hooks/use-pdf-viewer-handle";
@@ -512,10 +511,7 @@ function PdfViewerInner({
 	showBottomBar = false,
 	translationPane = false,
 	translationOnly = false,
-	texRootPath = null,
 	pdfPath = null,
-	syncTexScope,
-	cloudSyncBackward,
 	reloadPositionRef,
 	importIdentifier,
 	onOpenSettings,
@@ -808,18 +804,6 @@ function PdfViewerInner({
 	}, [pageTextLinkMap, citationLinks]);
 
 	const hostRef = useRef<HTMLDivElement>(null);
-	usePdfSyncTex({
-		docId,
-		tabId: baseDocId,
-		rootPath: texRootPath,
-		pdfPath,
-		scope: syncTexScope,
-		cloudSyncBackward,
-		isActive,
-		hostRef,
-		navigate: goToRegion,
-		docCapRef,
-	});
 	const selectionCommentEngagedRef = useRef(false);
 
 	// ---- Text selection → floating action menu ----

@@ -23,11 +23,9 @@ import {
 	type SkillTreeLabel,
 } from "@/lib/vault/agent-tree";
 import { toVaultRelative } from "@/lib/wiki";
-import { isWritingProjectMetadataPath } from "@/lib/writing/project-manifest";
 import {
 	isVirtualTreePath,
 	pathKey,
-	vaultRootFace,
 	visibleTreeChildren,
 } from "../tree-helpers";
 import type { FlatRow, TreeCreateDraft } from "../types";
@@ -107,16 +105,8 @@ export function useTreeIndex({
 			relPathForNode,
 			paperTreeLabelMode,
 		);
-		const writing = sorted.filter(
-			(node) => vaultRootFace(vaultPath, node.path) === "thesis",
-		);
-		const ordered = sorted.filter(
-			(node) => vaultRootFace(vaultPath, node.path) !== "thesis",
-		);
-		const libraryIndex = ordered.findIndex((node) => isPapersRoot(node.path));
-		ordered.splice(libraryIndex < 0 ? 0 : libraryIndex + 1, 0, ...writing);
 		return finishAgentTreeDisplay(
-			ordered,
+			sorted,
 			vaultPath,
 			skillLabels ?? EMPTY_SKILL_LABELS,
 		);
@@ -274,8 +264,6 @@ export function useTreeRows({
 		}
 		const walk = (list: FileNode[], depth: number) => {
 			for (const n of list) {
-				if (vaultPath && isWritingProjectMetadataPath(vaultPath, n.path))
-					continue;
 				const paper =
 					n.kind === "directory" && isPaperDirectory(n.path, n.children);
 				out.push({

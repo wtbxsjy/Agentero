@@ -1,6 +1,4 @@
-import { Loader2 } from "lucide-react";
-import { lazy, memo, Suspense, useCallback, useEffect } from "react";
-import { useTranslation } from "react-i18next";
+import { lazy, memo, Suspense, useCallback } from "react";
 import { PapersLibrary } from "@/components/library/papers-library";
 import { PlazaTabView } from "@/components/plaza/plaza-tab-view";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,11 +6,7 @@ import type { PdfViewerHandle } from "@/components/viewer";
 import { HtmlViewer, ImageViewer } from "@/components/viewer";
 import { LocalHtmlViewer } from "@/components/viewer/local-html-viewer";
 import { RecycleBinView } from "@/components/workspace/recycle-bin-view";
-import { TexProjectView } from "@/components/writing/tex-project-view";
-import { useSharedWritingEditor } from "@/components/writing/writing-cloud-context";
 import { useSettings } from "@/hooks/use-app-stores";
-import { errorText } from "@/lib/core/error";
-import { notifyError } from "@/lib/core/notify";
 import type { PaperLibraryRow, PaperMetadata } from "@/lib/paper";
 import { isRemoteArxivPath } from "@/lib/paper";
 import type { PdfVisualSessionTrace } from "@/lib/pdf/agent-trace/types";
@@ -21,10 +15,6 @@ import type { PdfHighlight } from "@/lib/pdf/highlight/types";
 import type { LibraryColumnPref } from "@/lib/settings";
 import { isMarkdownPath, paperRelFromNotes } from "@/lib/vault";
 import type { WikiRenameHeadingRequest } from "@/lib/wiki";
-import {
-	openWritingFile,
-	rememberWritingSource,
-} from "@/lib/workspace/navigation";
 import { updateTab } from "@/lib/workspace/store";
 import { type DocTab, tabIsPaperNotes } from "@/lib/workspace/tabs";
 import {
@@ -32,11 +22,6 @@ import {
 	isPlainPdfPath,
 	viewerModeSpec,
 } from "@/lib/workspace/viewer";
-import { isWritingSource } from "@/lib/workspace/writing-focus";
-import {
-	isWritingPath,
-	resolveWritingTarget,
-} from "@/lib/writing/project-target";
 
 // Heavyweight viewers are lazy-loaded so the EmbedPDF (PDFium) and Plate
 // editor bundles stay out of the initial chunk and are fetched on first use.
@@ -64,11 +49,6 @@ const TableViewer = lazy(() =>
 const TextEditor = lazy(() =>
 	import("@/components/viewer/text-editor").then((m) => ({
 		default: m.TextEditor,
-	})),
-);
-const TexLiveViewer = lazy(() =>
-	import("@/components/viewer/texlive/tex-live-viewer").then((m) => ({
-		default: m.TexLiveViewer,
 	})),
 );
 
@@ -152,7 +132,6 @@ export type DocViewTextProps = {
 		lastSaved: string,
 	) => Promise<boolean>;
 	/** ⌘S manual save: flush landed — TeX compiles here, others no-op. */
-	onManualSave: (path: string) => void;
 	onTabPatch: (id: string, patch: Partial<DocTab>) => void;
 };
 
@@ -198,41 +177,6 @@ function TabLoadingSkeleton() {
 					<Skeleton className="library-shimmer h-3 w-2/3" />
 				</div>
 			</div>
-		</div>
-	);
-}
-
-/**
- * Compiled-PDF pane while its LaTeX compile is still running: a minimal
- * centered hint (the bytes do not exist on disk yet).
- */
-function TexCompilingPlaceholder() {
-	const { t } = useTranslation("app");
-	return (
-		<div
-			className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-6"
-			aria-busy="true"
-			role="status"
-		>
-			<Skeleton className="library-shimmer h-3.5 w-28" />
-			<p className="text-muted-foreground text-xs">{t("tabs.texCompiling")}</p>
-		</div>
-	);
-}
-
-function TexCompilingIndicator() {
-	const { t } = useTranslation("app");
-	return (
-		<div
-			role="status"
-			aria-live="polite"
-			className="pointer-events-none absolute bottom-12 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-background/95 px-3 py-1.5 text-xs shadow-raised"
-		>
-			<Loader2
-				className="size-3.5 animate-spin motion-reduce:animate-none"
-				aria-hidden
-			/>
-			{t("tabs.texCompiling")}
 		</div>
 	);
 }
@@ -294,7 +238,6 @@ const DocumentContent = memo(function DocumentContent({
 	trashReloadSignal = 0,
 }: DocViewProps) {
 	const plazaEnabled = useSettings((s) => s.plazaEnabled);
-	const cloud = useSharedWritingEditor(tab.path);
 	// Bind tab.id once per tab so PdfViewer's memo bails out when only the tab
 	// record changes (highlight / ask patches via updateTab).
 	const handlePdfHandle = useCallback(
@@ -330,25 +273,6 @@ const DocumentContent = memo(function DocumentContent({
 		},
 		[editor.onTabPatch, isNotes, tab.id],
 	);
-	if (tab.texLive) {
-		if (!active && !keepMounted) return null;
-		const texRoot = tab.texRoot ?? tab.path.replace(/\.pdf$/i, ".tex");
-		return (
-			<div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
-				<Suspense fallback={<TabLoadingSkeleton />}>
-					<TexLiveViewer
-						rootPath={texRoot}
-						vaultPath={vaultPath}
-						active={active}
-					/>
-				</Suspense>
-			</div>
-		);
-	}
-	if (tab.texCompiling && !tab.pdfBytes && !tab.pdfUrl) {
-		if (!active && !keepMounted) return null;
-		return <TexCompilingPlaceholder />;
-	}
 	if (!tab.loaded) {
 		if (!active && !keepMounted) return null;
 		return <TabLoadingSkeleton />;
@@ -476,7 +400,6 @@ const DocumentContent = memo(function DocumentContent({
 						isActive={active}
 						isRemotePaper={isRemoteArxivPath(tab.path)}
 						plainViewer={isPlainPdfPath(tab.path)}
-						texRootPath={tab.texRoot}
 						pdfPath={tab.path}
 						importIdentifier={tab.paperMeta?.source_url ?? undefined}
 						onOpenSettings={pdf.onOpenSettings}
@@ -488,7 +411,6 @@ const DocumentContent = memo(function DocumentContent({
 						onOpenTranslationTab={pdf.onOpenTranslationTab}
 					/>
 				</Suspense>
-				{tab.texCompiling && <TexCompilingIndicator />}
 			</div>
 		);
 	}
@@ -583,8 +505,6 @@ const DocumentContent = memo(function DocumentContent({
 		);
 	}
 	if (tab.mode === "text") {
-		if (cloud.pending || (cloud.session && !cloud.shared))
-			return <TabLoadingSkeleton />;
 		// Same keep-alive gate as the Markdown editor: an evicted tab's
 		// unmount flushes its pending autosave; remount re-seeds from disk.
 		if (!active && !keepMounted) return <TabLoadingSkeleton />;
@@ -594,16 +514,12 @@ const DocumentContent = memo(function DocumentContent({
 					<TextEditor
 						// Stable per-tab key: external disk changes swap the document
 						// in place via `reloadKey` (view state and scroll survive).
-						key={`text-${tab.id}-${cloud.shared ? (cloud.shared.readOnly ? "cloud-view" : "cloud-edit") : "local"}`}
-						shared={cloud.shared ?? undefined}
-						panelId={tab.id}
-						hideLintFooter={isWritingSource(tab, vaultPath)}
+						key={`text-${tab.id}`}
 						seed={tab.textSeed}
 						path={tab.path}
 						reloadKey={tab.textKey}
 						active={active}
 						onPersist={text.onPersistFile}
-						onManualSave={text.onManualSave}
 						onDirtyChange={(d) => text.onTabPatch(tab.id, { textDirty: d })}
 						className="h-full w-full"
 					/>
@@ -644,48 +560,6 @@ const DocumentContent = memo(function DocumentContent({
 	);
 }, docViewPropsEqual);
 
-/** The project frame belongs to every project file, independent of viewer mode. */
 export function DocView(props: DocViewProps) {
-	const { tab, vaultPath, active, keepMounted } = props;
-	useEffect(() => {
-		if (active && tab.writingRoot)
-			rememberWritingSource(tab.path, tab.writingRoot);
-	}, [active, tab.path, tab.writingRoot]);
-	useEffect(() => {
-		if (
-			!active ||
-			!vaultPath ||
-			tab.writingRoot ||
-			!isWritingPath(vaultPath, tab.path)
-		)
-			return;
-		let cancelled = false;
-		void resolveWritingTarget(vaultPath, tab.path)
-			.then((project) => {
-				if (cancelled || !project) return;
-				if (project.compiledPdf) openWritingFile(tab.path, project.root, true);
-				else updateTab(tab.id, { writingRoot: project.root });
-			})
-			.catch((error) => {
-				if (!cancelled) notifyError(errorText(error));
-			});
-		return () => {
-			cancelled = true;
-		};
-	}, [active, vaultPath, tab.id, tab.path, tab.writingRoot]);
-	const content = <DocumentContent {...props} />;
-	if (vaultPath && tab.writingRoot && (active || keepMounted)) {
-		return (
-			<TexProjectView
-				panelId={tab.id}
-				sourcePath={tab.path}
-				projectRoot={tab.writingRoot}
-				vaultPath={vaultPath}
-				active={active}
-			>
-				{content}
-			</TexProjectView>
-		);
-	}
-	return content;
+	return <DocumentContent {...props} />;
 }

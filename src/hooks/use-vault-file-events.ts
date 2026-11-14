@@ -8,8 +8,6 @@ import {
 	type VaultFileChangedPayload,
 } from "@/lib/vault/fs-watch";
 import { invalidateSeedCache } from "@/lib/vault/seed-cache";
-import { isWritingManifestPath } from "@/lib/writing/project-manifest";
-import { bumpWritingTreeRevision } from "@/lib/writing/tree-target";
 
 type VaultFileEventsParams = {
 	vaultPath: string | null;
@@ -104,16 +102,10 @@ export function useVaultFileEvents({
 				h.onDiskChange(p);
 				h.onWikiChange?.(p);
 			}
-			if (
-				vaultPath &&
-				payload.paths.some((path) => isWritingManifestPath(vaultPath, path))
-			) {
-				bumpWritingTreeRevision();
-			}
 			// Structural changes affect the tree; plain content edits don't.
 			if (payload.kind !== "modify") h.onStructuralChange(payload.paths);
 		});
-	}, [vaultPath]);
+	}, []);
 }
 
 function payloadAffectsLibrary(payload: VaultFileChangedPayload): boolean {

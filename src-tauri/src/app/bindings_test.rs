@@ -278,32 +278,8 @@ pub(crate) fn export_typescript_bindings() {
             crate::features::pdf::bookmarks::pdf_save_bookmarks,
             crate::features::web::commands::web_proxy_allow_host,
             crate::features::web::commands::html_preview_grant,
-            crate::features::compile::detect_latex_engines,
-            crate::features::rtex::rtex_status,
-            crate::features::rtex::rtex_start,
-            crate::features::rtex::rtex_edit,
-            crate::features::rtex::rtex_set_document,
-            crate::features::rtex::rtex_request_layout,
-            crate::features::rtex::rtex_pause_background,
-            crate::features::rtex::rtex_stop,
-            crate::features::rtex::rtex_kpsewhich,
-            crate::features::rtex::rtex_read_tex_file,
-            crate::features::compile::clean_latex_aux_files,
-            crate::features::compile::chktex_lint,
-            crate::features::compile::root::resolve_latex_root,
-            crate::features::compile::types::latex_build_artifacts,
-            crate::features::compile::project::latex_project_inspect,
-            crate::features::compile::tools::latex_synctex_forward,
-            crate::features::compile::tools::latex_synctex_backward,
-            crate::features::compile::tools::latex_clean,
-            crate::features::jobs::commands::job_latex_compile_enqueue,
             crate::features::jobs::commands::job_jev_smart_highlights_enqueue,
             crate::features::jev::commands::jev_probe_health,
-            crate::features::writing::cloud::writing_cloud_state,
-            crate::features::writing::sync::writing_sync_project,
-            crate::features::writing::sync::writing_git_log,
-            crate::features::writing::sync::writing_git_diff,
-            crate::features::writing::sync::writing_git_restore,
         ])
         // Desktop event surface (see `app::events_contract`): emit sites keep
         // using `app.emit("<literal>", payload)`; the wrappers/mirrors there
@@ -359,9 +335,6 @@ pub(crate) fn export_typescript_bindings() {
             crate::app::events_contract::PaperImportedEvent,
             crate::app::events_contract::PaperAssetsReadyEvent,
             crate::app::events_contract::PaperRenamedEventPayload,
-            crate::app::events_contract::CompileLogEvent,
-            crate::features::compile::types::LatexCompileResult,
-            crate::app::events_contract::RtexEventEvt,
         ])
         // Tauri IPC serializes `i64`/`u64`/`usize` through serde_json as JSON
         // numbers, which the frontend already parses as JS `number` via the

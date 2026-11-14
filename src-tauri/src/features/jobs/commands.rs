@@ -548,61 +548,6 @@ pub async fn job_layout_analyze_enqueue(
     Ok(ApiResult::ok(start_or_hold(&app, &center, layout).await))
 }
 
-#[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct JobLatexCompileEnqueueArgs {
-    pub vault_path: String,
-    /// Absolute, or vault-relative .tex source path.
-    pub tex_path: String,
-    /// Engine id from the picker (pdflatex / xelatex / lualatex).
-    pub engine: String,
-    #[serde(default)]
-    pub lane: Option<JobLane>,
-    #[serde(default)]
-    pub force: bool,
-    #[serde(default)]
-    pub build: Option<crate::features::compile::types::LatexBuildOptions>,
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn job_latex_compile_enqueue(
-    app: tauri::AppHandle,
-    center: State<'_, JobCenter>,
-    args: JobLatexCompileEnqueueArgs,
-) -> Result<ApiResult<JobSnapshot>, String> {
-    let vault = try_vault_ok!(&args.vault_path);
-    // The .tex source is addressed by absolute path (it can live anywhere in
-    // the vault, including outside papers/); resolve vault-relative input.
-    let raw = Path::new(&args.tex_path);
-    let tex_path = if raw.is_absolute() {
-        raw.to_path_buf()
-    } else {
-        vault.join(raw)
-    };
-    if !tex_path.is_file() {
-        return Ok(map_err(AppError::message(format!(
-            "tex file not found: {}",
-            tex_path.display()
-        ))));
-    }
-    let tex_path = tex_path.to_string_lossy().to_string();
-    let params =
-        serde_json::json!({ "texPath": tex_path, "engine": args.engine, "build": args.build });
-    Ok(start_enqueued(
-        &app,
-        &center,
-        center.enqueue_latex_compile(
-            &vault,
-            &tex_path,
-            parse_lane(args.lane),
-            args.force,
-            Some(params),
-        ),
-    )
-    .await)
-}
-
 #[tauri::command]
 #[specta::specta]
 pub async fn job_download_assets_enqueue(

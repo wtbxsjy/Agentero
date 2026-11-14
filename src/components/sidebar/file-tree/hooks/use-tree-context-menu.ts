@@ -27,14 +27,12 @@ import {
 } from "@/lib/vault";
 import { isVaultAgentRoot } from "@/lib/vault/agent-tree";
 import { normalizePathKey } from "@/lib/vault/path";
-import { openTexPdf } from "@/lib/workspace/actions";
 import {
 	addFilePathToChat,
 	copyFilePath,
 	openFilePathInTerminal,
 	revealFilePath,
 } from "@/lib/workspace/file-path-actions";
-import { isTexPath } from "@/lib/workspace/viewer";
 import type { TreeContextMenuPortalProps } from "../tree-context-menu";
 import { pathKey, VAULT_ROOT_LABEL_KEY, vaultRootFace } from "../tree-helpers";
 import type {
@@ -291,13 +289,6 @@ export function useTreeContextMenu({
 					onOpenPaperNotes(menu.path);
 				}
 			: undefined,
-		onOpenTexPdf:
-			targets.length === 1 && isTexPath(menu.path)
-				? () => {
-						setMenu(null);
-						void openTexPdf(menu.path);
-					}
-				: undefined,
 		onEditMeta:
 			isPaperMenu && onEditPaperMeta
 				? () => {

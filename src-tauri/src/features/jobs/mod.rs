@@ -48,7 +48,6 @@ pub enum JobKind {
     CitingScan,
     LibraryIo,
     MetadataRefresh,
-    LatexCompile,
     JevSmartHighlights,
 }
 
@@ -74,7 +73,6 @@ impl JobKind {
             JobKind::CitingScan => "citingScan",
             JobKind::LibraryIo => "libraryIo",
             JobKind::MetadataRefresh => "metadataRefresh",
-            JobKind::LatexCompile => "latexCompile",
             JobKind::JevSmartHighlights => "jevSmartHighlights",
         };
         // ParseRefs always runs with online lookup enabled; the segment is
@@ -533,9 +531,6 @@ fn kind_concurrency(inner: &JobCenterInner, kind: JobKind) -> usize {
         // Online scans / dialog-driven file IO / polite metadata batches:
         // one library-scope renderer job of each kind at a time.
         JobKind::CitingScan | JobKind::LibraryIo | JobKind::MetadataRefresh => 1,
-        // One latexmk build at a time: TeX runs are CPU-heavy and the compile
-        // button is interactive, so a second file waits instead of competing.
-        JobKind::LatexCompile => 1,
         // jEV smart highlights issue one network request per batch; keep one
         // paper at a time to avoid hammering the API and to keep progress
         // meaningful.
@@ -992,29 +987,6 @@ impl JobCenter {
             JobKind::MetadataRefresh,
             vault,
             "",
-            lane,
-            force,
-            None,
-            params,
-        )
-        .await
-    }
-
-    /// Enqueue a latexmk build. `path` is the .tex source (the job's identity
-    /// for dedupe / cancel-for-paper); `params` carries `{ texPath, engine }`
-    /// so the fingerprint folds in the engine choice.
-    pub async fn enqueue_latex_compile(
-        &self,
-        vault: impl Into<PathBuf>,
-        path: impl Into<String>,
-        lane: JobLane,
-        force: bool,
-        params: Option<serde_json::Value>,
-    ) -> JobSnapshot {
-        self.enqueue_core(
-            JobKind::LatexCompile,
-            vault,
-            path,
             lane,
             force,
             None,

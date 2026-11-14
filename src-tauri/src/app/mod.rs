@@ -194,9 +194,7 @@ pub fn run() {
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
-        builder = builder
-            .manage(Arc::new(crate::core::telemetry::Telemetry::new()))
-            .manage(crate::features::rtex::RtexSessions::new());
+        builder = builder.manage(Arc::new(crate::core::telemetry::Telemetry::new()));
     }
 
     builder = handlers::attach_handlers(builder);
@@ -237,7 +235,6 @@ pub fn run() {
             crate::features::paper::analyze::refs::register_job_runners(&center);
             crate::features::paper::import::job_runners::register_job_runners(&center);
             crate::features::paper::analyze::layout::model_assets::register_job_runners(&center);
-            crate::features::compile::register_job_runners(&center);
             #[cfg(not(any(target_os = "ios", target_os = "android")))]
             crate::features::jev::register_job_runners(&center);
             let handle = app.handle().clone();
@@ -624,9 +621,6 @@ pub fn run() {
                 #[cfg(not(any(target_os = "android", target_os = "ios")))]
                 app.state::<Arc<crate::core::telemetry::Telemetry>>()
                     .shutdown();
-                #[cfg(not(any(target_os = "android", target_os = "ios")))]
-                app.state::<crate::features::rtex::RtexSessions>()
-                    .stop_all();
             }
             // Best-effort final push (bounded); only on Exit so it runs once.
             if matches!(event, tauri::RunEvent::Exit) {
