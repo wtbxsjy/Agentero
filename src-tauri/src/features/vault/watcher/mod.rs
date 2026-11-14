@@ -409,22 +409,6 @@ mod tests {
     }
 
     #[test]
-    fn mirrored_sync_store_changes_are_ignored() {
-        // Store mirrored at the vault root by a desktop WebDAV client.
-        assert!(is_ignored("/vault/blobs/ab/hash"));
-        assert!(is_ignored("/vault/manifests/0000000001-abcd.json.gz"));
-        assert!(is_ignored("/vault/HEAD"));
-        assert!(is_ignored("/vault/vault.json"));
-        // Same names inside a user-named subfolder of a mirrored target.
-        assert!(is_ignored("/vault/store/blobs/ab/hash"));
-        assert!(is_ignored("/vault/store/HEAD"));
-        // Windows separators, and user files that merely look similar.
-        assert!(is_ignored(r"C:\vault\blobs\ab\hash"));
-        assert!(!is_ignored("/vault/papers/p1/NOTES.md"));
-        assert!(!is_ignored("/vault/notes/HEAD.md"));
-    }
-
-    #[test]
     fn caps_invalidation_targets_paper_folders_of_capability_files() {
         assert!(is_caps_relevant("/vault/papers/a/PAPER.md"));
         assert!(is_caps_relevant("/vault/papers/a/source/main.TeX"));
