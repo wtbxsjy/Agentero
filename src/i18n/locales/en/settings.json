@@ -1,9 +1,5 @@
 {
 	"title": "Settings",
-	"host": {
-		"remote": "Remote",
-		"remoteContextHint": "Vault is open on {{host}} ({{path}}). App appearance stays local; Agent catalog below probes that host when you open the Agent section."
-	},
 	"nav": {
 		"account": "Account and teams",
 		"general": "General",
@@ -450,15 +446,6 @@
 			"registryOnly": "Only the Agentero registry entry will be removed; installed files stay on disk.",
 			"customConfirm": "Remove this custom agent from Agentero?",
 			"confirm": "Uninstall"
-		},
-		"remote": {
-			"banner": "Probing ACP agents on {{host}}. Binaries must be installed and logged in on the server (PATH / login shell).",
-			"commonAgents": "Agents on remote host",
-			"probeTitle": "Rescan & probe remote agents",
-			"empty": "No catalog results. Check the SSH session and remote PATH.",
-			"hint": "Refresh runs command -v then ACP initialize over SSH. If Claude shows “ACP adapter missing”, use Install ACP (opens Terminal → Enter → SSH install on the server). API keys stay on the remote machine (BYOA). If probe times out, enable Agent proxy (must be reachable from the server).",
-			"installAdapterAria": "Install ACP adapter for {{name}} on remote host via Terminal",
-			"installAdapterTitle": "Open Terminal, then SSH to {{host}} and run: {{command}} (press Enter to confirm)"
 		}
 	},
 	"translate": {
@@ -706,7 +693,6 @@
 	"doctor": {
 		"title": "Vault Doctor",
 		"refresh": "Run diagnosis again",
-		"remoteUnavailable": "Doctor is available for local Vaults only in this version.",
 		"openVault": "Open a local Vault to run Doctor.",
 		"sections": {
 			"host": "Host runtime",

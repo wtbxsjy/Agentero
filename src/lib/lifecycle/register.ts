@@ -40,7 +40,6 @@ import {
 } from "@/lib/shell/ui-store";
 import { seedVaultSkills } from "@/lib/vault/actions";
 import { joinVaultPath } from "@/lib/vault/path";
-import { isRemoteVaultHandle } from "@/lib/vault/remote/remote-vault";
 import {
 	getVaultPath,
 	refreshTree,
@@ -76,7 +75,7 @@ export function registerLifecycleHandlers(): () => void {
 			]);
 			perfFollow(opened);
 			if (!perfActive()) seedVaultSkills(vaultId);
-			if (isTauri() && !isRemoteVaultHandle(vaultId)) {
+			if (isTauri()) {
 				// Establish the Host scope before later handlers activate plugins.
 				await callApi(() => commands.vaultHold(vaultId), {
 					fallback: "vault hold failed",
@@ -84,10 +83,10 @@ export function registerLifecycleHandlers(): () => void {
 					logger.warn("vault hold failed", { error: errorText(e) });
 				});
 			}
-			if (isTauri() && !perfActive() && !isRemoteVaultHandle(vaultId)) {
+			if (isTauri() && !perfActive()) {
 				void maybeShowPaperBackfill(vaultId);
 			}
-			if (isTauri() && !perfActive() && !isRemoteVaultHandle(vaultId)) {
+			if (isTauri() && !perfActive()) {
 				// Auto-ingest: adopt bare papers/ folders created while the app
 				// was closed; the FS watcher only covers the live session.
 				void callApiResult(
@@ -107,7 +106,7 @@ export function registerLifecycleHandlers(): () => void {
 				clearAnnotationsVaultState();
 				clearLayoutVaultState();
 				clearUiVaultState();
-				if (isTauri() && !isRemoteVaultHandle(vaultId)) {
+				if (isTauri()) {
 					void callApi(() => commands.vaultRelease(vaultId), {
 						fallback: "vault release failed",
 					}).catch(() => undefined);

@@ -16,12 +16,6 @@ pub mod commands;
 pub mod job_runners;
 #[cfg(feature = "desktop")]
 pub mod recognize;
-#[cfg(feature = "desktop")]
-pub mod remote_ops;
-
-#[cfg(feature = "desktop")]
-pub use remote_ops::RemoteImportOps;
-
 // pdf_parse engine config refresh (settings-backed; desktop only). Registered
 // engines resolve through the core engine registry.
 #[cfg(all(

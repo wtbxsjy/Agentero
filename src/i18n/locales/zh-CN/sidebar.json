@@ -61,7 +61,6 @@
 		"cutItems": "已剪切 {{count}} 项",
 		"cutDesktopOnly": "剪切需要桌面应用。",
 		"pasteDesktopOnly": "粘贴需要桌面应用。",
-		"remoteCutPasteDisabled": "远程知识库不支持剪切和粘贴。",
 		"cutNeedsSelection": "请先选中要剪切的文件或文件夹。",
 		"pasteNeedsSelection": "请先选中粘贴目标。",
 		"paperMoveOutsidePapers": "无法将「{{name}}」移出 papers/。",
@@ -397,7 +396,6 @@
 			"refreshTitle": "通过 DOI / arXiv ID / 标题获取元数据",
 			"fetchFailed": "无法获取该标识符的元数据。",
 			"desktopOnly": "编辑元数据需要桌面应用。",
-			"remoteUnsupported": "远程 Vault 暂不支持编辑元数据。",
 			"saveFailed": "元数据保存失败。"
 		}
 	}

@@ -20,7 +20,6 @@ import {
 } from "@/lib/shell/commands/menu-contributions";
 import { registerCommand } from "@/lib/shell/commands/registry";
 import { vaultRelativePath } from "@/lib/vault/path";
-import { isRemoteVaultHandle } from "@/lib/vault/remote/remote-vault";
 import { getVaultPath, vaultStore } from "@/lib/vault/store";
 import { getActiveTab, getTabs, workspaceStore } from "@/lib/workspace/store";
 import type { PluginManifest } from "./api";
@@ -38,12 +37,7 @@ let generation = 0;
 let loading = false;
 export function canLoadDevelopmentPlugin(): boolean {
 	const vault = getVaultPath();
-	return (
-		import.meta.env.DEV &&
-		isTauri() &&
-		!isMobileApp() &&
-		Boolean(vault && !isRemoteVaultHandle(vault))
-	);
+	return import.meta.env.DEV && isTauri() && !isMobileApp() && Boolean(vault);
 }
 export const hasDevelopmentPlugins = () => loaded.size > 0;
 const reportError = (error: unknown): void => {
@@ -272,13 +266,7 @@ function restore(): Promise<void> {
 		vault = getVaultPath();
 	const task = restoreQueue.then(async () => {
 		await cleanup;
-		if (
-			!vault ||
-			isRemoteVaultHandle(vault) ||
-			generation !== epoch ||
-			getVaultPath() !== vault
-		)
-			return;
+		if (!vault || generation !== epoch || getVaultPath() !== vault) return;
 		const infos = await callResult(() => commands.pluginActivate(vault));
 		if (generation !== epoch || getVaultPath() !== vault) {
 			await Promise.all(

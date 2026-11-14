@@ -35,8 +35,6 @@ use crate::integration::connector::ConnectorController;
 use crate::integration::mcp::tunnel::McpTunnelController;
 #[cfg(not(target_os = "ios"))]
 use crate::integration::mcp::McpController;
-#[cfg(not(target_os = "ios"))]
-use crate::integration::remote::RemoteRegistry;
 // Used on every platform: the exit handler shuts down the agent warm pool.
 use std::sync::Arc;
 #[cfg(not(target_os = "ios"))]
@@ -151,11 +149,6 @@ pub fn run() {
 
     #[cfg(not(target_os = "ios"))]
     {
-        // Remote vault sessions are consumed by features (agent / import /
-        // trash) through inversion traits defined in the features themselves;
-        // register the registry both concretely (integration commands) and as
-        // each trait object (feature commands).
-        let remote_registry = Arc::new(RemoteRegistry::new());
         builder = builder
             .manage(FsWatchController::new())
             .manage(crate::features::paper::ingest::IngestQueue::default())
@@ -163,15 +156,10 @@ pub fn run() {
             .manage(crate::integration::word::WordController::default())
             .manage(Arc::new(McpController::new()))
             .manage(Arc::new(McpTunnelController::new()))
-            .manage(remote_registry.clone())
-            .manage(remote_registry.clone() as Arc<dyn crate::features::agent::RemoteAgentHosts>)
-            .manage(
-                remote_registry.clone() as Arc<dyn crate::features::paper::import::RemoteImportOps>
-            )
-            .manage(
-                remote_registry
-                    as Arc<dyn crate::features::vault::trash::remote_ops::RemoteTrashOps>,
-            );
+            // The agent feature still threads an optional remote launch
+            // target; with remote vaults removed it always resolves to local.
+            .manage(Arc::new(crate::features::agent::remote_host::NoRemoteHosts)
+                as Arc<dyn crate::features::agent::RemoteAgentHosts>);
     }
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -206,8 +194,9 @@ pub fn run() {
         // Bundled ACP adapter tier (offline fallback): record the packaged
         // adapters root before any catalog scan / spawn path can consult it.
         crate::features::agent::registry::bundled::init(app.handle());
-        app.state::<std::sync::Arc<crate::features::agent::delegate::DelegateBridge>>()
-            .start(app.handle().clone());
+        // Agentero KB: the delegate hub is not started. It only forwards work to
+        // remote vaults, which this fork removed, so `mcp_server` returns `None`
+        // and no ACP session gets the `agentero-delegate` tools.
         // JobCenter runner registry: business domains own their executors and
         // register them here at assembly time (P2 runner-registry refactor).
         // JobCenter itself lives in features/jobs, alongside the domains it
@@ -378,8 +367,6 @@ pub fn run() {
         {
             let connector = app.state::<Arc<ConnectorController>>();
             connector.set_app_handle(app.handle().clone());
-            let remote = app.state::<Arc<RemoteRegistry>>();
-            connector.set_remote_registry(Arc::clone(&remote));
         }
         #[cfg(not(target_os = "ios"))]
         {

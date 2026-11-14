@@ -28,10 +28,7 @@ import {
 	useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import type {
-	SettingsHostContext,
-	SettingsSection,
-} from "@/components/settings/types";
+import type { SettingsSection } from "@/components/settings/types";
 import { Button } from "@/components/ui/button";
 import { accountSurfaceEnabled } from "@/features/account/visibility";
 import { scrollBehavior } from "@/lib/core/motion";
@@ -43,11 +40,6 @@ import {
 import { pluginsSurfaceEnabled } from "@/lib/plugins/visibility";
 import type { AppSettings } from "@/lib/settings";
 import { closeSettingsWindow } from "@/lib/shell/settings-window";
-import {
-	getRemoteSessionMeta,
-	isRemoteVaultHandle,
-	remoteSessionIdFromHandle,
-} from "@/lib/vault/remote/remote-vault";
 
 // Panes load per section instead of riding along with the settings shell:
 // importing them statically pulled the whole surface (agent pane + model picker
@@ -105,11 +97,6 @@ const AppearancePane = memo(
 );
 const AgentPane = memo(
 	lazy(() => PANE_LOADERS.agent().then((m) => ({ default: m.AgentPane }))),
-);
-const RemoteAgentPane = memo(
-	lazy(() =>
-		PANE_LOADERS.agent().then((m) => ({ default: m.RemoteAgentPane })),
-	),
 );
 const TranslatePane = memo(
 	lazy(() =>
@@ -170,7 +157,7 @@ type SettingsContentProps = {
 	onClose?: () => void;
 	/** aria-labelledby id supplied by a dialog wrapper. */
 	titleId?: string;
-	/** Active vault path — remote handles switch Agent settings to the SSH host. */
+	/** Active vault path. */
 	vaultPath?: string | null;
 };
 
@@ -277,36 +264,6 @@ export function SettingsContent({
 			window.removeEventListener("resize", measureNavIndicator);
 		};
 	}, [measureNavIndicator]);
-
-	const hostContext = useMemo((): SettingsHostContext => {
-		if (vaultPath && isRemoteVaultHandle(vaultPath)) {
-			const sessionId = remoteSessionIdFromHandle(vaultPath);
-			const meta = getRemoteSessionMeta();
-			if (sessionId && meta && meta.sessionId === sessionId) {
-				const label =
-					meta.host.trim() ||
-					meta.displayName.split(":")[0]?.trim() ||
-					t("host.remote");
-				return {
-					kind: "remote",
-					label,
-					sessionId,
-					host: meta.host,
-					remotePath: meta.remotePath,
-				};
-			}
-			if (sessionId) {
-				return {
-					kind: "remote",
-					label: t("host.remote"),
-					sessionId,
-					host: "",
-					remotePath: "",
-				};
-			}
-		}
-		return { kind: "local" };
-	}, [vaultPath, t]);
 
 	const patch = useCallback(
 		(partial: Partial<AppSettings>) => onChange({ ...settings, ...partial }),
@@ -491,7 +448,6 @@ export function SettingsContent({
 								<GeneralPane
 									settings={settings}
 									patch={patch}
-									hostContext={hostContext}
 									vaultPath={vaultPath}
 								/>
 							</Suspense>
@@ -529,19 +485,11 @@ export function SettingsContent({
 							hidden={activeSection !== "agent"}
 						>
 							<Suspense fallback={<PaneFallback />}>
-								{hostContext.kind === "remote" ? (
-									<RemoteAgentPane
-										settings={settings}
-										patch={patch}
-										hostContext={hostContext}
-									/>
-								) : (
-									<AgentPane
-										settings={settings}
-										patch={patch}
-										onOpenDiagnostics={() => onSectionChange("doctor")}
-									/>
-								)}
+								<AgentPane
+									settings={settings}
+									patch={patch}
+									onOpenDiagnostics={() => onSectionChange("doctor")}
+								/>
 							</Suspense>
 						</div>
 					)}
@@ -571,7 +519,6 @@ export function SettingsContent({
 									settings={settings}
 									patch={patch}
 									vaultPath={vaultPath}
-									hostContext={hostContext}
 								/>
 							</Suspense>
 						</div>
@@ -583,7 +530,7 @@ export function SettingsContent({
 							hidden={activeSection !== "doctor"}
 						>
 							<Suspense fallback={<PaneFallback />}>
-								<DoctorPane vaultPath={vaultPath} hostContext={hostContext} />
+								<DoctorPane vaultPath={vaultPath} />
 							</Suspense>
 						</div>
 					)}

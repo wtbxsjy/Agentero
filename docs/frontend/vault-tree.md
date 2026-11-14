@@ -39,7 +39,6 @@ Vault 根上的 `.agents/` 与 `AGENTS.md` 合成一行，标题为 Agent（中�
 ## 建树
 
 - 本地：Host `vault_tree_build` **一次 IPC** 递归（`features/vault/tree.rs`）。
-- 远程：`remote_list` 前端递归。
 - **全量递归**：`papers/`、`notes/`、`.agents/`；论文内 `source/` **懒加载**（`childrenPending` → `vault_tree_children`）。
 - 论文默认仍是叶子。满足任一条件时行上出现 chevron，展开后依次列出「根目录白名单文档」与 `attachments/` 子项：
   - **根目录白名单文档**：`.md` / `.html` / `.htm`（扩展名大小写不敏感），但 **`PAPER.md` 永不显示**（论文行已代表派生正文）。只有 1 个可显示文档时仍保持叶子（通常就是 `NOTES.md`）；**≥2 个**时全部列出，因此 Zotero / Connector 导入的额外笔记与 `snapshot.html` 会作为子节点出现（#738）。
@@ -82,7 +81,7 @@ Vault 根上的 `.agents/` 与 `AGENTS.md` 合成一行，标题为 Agent（中�
 
 | 操作 | 方式 |
 |---|---|
-| 新建文件/文件夹 | 右键 → 树内联命名；菜单会按实际尺寸在窗口边缘自动翻转或滚动，不会被窗口下沿截断。论文行也可「新建文件」，直接建在论文根目录，默认名 `Untitled.md`（只选中主文件名、保留 `.md`），创建后会作为论文子节点出现；论文行不提供「新建文件夹」（根目录普通文件夹不会显示）。**远程 Vault** 的重名预检走 `vaultPathExists`（`remote_list` 父目录），不可用本机 `plugin-fs` `exists`（伪路径 `remote:<id>/…` 不在本地 scope） |
+| 新建文件/文件夹 | 右键 → 树内联命名；菜单会按实际尺寸在窗口边缘自动翻转或滚动，不会被窗口下沿截断。论文行也可「新建文件」，直接建在论文根目录，默认名 `Untitled.md`（只选中主文件名、保留 `.md`），创建后会作为论文子节点出现；论文行不提供「新建文件夹」（根目录普通文件夹不会显示）。|
 | 复制路径 | 右键；Windows 本地路径去掉 `\\?\` 前缀，扩展 UNC 路径显示为 `\\server\share\…`；仅转换剪贴板文本，内部文件路径保持原样 |
 | Finder 显示 | 右键 / `⌥⌘R` |
 | 终端打开 | 右键 / `⌥⌘T`（文件夹=自身，文件=父目录）；Windows 先把扩展盘符路径转换为普通盘符路径，再启动 Windows Terminal 或 CMD，目录名中的空格、中文与 shell 特殊字符不作为命令解析 |

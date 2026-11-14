@@ -26,7 +26,6 @@ directories, Rust commands, `bindings.ts` types, settings, i18n).
 | Switch | Module | Step 1 entry points hidden |
 |---|---|---|
 | `zhihu` | Zhihu agent and paper action | Settings → Agent row, paper info "Zhihu" chip |
-| `remoteVault` | SSH/SFTP vaults | Welcome button, recent remotes, vault switcher entry |
 | `wordCitation` | Word add-in citations | Citation dialog not mounted |
 | `updater` | In-app updater (points at official releases) | Update check reports unsupported |
 
@@ -61,6 +60,14 @@ Deleted in step 2 so far:
   their configs, the iOS TestFlight workflow and scripts, and the Android CI/release jobs. The
   mobile clients only worked through pairing, so they went with it. `isMobileApp()` and the
   `cfg(target_os = "ios" | "android")` gates are left in place; they are inert on desktop.
+- **Remote vaults** (switch removed): SSH/SFTP vaults (`integration/remote/`, core `remote.rs`,
+  the `remote_*` and `remote_agent_*` commands, the openssh dependency), the remote branches in
+  import, trash, Zotero, jobs and the Connector, the "Open remote" dialog and recent remotes, the
+  remote Agent settings pane (scan, probe and install over SSH), and the `remote:<sessionId>`
+  pseudo-path handling across the front end. Kept so upstream agent fixes still cherry-pick: the
+  `RemoteAgentHosts` / `RemoteAgentLaunch` traits, now backed by an empty `NoRemoteHosts`, the
+  core `VaultFs` abstraction, and the `agentero-delegate` code. The delegate hub is no longer
+  started, so ACP sessions do not get the delegate tools.
 
 Already hidden upstream: plugins (`src/lib/plugins/visibility.ts`) and account / cloud writing
 (`src/features/account/visibility.ts`).

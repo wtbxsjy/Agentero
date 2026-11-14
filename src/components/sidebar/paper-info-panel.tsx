@@ -66,7 +66,6 @@ import {
 import { venueInfo } from "@/lib/paper/venue-info";
 import { surfaces } from "@/lib/surfaces";
 import { type TagColorId, tagSwatchStyle } from "@/lib/ui/tag-colors";
-import { isRemoteVaultHandle } from "@/lib/vault/remote/remote-vault";
 import { getVaultPath } from "@/lib/vault/store";
 import { buildZhihuQuestionDraft, ZHIHU_HOME_URL } from "@/lib/zhihu";
 
@@ -556,8 +555,7 @@ export function PaperInfoPanel({
 
 	const resizable = open && Boolean(meta);
 	const vaultPath = getVaultPath();
-	const canEditMeta =
-		Boolean(meta) && !!vaultPath && !isRemoteVaultHandle(vaultPath);
+	const canEditMeta = Boolean(meta) && !!vaultPath;
 	const arxivId = meta?.arxiv_id ? arxivUrls(meta.arxiv_id)?.id : null;
 	const modelScopeUrl = arxivId
 		? `https://modelscope.cn/papers/${arxivId}/overview`

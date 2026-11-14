@@ -558,13 +558,7 @@ export function usePdfLayoutTranslate({
 			force = false,
 			runScopeIds: readonly string[] = [],
 		): Promise<boolean> => {
-			if (
-				!paperAbsPath ||
-				!paperRelPath ||
-				!vaultPath ||
-				vaultPath.startsWith("remote:")
-			)
-				return false;
+			if (!paperAbsPath || !paperRelPath || !vaultPath) return false;
 			const shared = {
 				jobId: null as string | null,
 				cancelRequested: false,
@@ -842,12 +836,7 @@ export function usePdfLayoutTranslate({
 	);
 
 	const startLayoutTranslate = useCallback(() => {
-		if (
-			paperAbsPath &&
-			paperRelPath &&
-			vaultPath &&
-			!vaultPath.startsWith("remote:")
-		) {
+		if (paperAbsPath && paperRelPath && vaultPath) {
 			startSharedDocumentTranslate();
 			return;
 		}
@@ -1230,12 +1219,7 @@ export function usePdfLayoutTranslate({
 				.map((item) => item.id),
 		);
 		if (pendingIds.size === 0) return;
-		if (
-			paperAbsPath &&
-			paperRelPath &&
-			vaultPath &&
-			!vaultPath.startsWith("remote:")
-		) {
+		if (paperAbsPath && paperRelPath && vaultPath) {
 			startSharedDocumentTranslate(false, [...pendingIds]);
 			return;
 		}
@@ -1338,12 +1322,7 @@ export function usePdfLayoutTranslate({
 	 * translation so one bad pass cannot empty the cache.
 	 */
 	const retranslateAllLayoutTranslate = useCallback(() => {
-		if (
-			paperAbsPath &&
-			paperRelPath &&
-			vaultPath &&
-			!vaultPath.startsWith("remote:")
-		) {
+		if (paperAbsPath && paperRelPath && vaultPath) {
 			startSharedDocumentTranslate(true);
 			return;
 		}
@@ -1619,11 +1598,7 @@ export function usePdfLayoutTranslate({
 	// pane's local React state. Cache hydrate is shared with `startLayoutTranslate`
 	// so both modes agree on cached blocks and the remaining pending set.
 	useEffect(() => {
-		if (
-			!translationPane ||
-			!paperAbsPath ||
-			(paperRelPath && vaultPath && !vaultPath.startsWith("remote:"))
-		)
+		if (!translationPane || !paperAbsPath || (paperRelPath && vaultPath))
 			return;
 		// A manual run owns the items and preview preparation.
 		if (layoutTranslateAbortRef.current) return;

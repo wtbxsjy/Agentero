@@ -101,7 +101,6 @@ However, when it comes to daily research and deep use of large language models (
 ### 4. Zotero Compatibility & Transparent Local Storage
 * **Seamless Zotero migration**: import an entire Zotero database in one click, keeping tags, notes, and attachments; works with the Zotero browser extension to save papers from the web; export to BibTeX / BibLaTeX.
 * **Transparent local folders**: no proprietary database or obfuscated directory layout — papers and notes are stored as plain files (PDF, Markdown) in a regular folder structure that any external editor can read.
-* **Multi-device sync & remote access**: sync with any S3-compatible cloud storage; access a library deployed on a remote server over an SSH tunnel.
 
 ---
 

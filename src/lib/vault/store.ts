@@ -299,7 +299,7 @@ export async function loadDirChildren(dirPath: string): Promise<void> {
  * Debounced, quiet file-tree reload (no busy flicker) for external
  * create/delete/rename. Re-lists only the affected directories when the
  * changed paths map onto loaded tree nodes; falls back to a full rebuild
- * otherwise (change at the vault root, too many targets, remote vault).
+ * otherwise (change at the vault root, too many targets).
  */
 function parentPath(path: string): string {
 	return path.replace(/[/\\][^/\\]+$/, "");

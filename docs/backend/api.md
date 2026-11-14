@@ -68,7 +68,7 @@ Host 通过 Tauri event 向前端推送事件。文件系统、任务和菜单�
 | `agent:elicitation-request` | form elicitation（Codex request_user_input） | `{ requestId, sessionId, message, toolCallId?, fields: { id, title, description?, required, kind, options[] }[] }` |
 | `agent:ask-user-request` | Grok `_x.ai/ask_user_question` | `{ requestId, sessionId, toolCallId?, mode, questions: { question, options[{label,description?}], multiSelect, allowOther }[] }` |
 | `job:progress` | 下载/解析任务字节与计数进度（`taskId` = JobCenter job id，投影行消费） | `{ taskId, phase, downloadedBytes, totalBytes?, progress?, currentCount?, totalCount? }`；PDF 与 TeX 并发下载，Host 把两条流的字节合并成**一个**总体进度后再 emit（两条流同时跑时 `phase` = `assets`，只有一条时为 `pdf` / `tex`），前端只做 clamp 不再按阶段加权；任一流仍在下载且 `Content-Length` 未知时 `totalBytes` / `progress` 为空（面板转不确定态），解析阶段显示为处理中，任务完成时为 100%。Host 对字节级进度做节流：百分比变化 ≥1 个点或距上次 emit ≥100ms 才发事件，流结束时必发最终值 |
-| `paper:imported`（已实现） | `paper_commit` 成功（catalog 已写入、NOTES 已建）；本地与远程导入路径统一发；`DownloadAssets` 后台任务为孤儿文件夹补建 catalog 行时也发 | `{ vaultId, paperId, timestamp }`（`vaultId` 为 vault 根路径，远程为 `remote:<sessionId>`） |
+| `paper:imported`（已实现） | `paper_commit` 成功（catalog 已写入、NOTES 已建）；`DownloadAssets` 后台任务为孤儿文件夹补建 catalog 行时也发 | `{ vaultId, paperId, timestamp }`（`vaultId` 为 vault 根路径） |
 | `paper:assets-ready`（已实现） | 论文资产就绪：同步下载完成 / 本地 PDF 拷贝完成 / `DownloadAssets` job 成功 | `{ vaultId, paperId, timestamp }` |
 | `job:completed`（已实现） | job 状态机真实迁移到 `Succeeded` 时由 `job:changed` 单点派生 | `{ jobId, kind, vaultId, paperId?, timestamp }`（`vaultId` = `JobSnapshot.vault_id`：**发起方传入的 vault 路径串**。前端直连的流程与 `getVaultPath()` 逐字一致；经 offer 中继或 Host 内部发起的流程为 Host 持有的形式（通常 canonical）—— Windows 上带 `\\?\` 前缀，消费端比较需容忍两种拼写） |
 | `job:failed`（已实现） | job 状态机真实迁移到 `Failed` 时由 `job:changed` 单点派生 | `{ jobId, kind, vaultId, paperId?, error?, timestamp }`（`vaultId` 同上） |
@@ -96,7 +96,7 @@ Host 通过 Tauri event 向前端推送事件。文件系统、任务和菜单�
 - 同步 `#[tauri::command]` 在主线程内执行；Windows 主线程即 UI 消息泵，重 IO 同步 command 执行期间整窗冻结。
 - **重 IO command（扫盘、SQLite、全库索引、字体/大文件读取等）必须写成 `async fn`**，阻塞体统一用 `core::blocking::run_blocking`（agentero-core，内部 `tokio::task::spawn_blocking`，与 Tauri 运行时同一 tokio 阻塞池）移出调用线程；对外返回 JSON 结构不变，前端 invoke 透明。
 - 使用 `State<'_, T>` 的 async command 受 Tauri 限制必须返回 `Result`（惯例 `Result<ApiResult<T>, String>`，恒为 `Ok(...)`）。`std::sync::Mutex` guard 不能跨 `await`：把「拿锁 + 干活」整体放进 `run_blocking` 闭包，State 先 clone 出可 `Send + 'static` 的 Arc 句柄（如 `WikiIndexState::handle()`、`CapsCache`、`ExternalRenameRepairStore`）。
-- command 前置检查的早退样板统一用 `app/command_util.rs` 的宏（逐字展开为原 `match … { Err(e) => return … map_err(e) }` 形状，IPC 错误语义不变）：`try_vault!`（返回 `ApiResult<T>` 的命令/vault 解析）、`try_vault_ok!` / `try_session!`（返回 `Result<ApiResult<T>, String>` 的命令 / vault 解析、remote session 获取）、`lock_wiki_index!`（wiki index `MutexGuard` 获取，可选第二参数附带 `ensure_vault`）。`try_vault!`/`try_vault_ok!`/`try_session!` 与 `lock_wiki_index!` 均支持可选 `OpTimer` 尾参（先走 `finish_err` 再返回；裸锁臂写作 `lock_wiki_index!(index; op)`）。jobs 命令另有模块本地 `try_job_paper!`（`validate_job_paper` 早退）与 `start_enqueued`（enqueue → announce/start 共用尾段）。
+- command 前置检查的早退样板统一用 `app/command_util.rs` 的宏（逐字展开为原 `match … { Err(e) => return … map_err(e) }` 形状，IPC 错误语义不变）：`try_vault!`（返回 `ApiResult<T>` 的命令/vault 解析）、`try_vault_ok!`（返回 `Result<ApiResult<T>, String>` 的命令 / vault 解析）、`lock_wiki_index!`（wiki index `MutexGuard` 获取，可选第二参数附带 `ensure_vault`）。`try_vault!`/`try_vault_ok!` 与 `lock_wiki_index!` 均支持可选 `OpTimer` 尾参（先走 `finish_err` 再返回；裸锁臂写作 `lock_wiki_index!(index; op)`）。jobs 命令另有模块本地 `try_job_paper!`（`validate_job_paper` 早退）与 `start_enqueued`（enqueue → announce/start 共用尾段）。
 - 已按此约定改造：`vault_*`（create/ensure/tree_build/tree_children）、`wiki_*` 全部、`graph_*`、`vault_search`、`paper_*`（catalog）、`usage_clear`/`activity_record_events`、`zotero_sync`/`zotero_scan`、`doctor_*`（除纯内存的 `doctor_set_dirty_paths`）、`list_system_fonts`（另有进程级缓存）、`export_system_cjk_font`、`paper_stage_import_file`、`paper_refs_list`、`connector_set_enabled`/`connector_set_port`（bind 改真 async，不再 `block_on`）。
 
 ### 2.6 类型化 IPC 契约（tauri-specta → `src/lib/core/bindings.ts`）
@@ -105,7 +105,7 @@ Host 通过 Tauri event 向前端推送事件。文件系统、任务和菜单�
 
 - **覆盖范围**
   - **命令**：desktop 注册的全部 `#[tauri::command]`（`app/handlers.rs` 的 `common_commands!` + desktop-only extras）逐一 collect 于 `src-tauri/src/app/bindings_test.rs`。
-  - **事件**：desktop 侧 emit 的全部事件（`job:*`（含 `job:progress` 字节/计数进度）、`agent:*`、`vault:file-changed`、`settings:changed`、`connector:*`、`mcp:*`、`paper:*` 等），声明于 `src-tauri/src/app/events_contract.rs`（wrapper/mirror + `#[tauri_specta(event_name = "…")]`，事件名与 emit 字面量一致，emit 调用点不改造）。iOS-only bridge client 事件（`bridge:status` / `bridge:progress` / `bridge:pair-pending`）不在其中。
+  - **事件**：desktop 侧 emit 的全部事件（`job:*`（含 `job:progress` 字节/计数进度）、`agent:*`、`vault:file-changed`、`settings:changed`、`connector:*`、`mcp:*`、`paper:*` 等），声明于 `src-tauri/src/app/events_contract.rs`（wrapper/mirror + `#[tauri_specta(event_name = "…")]`，事件名与 emit 字面量一致，emit 调用点不改造）。
 - **再生成 / 防漂移**
 
   ```bash
@@ -124,7 +124,7 @@ Host 通过 Tauri event 向前端推送事件。文件系统、任务和菜单�
 - **前端调用形态（迁移说明）**：bindings 导出 `commands`（camelCase 命令函数）与 `events`（`events.jobChanged.listen(cb)` 等，payload 已按事件名类型化）。返回值有两种信封：
   - 命令返回 `ApiResult<T>`（如 `commands.settingsGet()`）：Promise 直接 resolve 信封，判错看 `r.ok === false` 时读 `r.error`（`{ code, message, details? }`）；`r.data` 类型为 `T | null`。
   - 命令返回 `Result<ApiResult<T>, String>`（如 `commands.jobReport(args)`）：bindings 包了一层 `typedError`，resolve 为 `{ status: "ok", data: ApiResult<T> } | { status: "error", error: string }`；先判 `status`（外层 IPC 级错误，对应 Rust `Err(String)`），再判 `data.ok`（业务错误信封）。
-- **前端 helper（`src/lib/core/ipc.ts`）**：`callApi` / `callApiResult` / `callResult` 分别按上述信封形态解包并保留旧的 throw 语义（Host 错误抛出 `Error & { details }`，`fallback` / `desktopOnly` 可定制文案），返回类型由命令函数推断。旧的 `invokeApi` 与 app 命令的裸 `invoke` 已全部迁移删除：新调用点一律 `commands.*` + helper；事件订阅一律 `events.*.listen`（React 侧用 `useTauriEvent(events.x, cb)`，非 UI 模块用 `listenEventSafe(events.x, cb)`）。保留字符串形态的仅限：前端窗口间广播（`workspace:*`、`agent:attach-context` 等）与 iOS bridge client 事件（`bridge:status` / `bridge:progress` / `bridge:pair-pending` / `bridge:event:*`），以及 `src/lib/bridge/client.ts` 中 iOS bridge client **命令**（`bridge_connect` / `bridge_disconnect` / `bridge_resume` / `bridge_status` / `bridge_rpc`，mobile-gated，未进桌面 bindings）的裸 `invoke`。
+- **前端 helper（`src/lib/core/ipc.ts`）**：`callApi` / `callApiResult` / `callResult` 分别按上述信封形态解包并保留旧的 throw 语义（Host 错误抛出 `Error & { details }`，`fallback` / `desktopOnly` 可定制文案），返回类型由命令函数推断。旧的 `invokeApi` 与 app 命令的裸 `invoke` 已全部迁移删除：新调用点一律 `commands.*` + helper；事件订阅一律 `events.*.listen`（React 侧用 `useTauriEvent(events.x, cb)`，非 UI 模块用 `listenEventSafe(events.x, cb)`）。保留字符串形态的仅限：前端窗口间广播（`workspace:*`、`agent:attach-context` 等）。
 
 ## 3. Host 层 Tauri invoke API
 
@@ -207,7 +207,7 @@ Host 通过 Tauri event 向前端推送事件。文件系统、任务和菜单�
 
 #### `vault_tree_build` / `vault_tree_children`（已实现）
 
-本地文件树由 Host **一次 IPC** 构建（此前前端用 `plugin-fs readDir` 逐目录串行递归，目录数 = IPC 往返数）。远端 Vault 仍走 `remote_list` 的 TS 递归。
+本地文件树由 Host **一次 IPC** 构建（此前前端用 `plugin-fs readDir` 逐目录串行递归，目录数 = IPC 往返数）。
 
 - **`vault_tree_build`**：`{ vaultPath: string }` → `ApiResult<VaultTreeNode[]>`，一次递归 walk 返回整棵树。
 - **`vault_tree_children`**：`{ vaultPath: string, dirPath: string }` → `ApiResult<VaultTreeNode[]>`，列出单个目录的子节点；用于懒展开与 watcher 触发的**按路径局部刷新**。`dirPath` 必须在 Vault 内，否则报错。
@@ -229,49 +229,6 @@ type VaultTreeNode = {
   - 忽略名（`.git` / `.venv` / `node_modules` / `*.egg-info` / 其它 dot 名，白名单 `.agents` / `.env.example`）与深度上限 12 同前端规则。
   - 排序仍在前端（`sortNodes`，locale 感知）。
 - **局部刷新**：`vault:file-changed`（非 `modify`）携带的路径经 `collectTreeRefreshTargets`（`src/lib/vault/tree.ts`）映射到已加载的最近祖先目录节点，防抖 400ms 后仅对这些目录调 `vault_tree_children` 打补丁；根级变化 / 目标过多（>8）/ 无路径信息时回退整树 `vault_tree_build`。
-
-#### 远程 Vault（SSH/SFTP，MVP 已实现）
-
-设计见 [`remote.md`](remote.md)。前端伪路径 `remote:<sessionId>`；文件权威在远端。
-
-| Command | 说明 |
-|---|---|
-| `remote_connect` | `{ host, user?, remotePath }` → `RemoteSessionInfo`（含 `vaultHandle`、`caps`） |
-| `remote_ssh_config_hosts` | `()` → `[{ alias, user?, hostname?, port? }]`，解析 `~/.ssh/config`（含 `Include`），供连接对话框联想 |
-| `remote_disconnect` | flush catalog + 拆会话 |
-| `remote_list` | 列目录 |
-| `remote_read_text` / `remote_write_text` / `remote_write_bytes` | 读写 |
-| `remote_mkdir` / `remote_remove` | 建目录 / 删除（可 recursive） |
-| `remote_paper_list` / `remote_paper_get` | catalog 工作副本 |
-| `remote_paper_rescan` / `remote_paper_set_tags` / `remote_paper_set_is_read` | mutation 后 PUT 远端 |
-| `remote_cache_file` | PDF 等缓存到本机 ephemeral 路径（mtime 键 + LRU 2 GiB） |
-| `remote_cache_clear` | `{ sessionId? }` → `{ freedBytes }` 清除 blob 缓存 |
-| `remote_agent_scan` | 目录模板 + 远端 PATH 扫描 → `CatalogEntry[]`（设置页远端 Agent） |
-| `remote_agent_probe` | `{ sessionId, templateId }` → 远端 ACP `initialize`（应用 Agent 代理 env） |
-| `remote_agent_open_install_terminal` | 本机终端确认后 `ssh -t` 在远端执行模板 `install_command`（如 Claude ACP 适配器） |
-| `remote_vault_ensure` | `{ sessionId }` → 通过 SFTP 补种 bundled skills，并按相同 frontmatter `version` 规则安全升级第一方 Skill |
-
-Host 还支持 `__local_sim__` host（本机目录当远端，单测/开发用）。
-
-**远程超时与保活**：SSH/SFTP 建连、SFTP subsystem 启动和远端根目录校验默认最多 15 秒；每次 SFTP 文件操作默认最多 30 秒。SSH 使用 `ServerAliveInterval=30` 和 `ServerAliveCountMax=3`，约 90 秒无响应后判定连接失效。远端 Agent `which` 探测最多 30 秒；远端 ACP Agent 仅限制 15 秒建连，不限制正常运行时长。当前不自动重连、不重放写操作，详见 [`remote.md`](remote.md) §2.1。
-
-**入库入口与远程 Vault**：
-
-| 入口 | Command | 远程 `remote:…` |
-|---|---|---|
-| 魔棒标识符 | `lookup_import_batch` | ✅ staging → SFTP → catalog PUT |
-| 魔棒 Skill 导入 | `skill_install` / `skill_discard` | ❌ 仅本地 Vault |
-| 补资源 Download | `job_download_assets_enqueue` | ❌ 仅本地 Vault |
-| 本地 PDF | `paper_import_local_pdf` | ✅ 本机选 PDF → 上传远端 |
-| Bib/RIS 库导入 | `paper_import` | ✅ Translator → 上传远端 |
-| Zotero 桌面迁移 | `zotero_migrate` | ❌ 仅本地路径 |
-| Zotero Connector | HTTP `saveItems` / `saveAttachment` | ✅ 绑定 `remote:<sessionId>`；stage → SFTP → catalog PUT |
-| CLI import | `agentero import` | ❌ 仅本地 vault 路径 |
-| 回收站 | `path_trash` / `path_list_trash` / restore / purge | ✅ 经 `trash_bridge` 写远端 `.agentero/.trash/` |
-
-返回的 `paperDir`（远程）为 `remote:<sessionId>/papers/…`。
-
-Agent：`agent_run_once` / `agent_warm` 在 vault 为 `remote:…` 时经 SSH `bash -lc` 启动远端 ACP（含 Codex，经 `codex-acp` 适配器）。
 
 #### `path_open_in_terminal`（已实现）
 
@@ -328,7 +285,7 @@ Agent：`agent_run_once` / `agent_warm` 在 vault 为 `remote:…` 时经 SSH `b
 
 回收站浏览：中间栏 `RecycleBinView`（虚拟 tab `agentero:trash`）用这些命令列出 / 恢复 / 永久删除已删项。
 
-- **`path_list_trash`**（`{ vaultPath }` → `ApiResult<TrashEntry[]>`）：展平所有批次为逐项条目 `{ id, batchId, stored, rel, name, title, deletedAt, isDir }`，按删除时间倒序。`title` 来自删除时快照的 catalog 行（恰为一行论文记录时取其标题，供 UI 主行显示；普通文件 / 多论文文件夹为 `null`，回退 `name`）。本地与远程共用 core 的 manifest 类型、`plan_trash` 和 `snapshot_title`；远端移动与 catalog 发布仍在 `trash_bridge`。
+- **`path_list_trash`**（`{ vaultPath }` → `ApiResult<TrashEntry[]>`）：展平所有批次为逐项条目 `{ id, batchId, stored, rel, name, title, deletedAt, isDir }`，按删除时间倒序。`title` 来自删除时快照的 catalog 行（恰为一行论文记录时取其标题，供 UI 主行显示；普通文件 / 多论文文件夹为 `null`，回退 `name`）。移动与 manifest 由 core 的 `plan_trash` 和 `snapshot_title` 负责。
 - **`path_restore_item`**（`{ vaultPath, batchId, stored }` → `ApiResult<{ rel: string }>`）：把单项移回原位并 `upsert` 恢复其 catalog 行；原路径已占用则报错；批次清空后删除批次目录。
 - **`path_purge_item`**（`{ vaultPath, batchId, stored }` → `ApiResult<null>`）：永久删除单项（不可恢复）。
 - **`path_purge_trash`**（`{ vaultPath }` → `ApiResult<null>`）：清空整个回收站（不可恢复）。
@@ -472,7 +429,7 @@ Updater 模块与命令注册均排除 Android / iOS，与 Cargo 的 updater 插
 
 #### `vault_hold`
 
-注册当前窗口对某个 vault 的持有（窗口 label 由 Host 注入，前端签名只有 `path`）。前端在 `vault:opened` 作用域 setup 时调用（remote handle 跳过），与 `vault_release` 成对。
+注册当前窗口对某个 vault 的持有（窗口 label 由 Host 注入，前端签名只有 `path`）。前端在 `vault:opened` 作用域 setup 时调用，与 `vault_release` 成对。
 
 - **参数**：`{ path: string }`
 - **返回**：`{ ok: true; data: null }`
@@ -480,7 +437,7 @@ Updater 模块与命令注册均排除 Android / iOS，与 Cargo 的 updater 插
 
 #### `vault_release`
 
-释放 Host 侧为某个 vault 持有的资源。前端在释放 `vault:opened` 作用域时调用（remote handle 跳过）。
+释放 Host 侧为某个 vault 持有的资源。前端在释放 `vault:opened` 作用域时调用。
 
 - **参数**：`{ path: string }`
 - **返回**：`{ ok: true; data: null }`
@@ -1009,7 +966,6 @@ Updater 模块与命令注册均排除 Android / iOS，与 Cargo 的 updater 插
 
 - **返回**：`{ ok: true; data: SkillImportResult[] }`，每项含 `name`、`description`、`path`、 `source`、`skipped`（已存在时跳过）。
 - **行为**：从临时 discovery 解压 GitHub tarball，将选中 Skill 目录复制到 `.agents/skills/<name>/`，并写入 `agentero-skill.json` 来源记录。已存在目录**不覆盖**。安装完成后由前端 `refreshTree`。
-- **限制**：仅本地 Vault；远程 Vault 应在 `lookup_import_batch` 阶段直接拒绝。
 
 #### `skill_discard`
 
@@ -1070,7 +1026,7 @@ Updater 模块与命令注册均排除 Android / iOS，与 Cargo 的 updater 插
 
 #### `paper_analyze_pdf`（规划中）
 
-为本地 paper PDF 生成可重建的引用与插图 sidecar。首版不支持远程 Vault，不自动联网补全库外引用。
+为本地 paper PDF 生成可重建的引用与插图 sidecar。不自动联网补全库外引用。
 
 - **参数**：
 
@@ -1169,7 +1125,7 @@ Updater 模块与命令注册均排除 Android / iOS，与 Cargo 的 updater 插
   };
   ```
 
-- **行为**：无参考文献不算错误（空 sidecar 也落盘并记录指纹）；魔棒入库与单篇 Download 完成后 Host 自动后台触发（失败仅记日志）。远程 Vault 不支持。
+- **行为**：无参考文献不算错误（空 sidecar 也落盘并记录指纹）；魔棒入库与单篇 Download 完成后 Host 自动后台触发（失败仅记日志）。
 
 #### `paper_refs_list`
 
@@ -1300,7 +1256,7 @@ Updater 模块与命令注册均排除 Android / iOS，与 Cargo 的 updater 插
 }
 ```
 
-- **返回**：`{ ok: true; data: PaperListRow[] }`。`PaperListRow` = 扁平展开的 `PaperRecord`（`path`、`title`、`authors`、`date`/`year`、`type`、标识符与远程 URL 等）+ 列表专用的 `has_pdf`（对 `papers/<id>/` 的本地 PDF 探测）。前端 `PaperLibraryRow` 由此派生；`remote_paper_list` 返回裸 `PaperRecord`，故远程行的 `has_pdf` 为 `undefined`（"未探测"，不是"没有 PDF"）。
+- **返回**：`{ ok: true; data: PaperListRow[] }`。`PaperListRow` = 扁平展开的 `PaperRecord`（`path`、`title`、`authors`、`date`/`year`、`type`、标识符与远程 URL 等）+ 列表专用的 `has_pdf`（对 `papers/<id>/` 的本地 PDF 探测）。前端 `PaperLibraryRow` 由此派生。
 - **前端**：`src/lib/paper/api.ts` → `listPapers`；UI 侧本地表头排序（不经由本命令传 sort 参数）。
 - **说明**：当前无 filter/pagination；扩展筛选/FTS 仍可用规划契约 `paper:list`（见下）。
 
@@ -1707,7 +1663,7 @@ Host 作为 ACP Client：按注册表 spawn 用户本机 Agent（`cwd` = 当前 
 
 **静默**安装、升级或卸载 catalog Agent CLI（需要时一并装/卸 ACP 适配器）。不弹终端、不写临时确认脚本；命令由 Host 按平台拼装，UI 不得传入任意 shell。
 
-> 已取代旧的 `agent_open_install_terminal`（打开系统终端、Enter 确认后再装）。远端仍用 `remote_agent_open_install_terminal`（SSH 确认安装）。
+> 已取代旧的 `agent_open_install_terminal`（打开系统终端、Enter 确认后再装）。
 
 - **参数**：`{ templateId: string, action: "install" | "update" | "uninstall", taskId?: string }`
   - 支持的 `templateId`：`opencode` · `claude-acp` · `codex-acp` · `cursor-agent` · `hermes` · `qodercli` · `qoder-cn` · `grok-build` · `pi` · `dsh` · `kimi-code` · `zcode` · `minimax-code` · `mimo-code` · `codebuddy`（不含 `custom`）
@@ -2031,7 +1987,7 @@ interface UninstallInfo {
 // => { ok: true; data: WikiRenameResult }
 ```
 
-`WikiRenameResult` 为 `{ movedPath, updatedSources, skipped: { path, reason }[], rollback }`，其中 `rollback` 为 `notNeeded`、`completed` 或 `manualRecoveryRequired`。冲突、未保存编辑、来源内容已变、目标已存在或失败回滚均返回错误；remote Vault 不通过该本地命令执行。
+`WikiRenameResult` 为 `{ movedPath, updatedSources, skipped: { path, reason }[], rollback }`，其中 `rollback` 为 `notNeeded`、`completed` 或 `manualRecoveryRequired`。冲突、未保存编辑、来源内容已变、目标已存在或失败回滚均返回错误。
 
 #### `wiki_rename_heading`
 

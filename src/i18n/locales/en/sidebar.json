@@ -61,7 +61,6 @@
 		"cutItems": "Cut {{count}} item(s)",
 		"cutDesktopOnly": "Cut requires the desktop app.",
 		"pasteDesktopOnly": "Paste requires the desktop app.",
-		"remoteCutPasteDisabled": "Cut and paste are not supported for remote vaults.",
 		"cutNeedsSelection": "Select a file or folder to cut.",
 		"pasteNeedsSelection": "Select a destination to paste into.",
 		"paperMoveOutsidePapers": "Cannot move 「{{name}}」 outside papers/.",
@@ -398,7 +397,6 @@
 			"refreshTitle": "Fetch metadata from DOI / arXiv ID / title",
 			"fetchFailed": "Could not fetch metadata for this identifier.",
 			"desktopOnly": "Editing metadata requires the desktop app.",
-			"remoteUnsupported": "Editing metadata is not supported for remote vaults yet.",
 			"saveFailed": "Failed to save metadata."
 		}
 	}

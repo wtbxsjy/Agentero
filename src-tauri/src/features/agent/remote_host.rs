@@ -1,10 +1,9 @@
-//! Dependency inversion for remote-vault BYOA.
+//! Launch-target seam for agents.
 //!
-//! The agent feature must not import `integration::remote` (features may only
-//! depend on core). The remote side (`integration::remote::launch`) implements
-//! these traits for `RemoteSession` / `RemoteRegistry`, and the desktop app
-//! registers `Arc<dyn RemoteAgentHosts>` as Tauri state; commands consume it
-//! via `State<'_, Arc<dyn RemoteAgentHosts>>`.
+//! Upstream runs agents on an SSH host for remote vaults through these traits.
+//! This fork removed remote vaults; the app registers [`NoRemoteHosts`], so
+//! every target resolves to the local machine. The seam is kept so the agent
+//! code stays close to upstream for cherry-picks.
 
 use crate::core::error::AppError;
 use crate::features::vault::CreateVaultResult;
@@ -82,4 +81,25 @@ pub struct RemoteTargetInfo {
     pub destination: String,
     pub remote_path: String,
     pub local_sim: bool,
+}
+
+/// The only [`RemoteAgentHosts`] in this fork: no remote vaults exist.
+pub struct NoRemoteHosts;
+
+#[async_trait]
+impl RemoteAgentHosts for NoRemoteHosts {
+    async fn resolve_target(
+        &self,
+        _vault_path: Option<&str>,
+    ) -> Result<Option<Arc<dyn RemoteAgentLaunch>>, AppError> {
+        Ok(None)
+    }
+
+    async fn get_session(&self, _session_id: &str) -> Result<Arc<dyn RemoteAgentLaunch>, AppError> {
+        Err(AppError::message("remote vaults are not supported"))
+    }
+
+    async fn list_targets(&self) -> Result<Vec<RemoteTargetInfo>, AppError> {
+        Ok(Vec::new())
+    }
 }

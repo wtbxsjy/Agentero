@@ -585,10 +585,7 @@ export async function writeLayoutTranslateSidecar(
 			return written;
 		});
 	const merged = new Map<string, LayoutTranslateSidecarItem>();
-	if (
-		options.preserveExisting &&
-		(!isTauri() || paperAbsPath.startsWith("remote:"))
-	) {
+	if (options.preserveExisting && !isTauri()) {
 		const existing = await readLayoutTranslateSidecar(paperAbsPath, key);
 		for (const item of existing?.items ?? []) {
 			merged.set(item.id, item);
@@ -615,7 +612,7 @@ export async function writeLayoutTranslateSidecar(
 				a.bbox.x - b.bbox.x,
 		),
 	};
-	if (isTauri() && !paperAbsPath.startsWith("remote:")) {
+	if (isTauri()) {
 		await callApi(() =>
 			commands.layoutTranslateCacheWrite({
 				paperAbsPath,

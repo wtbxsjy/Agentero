@@ -17,7 +17,6 @@ pub mod mcp;
 ))]
 pub mod plugins;
 #[cfg(feature = "desktop")]
-pub mod remote;
 
 #[cfg(feature = "desktop")]
 pub mod word;

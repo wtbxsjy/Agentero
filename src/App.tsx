@@ -102,14 +102,12 @@ import {
 	migrateZoteroFromWelcome,
 	newWindow,
 	openRecentVault,
-	openRemoteVault,
 	openSelectedInTerminal,
 	openVault,
 	refreshAll,
 	removeRecent,
 	revealSelectedInFinder,
 } from "@/lib/vault/actions";
-import { isRemoteVaultHandle } from "@/lib/vault/remote/remote-vault";
 import { vaultStore } from "@/lib/vault/store";
 import { renameMayAffectWikiTargets } from "@/lib/wiki";
 import { handleExternalRename } from "@/lib/wiki/actions";
@@ -211,7 +209,6 @@ function WelcomeCenter() {
 			recentVaults={recentVaults}
 			busy={busy}
 			onOpenVault={() => void openVault()}
-			onOpenRemoteVault={(args) => void openRemoteVault(args)}
 			onCreateVault={() => void createNewVault()}
 			onMigrateZotero={() => void migrateZoteroFromWelcome()}
 			onOpenRecent={(path) => void openRecentVault(path)}
@@ -278,7 +275,7 @@ export default function App() {
 		let lastPayload = "";
 		const sync = () => {
 			const root = vaultStore.getState().vaultPath;
-			if (!root || isRemoteVaultHandle(root)) return;
+			if (!root) return;
 			const paths = dirtyVaultPaths(root).sort();
 			const payload = JSON.stringify([root, paths]);
 			if (payload === lastPayload) return;
