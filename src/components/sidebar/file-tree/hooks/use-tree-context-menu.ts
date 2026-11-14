@@ -17,7 +17,6 @@ import {
 	type PaperMetadata,
 } from "@/lib/paper";
 import { TRASH_VIRTUAL_PATH } from "@/lib/paper/api";
-import { surfaces } from "@/lib/surfaces";
 import {
 	type FileNode,
 	resolveCreateParent,
@@ -283,22 +282,6 @@ export function useTreeContextMenu({
 						const parent = resolveCreateParent(vaultPath, menu.path, nodes);
 						setMenu(null);
 						onStartCreate("file", parent);
-					}
-				: undefined,
-		onNewTable:
-			surfaces.researchTable && onStartCreate && vaultPath
-				? () => {
-						const parent = resolveCreateParent(vaultPath, menu.path, nodes);
-						setMenu(null);
-						onStartCreate("table", parent);
-					}
-				: undefined,
-		onNewExperiment:
-			surfaces.researchTable && onStartCreate && vaultPath
-				? () => {
-						const parent = resolveCreateParent(vaultPath, menu.path, nodes);
-						setMenu(null);
-						onStartCreate("experiment", parent);
 					}
 				: undefined,
 		onNewFolder:

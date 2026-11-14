@@ -4,7 +4,6 @@ React 19 + TypeScript Webview UI。全局状态为按域 **zustand vanilla store
 
 > 整体架构与跨层工作流见 [../architecture.md](../architecture.md)。
 
-科研对象／结果表、字段编辑和 Notebook 实时引用见 [科研表格](research-tables.md)。
 
 ## 定位
 

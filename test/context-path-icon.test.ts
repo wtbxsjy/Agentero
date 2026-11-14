@@ -4,7 +4,6 @@ import {
 	FileType2,
 	Folder,
 	ScrollText,
-	Table,
 } from "lucide-react";
 import { describe, expect, it } from "vitest";
 import {
@@ -101,8 +100,7 @@ describe("context-path-icon", () => {
 		).toBe(Folder);
 	});
 
-	it("uses Table for research tables and FileJson for other JSON", () => {
-		expect(contextPathIcon("data/Results.TABLE.JSON")).toBe(Table);
+	it("uses FileJson for JSON", () => {
 		expect(contextPathIcon("notes/config.json")).toBe(FileJson);
 		expect(contextPathIcon("notes/config.JSON")).toBe(FileJson);
 	});

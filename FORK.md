@@ -25,7 +25,6 @@ directories, Rust commands, `bindings.ts` types, settings, i18n).
 
 | Switch | Module | Step 1 entry points hidden |
 |---|---|---|
-| `researchTable` | Research tables, experiment notes | `/` command, "New table" / "New experiment" in the tree menu |
 | `zhihu` | Zhihu agent and paper action | Settings → Agent row, paper info "Zhihu" chip |
 | `remoteVault` | SSH/SFTP vaults | Welcome button, recent remotes, vault switcher entry |
 | `sync` | S3 sync | Settings → Sync |
@@ -47,6 +46,12 @@ Deleted in step 2 so far:
   Cool Papers notes fetch, the arXiv proxy, and the embedding endpoint probe in Settings (moved to
   `discovery/embedding_probe.rs`). The catalog tables `embed_cache` / `discovery_runs` stay in the
   schema history but are no longer written.
+- **Research tables / experiment notes** (switch removed): the `*.table.json` grid viewer and
+  `::research-table` embeds, "New table" / "New experiment" and the `/` command, the core
+  `research_table` module, MCP `table_query` / `table_upsert` / `table_update_cells`, the
+  `agentero table` CLI, the `use_table_ops` / `experiment_locked` write guards, table hits in
+  `vault_search`, and table-path rewriting in wiki renames. Existing `*.table.json` files now open
+  as plain JSON.
 
 Already hidden upstream: plugins (`src/lib/plugins/visibility.ts`) and account / cloud writing
 (`src/features/account/visibility.ts`). The mobile app only ships in iOS builds.

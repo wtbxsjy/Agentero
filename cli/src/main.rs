@@ -238,11 +238,6 @@ enum Commands {
         #[command(subcommand)]
         cmd: commands::ui::UiCmd,
     },
-    /// Research table rows (`*.table.json`).
-    Table {
-        #[command(subcommand)]
-        cmd: commands::table::TableCmd,
-    },
     /// Translate text with free machine translation (no API key).
     Translate {
         /// Text to translate.
@@ -406,7 +401,6 @@ fn command_label(cmd: &Commands) -> &'static str {
         Commands::Mark { .. } => "cli.mark",
         Commands::Mcp { .. } => "cli.mcp",
         Commands::Ui { .. } => "cli.ui",
-        Commands::Table { .. } => "cli.table",
         Commands::Translate { .. } => "cli.translate",
         Commands::Open { .. } => "cli.open",
     }
@@ -445,7 +439,6 @@ async fn run(command: Commands, globals: &GlobalOpts) -> Result<serde_json::Valu
             McpCmd::Serve(args) => commands::mcp::serve(args, globals).await,
         },
         Commands::Ui { cmd } => commands::ui::run(cmd, globals),
-        Commands::Table { cmd } => commands::table::run(cmd, globals),
         Commands::Translate {
             text,
             to,

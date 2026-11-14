@@ -14,7 +14,6 @@ import {
 	type LucideIcon,
 	MessageSquareWarning,
 	Quote,
-	Table2,
 	Workflow,
 } from "lucide-react";
 import { useEditorRef } from "platejs/react";
@@ -59,7 +58,6 @@ type SlashCommandMenuProps = {
 };
 
 const COMMAND_ICONS: Record<SlashCommandId, LucideIcon> = {
-	researchTable: Table2,
 	heading1: Heading1,
 	heading2: Heading2,
 	heading3: Heading3,

@@ -4,7 +4,6 @@ import {
 	LIBRARY_VIRTUAL_PATH,
 	TRASH_VIRTUAL_PATH,
 } from "@/lib/paper/api";
-import { isResearchTablePath, TABLE_SUFFIX } from "@/lib/research-table/model";
 import { basenameOf, normalizePathKey } from "@/lib/vault/path";
 import type { DocTab, TabResources } from "@/lib/workspace/tabs/types";
 import type { CenterViewMode } from "@/lib/workspace/viewer";
@@ -13,12 +12,9 @@ export { basenameOf, normalizePathKey as normalizeTabPath };
 
 export const SPLIT_PANE_ID_MARKER = "::pane-";
 
-/** Tab label for a file path. Research tables hide the `.table.json` suffix. */
+/** Tab label for a file path. */
 export function tabTitleForPath(path: string): string {
-	const base = basenameOf(path);
-	if (!isResearchTablePath(base)) return base;
-	const stem = base.slice(0, -TABLE_SUFFIX.length);
-	return stem || base;
+	return basenameOf(path);
 }
 
 export function tabIdForPath(path: string): string {

@@ -9,7 +9,6 @@ pub mod mcp;
 pub mod open;
 pub mod paper;
 pub mod sync;
-pub mod table;
 pub mod translate;
 pub mod ui;
 pub mod vault;
