@@ -34,8 +34,6 @@ desktop = [
   "dep:tauri-plugin-log",
   "dep:fern",
   "dep:tauri-plugin-opener",
-  "dep:tauri-plugin-updater",
-  "dep:tauri-plugin-process",
   "dep:tauri-plugin-single-instance",
   "dep:tauri-plugin-window-state",
 	"dep:tauri-plugin-better-auth",
@@ -123,13 +121,9 @@ specta = { version = "2.0.0-rc.22", features = ["derive", "chrono"] }
 specta-typescript = { version = "0.0.12", optional = true }
 fontdb = "0.23"
 
-# Updates and process relaunch are desktop-only. Mobile distribution is owned by
-# its app stores, not the in-app updater.
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-better-auth = { version = "=0.1.2", optional = true }
 agentero-plugin-host = { path = "../crates/agentero-plugin-host", optional = true }
-tauri-plugin-updater = { version = "2.14.1", optional = true }
-tauri-plugin-process = { version = "2", optional = true }
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"], optional = true }
 tauri-plugin-window-state = { version = "2", optional = true }
 # Blocking client: telemetry flush happens in the synchronous RunEvent::Exit callback.

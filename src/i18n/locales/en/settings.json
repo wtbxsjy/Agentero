@@ -880,22 +880,6 @@
 			"title": "Network error downloading from GitHub",
 			"openSettings": "Open network settings"
 		},
-		"update": {
-			"available": "Version {{version}} is ready",
-			"downloading": "Downloading update...",
-			"downloadingProgress": "Downloading update: {{progress}}%",
-			"installing": "Installing update and restarting...",
-			"installFailed": "Couldn't install the update. Try again",
-			"check": "Check for updates",
-			"downloadInstall": "Install and restart",
-			"releaseNotes": "Release notes",
-			"tagNew": "New version",
-			"tagUpdating": "Updating…",
-			"tagDownloading": "Updating {{progress}}%",
-			"tagInstalling": "Installing…",
-			"toastTitle": "Agentero {{version}} is available",
-			"toastDescription": "Download the verified update and restart Agentero"
-		},
 		"cli": {
 			"label": "Command-line tools",
 			"description": "Headless Vault / Catalog for scripts and external agents",
@@ -921,8 +905,7 @@
 			"installFailed": "Could not install CLI command",
 			"uninstallFailed": "Could not remove CLI command",
 			"statusFailed": "Could not read CLI status",
-			"openReleaseFailed": "Could not open the release page",
-			"syncFailed": "Could not auto-sync the installed CLI with this app version. Update it from Settings → About"
+			"openReleaseFailed": "Could not open the release page"
 		},
 		"feedback": {
 			"label": "Feedback",

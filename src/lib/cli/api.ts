@@ -5,7 +5,6 @@
 
 import { commands, type UiRequestPayload } from "@/lib/core/bindings";
 import { callApi } from "@/lib/core/ipc";
-import { logger } from "@/lib/core/logger";
 import { isTauri } from "@/lib/core/tauri";
 
 export type CliInstallStatus = {
@@ -51,51 +50,6 @@ export function uninstallCliCommand(): Promise<CliInstallResult> {
 	return callApi(() => commands.cliUninstallCommand(), {
 		fallback: "Failed to remove CLI command",
 	});
-}
-
-export type CliSyncOutcome = "synced" | "skipped";
-
-/**
- * Re-align an already-installed CLI shim with the running app version.
- *
- * The Host downloads and verifies the CLI against the *compiled-in* app
- * version, so the old process cannot pre-install the next CLI during an app
- * update. Instead the fresh app syncs on startup: when the user has a managed
- * CLI entry (`installed`) whose version drifted (`!shimCurrent`), re-run the
- * install so binary + shim match this build. Never throws; callers can retry
- * a transient release-asset/network failure and surface a final failure with
- * a toast. A missing CLI is always skipped: app updates never opt a user into
- * installing a command-line tool they did not previously install.
- */
-export async function syncInstalledCliWithApp(): Promise<
-	CliSyncOutcome | "failed"
-> {
-	if (!isTauri() || import.meta.env.DEV) return "skipped";
-	let status: CliInstallStatus;
-	try {
-		status = await fetchCliInstallStatus();
-	} catch (error) {
-		logger.warn("cli_sync status_read_failed", { error: String(error) });
-		return "skipped";
-	}
-	if (!status.installed || status.shimCurrent || !status.canInstall) {
-		return "skipped";
-	}
-	logger.info("op start cli_sync", {
-		from: status.cliVersion ?? "?",
-		to: status.appVersion,
-	});
-	try {
-		const result = await installCliCommand();
-		logger.info("op end cli_sync ok=true", {
-			version: result.status.cliVersion ?? "?",
-			action: result.action,
-		});
-		return "synced";
-	} catch (error) {
-		logger.warn("op end cli_sync ok=false", { error: String(error) });
-		return "failed";
-	}
 }
 
 export type FinderServiceStatus = {

@@ -19,15 +19,12 @@ identifier `com.wtbxsjy.agentero.kb` (installs beside the official app; same ide
 
 ## Dropped modules (P0)
 
-P0 removes modules in two steps. Step 1 hides them at their UI entry points with the
-compile-time switches in `src/lib/surfaces.ts`. Step 2 deletes them one module per PR (front-end
-directories, Rust commands, `bindings.ts` types, settings, i18n).
+P0 removed modules in two steps. Step 1 hid them at their UI entry points with compile-time
+switches in `src/lib/surfaces.ts`. Step 2 deleted them one module per commit (front-end
+directories, Rust commands, `bindings.ts` types, settings, i18n). Step 2 is complete and
+`surfaces.ts` is gone.
 
-| Switch | Module | Step 1 entry points hidden |
-|---|---|---|
-| `updater` | In-app updater (points at official releases) | Update check reports unsupported |
-
-Deleted in step 2 so far:
+Deleted in step 2:
 
 - **Writing / TeX** (switch removed): writing desk and cloud writing, TeX projects, LaTeX compile
   and SyncTeX, realtime-tex live preview (`rtex-core` dependency and `src-tauri/rtex/` resources),
@@ -76,12 +73,23 @@ Deleted in step 2 so far:
   with its macOS/Windows drivers, the `word_*` commands and `word:changed` event, the Connector's
   `/integration/macWordCommand` route, the citation dialog and the Settings → Connector toggle) and
   the `hayagriva` CSL dependency it alone used.
+- **In-app updater** (switch removed): `tauri-plugin-updater` / `tauri-plugin-process` and their
+  JS packages and capabilities, the updater endpoint and public key in `tauri.conf.json`,
+  `app_update_check`, `src/lib/update/`, the title-bar update tag, the About pane check/install
+  button, the startup update toast and the post-update CLI resync, plus the release workflow's
+  signing check, updater JSON upload and `rewrite-updater-json` job. New versions come from a
+  rebuild.
 
 Already hidden upstream: plugins (`src/lib/plugins/visibility.ts`) and account / cloud writing
 (`src/features/account/visibility.ts`).
 
-Still open for step 2: the `agentero://` deep-link scheme is shared with the official app and is
-hard-coded in Rust and TS; change it together with the pairing/account code that uses it.
+Still open after step 2:
+
+- The `agentero://` deep-link scheme is shared with the official app and is hard-coded in Rust
+  and TS; change it together with the account code that uses it.
+- Settings → About still points at upstream: "Install CLI" downloads the official
+  `agentero-cli` archive for the same version from `poco-ai/Agentero` releases, and the GitHub
+  star link and Homebrew hint name the upstream repo and tap.
 
 ## KB panel
 

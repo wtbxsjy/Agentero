@@ -101,8 +101,6 @@ pub fn run() {
     {
         builder = builder
             .plugin(account::plugin())
-            .plugin(tauri_plugin_updater::Builder::new().build())
-            .plugin(tauri_plugin_process::init())
             // Only the main window remembers geometry; settings / feature /
             // doc popouts keep their own fixed sizes.
             .plugin(

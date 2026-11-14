@@ -2,14 +2,11 @@ import { getVersion } from "@tauri-apps/api/app";
 import { appLogDir } from "@tauri-apps/api/path";
 import { openPath, openUrl } from "@tauri-apps/plugin-opener";
 import {
-	ArrowRight,
 	Download,
-	ExternalLink,
 	FolderOpen,
 	Info,
 	Languages,
 	LoaderCircle,
-	RefreshCw,
 	Star,
 	Terminal,
 } from "lucide-react";
@@ -47,14 +44,6 @@ import {
 	reflowCacheUsage,
 } from "@/lib/pdf/reflow/cache-manage";
 import { notifyReleaseDownloadError } from "@/lib/settings/download-error";
-import {
-	checkForUpdate,
-	getUpdateReleaseUrl,
-	getUpdateSnapshot,
-	installAvailableUpdate,
-	subscribeUpdate,
-	type UpdateSnapshot,
-} from "@/lib/update";
 
 /** Same as README / homebrew-agentero Formula (headless CLI, not the desktop cask). */
 const CLI_BREW_INSTALL_COMMAND =
@@ -65,7 +54,6 @@ const GITHUB_REPO_URL = "https://github.com/poco-ai/Agentero";
 export function AboutPane() {
 	const { t } = useTranslation("settings");
 	const [version, setVersion] = useState<string>();
-	const [update, setUpdate] = useState<UpdateSnapshot>(getUpdateSnapshot);
 	const [cli, setCli] = useState<CliInstallStatus | null>(null);
 	const [cliBusy, setCliBusy] = useState(false);
 	const [cliLoading, setCliLoading] = useState(false);
@@ -97,20 +85,10 @@ export function AboutPane() {
 			.then(setVersion)
 			.catch(() => undefined);
 	}, []);
-	useEffect(() => subscribeUpdate(setUpdate), []);
 	useEffect(() => {
 		void refreshCli();
 	}, [refreshCli]);
 
-	const checking = update.phase === "checking";
-	const installing =
-		update.phase === "downloading" || update.phase === "installing";
-	const onCheck = () => {
-		void checkForUpdate();
-	};
-	const onInstall = () => {
-		void installAvailableUpdate();
-	};
 	const installErrorText = (err: unknown) =>
 		lifecycleErrorMessage(errorText(err), (key, options) =>
 			t(key, { ...options, defaultValue: "" }),
@@ -280,61 +258,11 @@ export function AboutPane() {
 							{version && (
 								<p className="flex flex-wrap items-center gap-1.5 text-muted-foreground text-xs">
 									<span>{t("about.version", { version })}</span>
-									{update.availableVersion && (
-										<span className="inline-flex items-center gap-0.5 font-medium text-emerald-600 dark:text-emerald-400">
-											<ArrowRight aria-hidden className="size-3" />
-											{`v${update.availableVersion}`}
-										</span>
-									)}
 								</p>
 							)}
 						</div>
 					</div>
-					<div className="flex shrink-0 items-center gap-2">
-						{update.availableVersion && (
-							<Button variant="link" size="sm" asChild>
-								<a
-									href={getUpdateReleaseUrl(update.availableVersion)}
-									onClick={(event) => {
-										event.preventDefault();
-										openExternalUrl(event.currentTarget.href);
-									}}
-								>
-									{t("about.update.releaseNotes")}
-									<ExternalLink data-icon="inline-end" />
-								</a>
-							</Button>
-						)}
-						{update.phase === "available" ? (
-							<Button size="sm" onClick={onInstall}>
-								<Download data-icon="inline-start" />
-								{t("about.update.downloadInstall")}
-							</Button>
-						) : update.phase === "unsupported" ? null : (
-							<Button
-								variant="outline"
-								size="sm"
-								disabled={checking || installing}
-								onClick={onCheck}
-							>
-								{checking || installing ? (
-									<LoaderCircle
-										data-icon="inline-start"
-										className="animate-spin"
-									/>
-								) : (
-									<RefreshCw data-icon="inline-start" />
-								)}
-								{t("about.update.check")}
-							</Button>
-						)}
-					</div>
 				</div>
-				{update.phase === "available" && update.notes?.trim() ? (
-					<div className="border-t px-3.5 py-2.5 text-muted-foreground text-xs leading-relaxed whitespace-pre-wrap">
-						{update.notes.trim()}
-					</div>
-				) : null}
 			</SettingsGroup>
 			{showFeedback ? <AboutFeedback /> : null}
 			{isTauri() ? (

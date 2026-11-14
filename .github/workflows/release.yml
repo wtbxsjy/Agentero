@@ -21,21 +21,6 @@ jobs:
     needs: checks
     runs-on: ubuntu-latest
     steps:
-      - name: Verify updater signing configuration
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ]]; then
-            echo "::error::Missing TAURI_SIGNING_PRIVATE_KEY. Refusing to publish an unsigned updater release."
-            exit 1
-          fi
-          if [[ -z "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" ]]; then
-            echo "::error::Missing TAURI_SIGNING_PRIVATE_KEY_PASSWORD."
-            exit 1
-          fi
-
       - name: Create draft GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -198,9 +183,6 @@ jobs:
           # empty/absent secret still builds, but ships without the built-in
           # provider, so verify it after release. See docs/backend/builtin-provider.md.
           AGENTERO_BUILTIN_API_KEY: ${{ secrets.AGENTERO_BUILTIN_API_KEY }}
-          # Tauri updater signature, independent from Apple code signing.
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           # Developer ID Application (.p12 base64) + password — see macos-signing.md
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -218,29 +200,6 @@ jobs:
           # Body is set by the prepare job; keep draft + same tag.
           releaseDraft: true
           prerelease: ${{ contains(github.ref_name, '-') }}
-          # The action merges per-platform signed artifacts into latest.json.
-          # NSIS supports user-level update installation; prefer it over MSI.
-          uploadUpdaterJson: true
-          uploadUpdaterSignatures: true
-          updaterJsonPreferNsis: true
-
-  # tauri-action writes api.github.com asset URLs into latest.json; anonymous
-  # API requests share a 60/hour per-IP quota, so updater downloads 403 behind
-  # shared NATs. Rewrite them to CDN download URLs once all installers are up.
-  updater-json:
-    name: Rewrite updater manifest
-    needs: installers
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Point updater downloads at the release CDN
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPOSITORY: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
-        run: node scripts/rewrite-updater-json.mjs
 
   cli:
     name: CLI (${{ matrix.platform }})

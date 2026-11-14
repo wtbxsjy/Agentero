@@ -377,12 +377,6 @@ type VaultTreeNode = {
   - 窗口关闭时 Host 向所有窗口 `emit("window:closed", { kind: "settings" })`，便于主窗口同步 Settings 打开状态（实现 `⌘,` _toggle_）；建窗失败时也会 emit 一次，避免 toggle 卡在“已打开”。
   - 与 `window_new` 同理，**必须是 `async` command**。
 
-#### `app_update_check`（桌面）
-
-使用 Tauri Updater 查询当前平台的更新，返回 `Result<AppUpdate | null, String>`。请求超时为 30 秒，`retryOnTimeout` 为 `true` 时仅在网络超时后重试一次。返回的 `rid` 是当前 Webview 持有的 updater 资源，供 Tauri Updater 插件下载、安装和释放。
-
-Updater 模块与命令注册均排除 Android / iOS，与 Cargo 的 updater 插件依赖门控一致。`desktop` feature 在移动端构建中也会启用，不能单独用它判断桌面平台。
-
 #### `fs_watch_start` / `fs_watch_stop`（已实现）
 
 按窗口启停 Vault 文件系统监听（Rust `notify` 递归监听），用于外部编辑器 / Agent 写盘后自动重载编辑器与文件树。
