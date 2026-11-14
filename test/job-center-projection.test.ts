@@ -377,12 +377,6 @@ describe("job task projection", () => {
 				undefined,
 			],
 			[
-				{ mode: "plaza", id: "abc", title: "A Paper" },
-				"search",
-				"Import into library",
-				"A Paper",
-			],
-			[
 				{ mode: "coolNotes", title: "A Paper" },
 				"layout",
 				"Fetch Cool Papers notes",

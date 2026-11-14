@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { AgentLogo } from "@/components/agent/agent-logo";
 import { LayoutMenu } from "@/components/shell/layout-menu";
 import { TrafficLightSpacer } from "@/components/shell/traffic-light-spacer";
-import { UpdateIndicator } from "@/components/shell/update-indicator";
 import { WindowHeader } from "@/components/shell/window-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,7 +111,6 @@ export const TitleBar = memo(function TitleBar({
 				{/* Drag region fills the middle — document tabs are in dockview. */}
 				<div className="min-w-0 flex-1 self-stretch" data-tauri-drag-region />
 				<div className="flex shrink-0 items-center gap-0.5 pr-2">
-					<UpdateIndicator />
 					<LayoutMenu value={layoutMode} onValueChange={onApplyLayoutMode} />
 					<ContextMenu>
 						<Tooltip>

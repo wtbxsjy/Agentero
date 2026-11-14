@@ -2,16 +2,12 @@ import { getVersion } from "@tauri-apps/api/app";
 import { appLogDir } from "@tauri-apps/api/path";
 import { openPath, openUrl } from "@tauri-apps/plugin-opener";
 import {
-	ArrowRight,
 	Download,
-	ExternalLink,
 	FolderOpen,
 	Info,
 	Languages,
 	LoaderCircle,
-	RefreshCw,
 	Star,
-	Telescope,
 	Terminal,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -32,10 +28,6 @@ import {
 } from "@/components/ui/tooltip";
 import { lifecycleErrorMessage } from "@/lib/agent/lifecycle-error";
 import {
-	plazaScratchClear,
-	plazaScratchStats,
-} from "@/lib/agent/plaza-scratch";
-import {
 	type CliInstallStatus,
 	fetchCliInstallStatus,
 	installCliCommand,
@@ -52,14 +44,6 @@ import {
 	reflowCacheUsage,
 } from "@/lib/pdf/reflow/cache-manage";
 import { notifyReleaseDownloadError } from "@/lib/settings/download-error";
-import {
-	checkForUpdate,
-	getUpdateReleaseUrl,
-	getUpdateSnapshot,
-	installAvailableUpdate,
-	subscribeUpdate,
-	type UpdateSnapshot,
-} from "@/lib/update";
 
 /** Same as README / homebrew-agentero Formula (headless CLI, not the desktop cask). */
 const CLI_BREW_INSTALL_COMMAND =
@@ -70,16 +54,10 @@ const GITHUB_REPO_URL = "https://github.com/poco-ai/Agentero";
 export function AboutPane() {
 	const { t } = useTranslation("settings");
 	const [version, setVersion] = useState<string>();
-	const [update, setUpdate] = useState<UpdateSnapshot>(getUpdateSnapshot);
 	const [cli, setCli] = useState<CliInstallStatus | null>(null);
 	const [cliBusy, setCliBusy] = useState(false);
 	const [cliLoading, setCliLoading] = useState(false);
 	const [logsBusy, setLogsBusy] = useState(false);
-	const [scratchStats, setScratchStats] = useState<{
-		papers: number;
-		bytes: number;
-	} | null>(null);
-	const [scratchBusy, setScratchBusy] = useState(false);
 	const [reflowUsage, setReflowUsage] = useState<{
 		papers: number;
 		bytes: number;
@@ -107,20 +85,10 @@ export function AboutPane() {
 			.then(setVersion)
 			.catch(() => undefined);
 	}, []);
-	useEffect(() => subscribeUpdate(setUpdate), []);
 	useEffect(() => {
 		void refreshCli();
 	}, [refreshCli]);
 
-	const checking = update.phase === "checking";
-	const installing =
-		update.phase === "downloading" || update.phase === "installing";
-	const onCheck = () => {
-		void checkForUpdate();
-	};
-	const onInstall = () => {
-		void installAvailableUpdate();
-	};
 	const installErrorText = (err: unknown) =>
 		lifecycleErrorMessage(errorText(err), (key, options) =>
 			t(key, { ...options, defaultValue: "" }),
@@ -192,17 +160,6 @@ export function AboutPane() {
 			.finally(() => setLogsBusy(false));
 	};
 
-	const refreshScratchStats = useCallback(() => {
-		if (!isTauri()) return;
-		void plazaScratchStats()
-			.then(setScratchStats)
-			.catch(() => setScratchStats(null));
-	}, []);
-
-	useEffect(() => {
-		refreshScratchStats();
-	}, [refreshScratchStats]);
-
 	const refreshReflowUsage = useCallback(() => {
 		if (!isTauri()) return;
 		void reflowCacheUsage()
@@ -236,21 +193,6 @@ export function AboutPane() {
 				description: errorText(err),
 			});
 		});
-	};
-
-	const onClearScratch = () => {
-		setScratchBusy(true);
-		void plazaScratchClear()
-			.then(async () => {
-				notifySuccess(t("about.scratch.clearDone"));
-				refreshScratchStats();
-			})
-			.catch((err) =>
-				notifyError(t("about.scratch.clearFailed"), {
-					description: errorText(err),
-				}),
-			)
-			.finally(() => setScratchBusy(false));
 	};
 
 	// Derive the status line from structured fields; the Host `message` is
@@ -316,61 +258,11 @@ export function AboutPane() {
 							{version && (
 								<p className="flex flex-wrap items-center gap-1.5 text-muted-foreground text-xs">
 									<span>{t("about.version", { version })}</span>
-									{update.availableVersion && (
-										<span className="inline-flex items-center gap-0.5 font-medium text-emerald-600 dark:text-emerald-400">
-											<ArrowRight aria-hidden className="size-3" />
-											{`v${update.availableVersion}`}
-										</span>
-									)}
 								</p>
 							)}
 						</div>
 					</div>
-					<div className="flex shrink-0 items-center gap-2">
-						{update.availableVersion && (
-							<Button variant="link" size="sm" asChild>
-								<a
-									href={getUpdateReleaseUrl(update.availableVersion)}
-									onClick={(event) => {
-										event.preventDefault();
-										openExternalUrl(event.currentTarget.href);
-									}}
-								>
-									{t("about.update.releaseNotes")}
-									<ExternalLink data-icon="inline-end" />
-								</a>
-							</Button>
-						)}
-						{update.phase === "available" ? (
-							<Button size="sm" onClick={onInstall}>
-								<Download data-icon="inline-start" />
-								{t("about.update.downloadInstall")}
-							</Button>
-						) : update.phase === "unsupported" ? null : (
-							<Button
-								variant="outline"
-								size="sm"
-								disabled={checking || installing}
-								onClick={onCheck}
-							>
-								{checking || installing ? (
-									<LoaderCircle
-										data-icon="inline-start"
-										className="animate-spin"
-									/>
-								) : (
-									<RefreshCw data-icon="inline-start" />
-								)}
-								{t("about.update.check")}
-							</Button>
-						)}
-					</div>
 				</div>
-				{update.phase === "available" && update.notes?.trim() ? (
-					<div className="border-t px-3.5 py-2.5 text-muted-foreground text-xs leading-relaxed whitespace-pre-wrap">
-						{update.notes.trim()}
-					</div>
-				) : null}
 			</SettingsGroup>
 			{showFeedback ? <AboutFeedback /> : null}
 			{isTauri() ? (
@@ -505,49 +397,6 @@ export function AboutPane() {
 									/>
 								) : null}
 								{t("about.logs.clear")}
-							</Button>
-						</div>
-					</SettingsRow>
-				</SettingsGroup>
-			) : null}
-			{isTauri() ? (
-				<SettingsGroup>
-					<SettingsRow
-						label={
-							<span className="inline-flex items-center gap-1.5">
-								<Telescope
-									className="size-3.5 shrink-0 text-muted-foreground"
-									aria-hidden
-								/>
-								{t("about.scratch.label")}
-							</span>
-						}
-					>
-						<div className="flex items-center gap-2">
-							{scratchStats?.bytes ? (
-								<span className="text-muted-foreground text-xs">
-									{t("about.scratch.summary", {
-										papers: scratchStats.papers,
-										size: `${(scratchStats.bytes / 1024 / 1024).toFixed(1)} MB`,
-									})}
-								</span>
-							) : null}
-							{/* Gate on bytes, not papers: failed parses leave an
-							    orphaned paper.pdf (bytes > 0, papers == 0) that
-							    must stay clearable. */}
-							<Button
-								variant="outline"
-								size="sm"
-								disabled={scratchBusy || !scratchStats?.bytes}
-								onClick={onClearScratch}
-							>
-								{scratchBusy ? (
-									<LoaderCircle
-										data-icon="inline-start"
-										className="animate-spin"
-									/>
-								) : null}
-								{t("about.scratch.clear")}
 							</Button>
 						</div>
 					</SettingsRow>

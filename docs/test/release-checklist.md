@@ -60,8 +60,6 @@ cargo test -p agentero-core -p agentero-cli
 | # | 界面 | 操作 | 预期 | 结果 |
 |---|---|---|---|---|
 | 0.2.1 | 终端 | 跑上列命令 | 全部通过 | ☐ |
-| 0.2.2 | GitHub Actions | Release job 的 updater secret 校验 | `TAURI_SIGNING_PRIVATE_KEY` 和密码缺失时在创建 Draft 前失败 | ☐ |
-| 0.2.3 | Draft Release | 检查 updater 资产 | 有 `latest.json`、各平台 updater 包与对应 `.sig`；`latest.json` 包含每个平台的 URL 和签名，且 URL 为 `github.com/.../releases/download/...`（不是 `api.github.com/.../releases/assets/...`，匿名下载会被 60 次/小时限流） | ☐ |
 | 0.2.3a | GitHub Actions / AtomGit | 配置 `ATOMGIT_TOKEN`，发布 Release 后检查自动触发的同步 job（或按 tag 手动 Run workflow） | 「Publish the release tag on AtomGit」步骤不因 push 被拒而失败：镜像仓库会告警 `pull-mirror (image) repository` 后继续；同名 tag 提交一致；说明和全部上传附件同步；每个附件回读 SHA-256 一致；重跑不重复附件；最新稳定版发布后标记 `latest`；预发布与补传旧稳定版为 `pre` 且不抢占现有 `latest`；缺令牌或附件失败时 job 报错 | ☐ |
 | 0.2.3b | GitHub Actions / AtomGit | 检查同步 job 的「Pin AtomGit to its overseas edge」步骤日志 | 四个域名全部 `Pinned <host> -> <IP>`；`getent hosts` 显示该 IP；上传日志的 `via <host>` 为 `file.gitcode.com`（已在固定列表内，若变成别的 OBS 域名需补进列表）；120 MB 级 AppImage 在数十秒内 `Uploaded and verified`，无 `HTTP 502`、无 `Retry n/2` | ☐ |
 | 0.2.4 | GitHub Actions / 应用·设置 | 确认 `AGENTERO_BUILTIN_API_KEY` secret 已配且本次构建注入了它 | 缺 secret **不会**让构建失败（`option_env!` 当未设置处理），只会静默产出没有内置 provider 的包。信号：Host `builtin_provider_status.available` 为 `true`。新装正文引擎始终默认「本地」，设置页不再提供内置正文选项，不能用该下拉判断 key 是否注入。见 [release.md](release.md) §内置 Provider 构建期注入 | ☐ |
@@ -178,7 +176,7 @@ cargo test -p agentero-core -p agentero-cli
 | 4.11 | 中间栏 | 把 paper tab / tab group 拖过相邻 Library，再拖成上下或左右分屏；从树拖文件到边；drop / cancel 后立即在 Library、MD、PDF 正文选字 | 移动中不出现原生文字选区；多分屏网格可用；结束后正文恢复正常选择 | ☐ |
 | 4.12 | 左栏 / 右栏 | 点折叠按钮；交替 `⌥⌘S` / `⌘L` | 侧栏折叠且保留像素宽度；两栏快捷键不「抢成互斥坏掉」 | ☐ |
 | 4.13 | 系统 / 右栏 | 拖动 AI 栏宽度后开关右栏、切换 Agent/笔记/阅读预设、重启应用；调整并最大化主窗后重启 | AI 栏始终恢复最后拖出的宽度；主窗尺寸、位置和最大化状态恢复 | ☐ |
-| 4.14 | 全局 UI / 移动端 | 在标题栏、导航、工具栏、Library 表头、回收站行和可点击卡片上拖动或长按，再分别在 MD、PDF、Agent 回复、Plaza 文章、metadata 与输入框中选字 | 操作型 Chrome 不出现文字选区；正文、可复制值及编辑控件仍可选择和复制 | ☐ |
+| 4.14 | 全局 UI / 移动端 | 在标题栏、导航、工具栏、Library 表头、回收站行和可点击卡片上拖动或长按，再分别在 MD、PDF、Agent 回复、metadata 与输入框中选字 | 操作型 Chrome 不出现文字选区；正文、可复制值及编辑控件仍可选择和复制 | ☐ |
 
 ---
 

@@ -4,7 +4,6 @@ import { COMPOSER_MENU_SURFACE } from "@/components/agent/composer/composer-menu
 import { ContextPathIcon } from "@/components/agent/context-path-icon";
 import { PopoverContent } from "@/components/ui/popover";
 import { mentionPathHasChildren } from "@/lib/agent/mention";
-import { lookupPlazaMention } from "@/lib/agent/plaza-mention";
 import { cn } from "@/lib/core/utils";
 
 /** Must render inside the composer `Popover` subtree — `PopoverContent` needs its context. */
@@ -69,17 +68,12 @@ export function ComposerMentionMenu({
 				</div>
 			) : (
 				mentionOptions.map((path, index) => {
-					// Plaza rows: paper title as label, source name as the hint line.
-					const plazaEntry = lookupPlazaMention(path);
-					const label = plazaEntry?.title.trim() || labelForPath(path);
-					const hint = plazaEntry
-						? plazaEntry.sourceLabel
-						: !mentionBrowseRoot && label !== path && path.includes("/")
+					const label = labelForPath(path);
+					const hint =
+						!mentionBrowseRoot && label !== path && path.includes("/")
 							? path
 							: null;
-					const rowTitle = plazaEntry
-						? `${plazaEntry.title} · ${plazaEntry.sourceLabel}`
-						: path;
+					const rowTitle = path;
 					const showPathHint = Boolean(hint);
 					const canEnter = mentionPathHasChildren(
 						path,

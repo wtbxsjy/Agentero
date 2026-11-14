@@ -182,12 +182,6 @@ enum Commands {
         #[command(subcommand)]
         cmd: commands::vault::VaultCmd,
     },
-    /// Cloud sync (S3/R2, WebDAV): configure, run, inspect — same engine as
-    /// the desktop app, no GUI required.
-    Sync {
-        #[command(subcommand)]
-        cmd: commands::sync::SyncCmd,
-    },
     /// Introspect curated machine ops (agent schema). Omit id for the full index.
     Describe {
         /// Op id (`paper.list`) or MCP tool name (`paper_list`).
@@ -207,12 +201,6 @@ enum Commands {
     Discover {
         #[command(subcommand)]
         cmd: commands::discover::DiscoverCmd,
-    },
-    /// Plaza feed subscriptions (RSS / Atom / JSON Feed): subscribe, refresh,
-    /// read items — same store as the desktop app, vault-free.
-    Feed {
-        #[command(subcommand)]
-        cmd: commands::feed::FeedCmd,
     },
     /// Export catalog data.
     Export {
@@ -243,11 +231,6 @@ enum Commands {
     Ui {
         #[command(subcommand)]
         cmd: commands::ui::UiCmd,
-    },
-    /// Research table rows (`*.table.json`).
-    Table {
-        #[command(subcommand)]
-        cmd: commands::table::TableCmd,
     },
     /// Translate text with free machine translation (no API key).
     Translate {
@@ -401,19 +384,16 @@ fn command_label(cmd: &Commands) -> &'static str {
             commands::vault::VaultCmd::Create { .. } => "cli.vault.create",
             commands::vault::VaultCmd::List => "cli.vault.list",
         },
-        Commands::Sync { .. } => "cli.sync",
         Commands::Describe { .. } => "cli.describe",
         Commands::Paper { .. } => "cli.paper",
         Commands::Import { .. } => "cli.import",
         Commands::Discover { .. } => "cli.discover",
-        Commands::Feed { .. } => "cli.feed",
         Commands::Export { .. } => "cli.export",
         Commands::Doctor { .. } => "cli.doctor",
         Commands::Layout { .. } => "cli.layout",
         Commands::Mark { .. } => "cli.mark",
         Commands::Mcp { .. } => "cli.mcp",
         Commands::Ui { .. } => "cli.ui",
-        Commands::Table { .. } => "cli.table",
         Commands::Translate { .. } => "cli.translate",
         Commands::Open { .. } => "cli.open",
     }
@@ -439,12 +419,10 @@ fn resolve_format(cli: &Cli) -> OutputFormat {
 async fn run(command: Commands, globals: &GlobalOpts) -> Result<serde_json::Value, CliError> {
     match command {
         Commands::Vault { cmd } => commands::vault::run(cmd, globals).await,
-        Commands::Sync { cmd } => commands::sync::run(cmd, globals).await,
         Commands::Describe { op } => commands::describe::run(op.as_deref(), globals),
         Commands::Paper { cmd } => commands::paper::run(cmd, globals).await,
         Commands::Import { cmd } => commands::import::run(cmd, globals).await,
         Commands::Discover { cmd } => commands::discover::run(cmd, globals).await,
-        Commands::Feed { cmd } => commands::feed::run(cmd, globals).await,
         Commands::Export { cmd } => commands::export::run(cmd, globals).await,
         Commands::Doctor { cmd } => commands::doctor::run(cmd, globals),
         Commands::Layout { cmd } => commands::layout::run(cmd, globals),
@@ -453,7 +431,6 @@ async fn run(command: Commands, globals: &GlobalOpts) -> Result<serde_json::Valu
             McpCmd::Serve(args) => commands::mcp::serve(args, globals).await,
         },
         Commands::Ui { cmd } => commands::ui::run(cmd, globals),
-        Commands::Table { cmd } => commands::table::run(cmd, globals),
         Commands::Translate {
             text,
             to,
@@ -520,16 +497,5 @@ mod ops_contract {
             clap_has_path(&root, &["mcp", "serve"]),
             "agentero mcp serve is not registered"
         );
-    }
-
-    #[test]
-    fn feed_commands_are_registered() {
-        let root = Cli::command();
-        for sub in ["list", "add", "remove", "refresh", "items", "read"] {
-            assert!(
-                clap_has_path(&root, &["feed", sub]),
-                "agentero feed {sub} is not registered"
-            );
-        }
     }
 }

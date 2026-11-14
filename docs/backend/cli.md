@@ -5,11 +5,10 @@ Headless Vault / Catalog / Wiki 接口；**不含** BYOA / paper-reader。
 ## 位置
 
 - 目录：`cli/`（crate `agentero-cli`）
-- path 依赖 `agentero-core` 与 `agentero-mcp`（**不**依赖 `agentero_lib`，依赖树无 tauri/wry/tao）：`features::{vault,catalog,import,wiki,zotero,feeds,translate,doctor,trash,pdf_locate,open_request,sync}` + 顶层 `{error,fs}`。`agentero mcp serve` 与桌面端共用 `agentero-mcp` 的工具面
+- path 依赖 `agentero-core` 与 `agentero-mcp`（**不**依赖 `agentero_lib`，依赖树无 tauri/wry/tao）：`features::{vault,catalog,import,wiki,zotero,translate,doctor,trash,pdf_locate,open_request}` + 顶层 `{error,fs}`。`agentero mcp serve` 与桌面端共用 `agentero-mcp` 的工具面
 - 可选同版本 CLI 安装（不随桌面安装包打入，减小体积 [#285](https://github.com/poco-ai/Agentero/issues/285)；open/deep-link 仍见 [#165](https://github.com/poco-ai/Agentero/issues/165) / [#166](https://github.com/poco-ai/Agentero/issues/166)）
   - 设置 → 关于：**安装 CLI** 从 GitHub Release 下载与 App **同版本** 的 `agentero-cli-{ver}-{triple}` 归档，校验 `.sha256` 后写入用户目录并创建 PATH shim。POSIX 写 `~/.local/bin/agentero` 软链（不静默改 shell rc）；Windows 写 `agentero-cli.cmd` 并**自动把安装目录加入用户 PATH**（`HKCU\Environment`，广播 `WM_SETTINGCHANGE`，无需重启，新开终端即可用 `agentero-cli`）。下载 404 的错误文案会带上完整资产 URL（含宿主 triple），架构/版本不匹配时自解释；`CliInstallStatus.commandName` 供前端按平台展示验证命令
   - 独立 CLI 归档仍随每次 Release 发布，供无桌面的 headless 机器使用；macOS 亦可通过 Homebrew tap `poco-ai/agentero` 安装 headless CLI
-  - **更新后自动同步**：应用内更新只替换 GUI 包；更新重启后的新进程在 main window 启动时检测已安装 shim（`installed && !shimCurrent`，见 `syncInstalledCliWithApp`），自动重新下载同版本 CLI 并刷新 shim（Host 按编译期 App 版本下载校验，旧进程无法预装新版 CLI，故只能在新进程里同步）。Release 的桌面包与 CLI 归档独立上传，首次请求暂未命中或网络短暂失败时会在 15 秒、60 秒后重试；只对已有 CLI 生效，未安装 CLI 的用户不会被自动安装。成功静默，最终失败 `notifyError` Toast；dev 环境跳过
 
 ## 命令组
 
@@ -17,20 +16,17 @@ Headless Vault / Catalog / Wiki 接口；**不含** BYOA / paper-reader。
 |---|---|
 | `open` | 在桌面 App 打开本地目录为 Vault（`agentero open <PATH>`；简写 `agentero <PATH>`） |
 | `vault` | create / list 等 |
-| `sync` | 云同步（S3/R2、WebDAV、Git）：configure / status / test / now / disconnect，与桌面端共用引擎（见下） |
 | `mcp serve` | 前台 Streamable HTTP MCP（loopback）。与桌面端共用工具面，不启动 GUI。见 [mcp.md](mcp.md) |
 | `describe` | Agent 自省：策展型 op 目录与单 op 的 input/output/errors/examples（机器契约真源） |
 | `paper` | list/get、tag list/set/add/rm、move、open、download/parse、notes fetch… |
 | `import` | 标识符入库 |
 | `discover` | 查询式发现：按关键词/分类/提交日期窗口抓 arXiv 候选，确定性词法排序（headless、无 embedding key） |
-| `feed` | 广场订阅源（RSS / Atom / JSON Feed）：`list` / `add` / `remove` / `refresh` / `items` / `read`；与桌面端共用 `$XDG_DATA_HOME/agentero/feeds.sqlite`，无 Vault 概念 |
 | `export` | 导出 |
 | `doctor` | Vault 结构与 Catalog 诊断；含 wikilink 检查与 aliases / 视觉批注 / catalog 去重修复 |
 | `layout` | 侧栏同构版面索引：`list` / `get`（figure / table / algorithm / formula / section / paragraph） |
 | `mark` | 阅读标注：`list` / `get` / `add`（`--quote` 文字锚点或 `--region` 区域锚点）/ `update` / `delete` |
 | `ui` | 桌面工作区/窗口操作：`open`（打开或聚焦文档/文件夹/论文）/ `close`（关闭面板）/ `window`（聚焦原生子窗口）/ `split`（分屏）；均走 `agentero://ui` 深链 + 请求文件 |
 | `translate` | 免费机器翻译纯文本（无需 API Key，不读桌面 settings） |
-| `table` | 科研表格行操作：`query` / `upsert` / `update-cells`（与桌面网格共用 `*.table.json`） |
 
 稳定 `--json` 输出，供脚本与外部 Agent 组合。JSON 默认 **compact 单行**（省 token），`--pretty` 恢复缩进美化（[#367](https://github.com/poco-ai/Agentero/issues/367)）。
 
@@ -164,21 +160,6 @@ known_vaults = ["/Users/philfan/l/paper", "/Users/philfan/l/video-acc"]
 
 普通保存复用 core 原子写，使用唯一同目录 `.tmp`、Unix `0600`，替换前同步文件内容；旧位置迁移使用 `tempfile::persist_noclobber` 保证不覆盖已有新配置。原子替换失败不会退化为截断写。
 
-## 科研表格（`table`）
-
-`version` 仍是 `1`。`table query|upsert|update-cells` 与桌面网格共用 `src/lib/research-table/model.ts` 的文件模式，直接改 Vault 里的 `*.table.json`。没有 SQLite 索引，也没有全表搜索。查询按文件中的存储顺序返回，单元格用字段名而不是字段 ID。
-
-```bash
-agentero table query data/run.table.json --json
-agentero table query data/run.table.json --field 容量 --equals 2.5 --json
-agentero table update-cells data/run.table.json --expected-revision 3 \
-  --data '{"cells":[{"registryId":"ID-0001","field":"容量","value":2.5}]}' --json
-agentero table upsert data/run.table.json --expected-revision 4 --idempotency-key batch-1 \
-  --data '{"rows":[{"values":{"样品":"A"}}]}' --json
-```
-
-变更正文来自 `--data`，或者在非 TTY 时从 stdin 读取。`expectedRevision` 必须与 `table query` 看到的 `revision` 一致，不一致返回 `revision_conflict`（`details.revision` 为当前修订号）且不写盘。省略 `registryId` 的 `upsert` 追加一行并签发下一个注册编号；已有编号只更新给出的字段。可选 `idempotencyKey`（1–80 个字符、不含空白）在成功写入后记入文件的 `appliedKeys`（最多保留 50 个）。同一个键再次出现时不写盘、不增加 `revision`，返回 `replayed: true`。`file_write` 不能覆盖或追加已有的 `*.table.json`。桌面端保存时如果磁盘内容既不是上次保存的快照、也不是即将写入的正文，已有的字节冲突检查会拒绝覆盖。
-
 ## 发现（discover）
 
 `discover arxiv` 是**查询式、无 Vault** 的发现原语，对应「抓当天 arXiv + 关键词排序」：候选来自 arXiv Atom API（`export.arxiv.org/api/query`，按提交日期倒序），用**确定性词法打分**排序——标题命中权重 3、摘要命中权重 1，每个结果带 `matches` 说明命中了哪些词、贡献多少。不需要 embedding 端点或 API key。
@@ -212,40 +193,7 @@ agentero discover arxiv -k dance -k choreography --match any --top 20 --json
 - **已入库去重**：解析到 vault 时，候选里 arXiv id 已在 catalog 的会被**排序前**剔除（`excluded` 计数）；命令仍保持 vault-free——解析不到 vault 就静默跳过去重，只有显式传了无效 `--vault` 才报错。`--no-dedup` 可关闭。
 - **可选语义排序**：给了 `--embed-base` + `--embed-model` 后，把关键词的 embedding 与候选 embedding 的余弦按 `--semantic-weight` 加到词法分上（`matches` 里出现 `field: "semantic"` 一项）。端点失败**不报错**，降级为纯词法并在 `semanticError` / 文本末行提示。默认不启用，词法仍是基线。
 - 输出是可直接消费的短名单（`_shortlist.json` 的收敛版）；Agent 拿到后自行判断题相关性，再走 `import id` 入库。
-- 与桌面广场的 arXiv Daily **不同**：后者是「读我的库 → 今天该读什么」的库画像 embedding 排序，依赖 catalog 与 embedding 端点；本命令是 query-first、零依赖，供 headless / 管线使用。
-
-## 订阅源（feed）
-
-`feed *` 是桌面广场订阅源（RSS / Atom / JSON Feed）的 headless 面，与桌面端共用同一个库 `$XDG_DATA_HOME/agentero/feeds.sqlite`（schema 见 `agentero-core::features::paper::discovery::feeds`），**不依赖 Vault、不写 catalog**。给某个 URL 订阅即可；若该 URL 是 HTML 页面，会自动跟随页面里发现的 feed 链接（与桌面端行为一致）。
-
-```bash
-# 订阅（首抓一次），随后交给定时任务
-agentero feed add https://huggingface.co/blog/feed.xml --json
-agentero feed add https://example.com/ --title "Example blog" --json
-
-# 定时拉取：只抓 15 分钟内没抓过的（ETag/Last-Modified 命中 304 时不重写条目）
-agentero feed refresh --stale --json
-# 单个源同样可以加 --stale：只在超过 15 分钟时才抓
-agentero feed refresh --id <sub-id> --stale --json
-
-# 消费：未读条目（脚本请始终加 --json）
-agentero feed items --filter unread --limit 20 --json
-# 只有带 DOI / paper_url 的条目
-agentero feed items --filter paper --json
-
-# 处理完标记已读，避免下轮重复消费
-agentero feed read <item-id> --json
-agentero feed read <item-id> --unread --json
-
-# 管理
-agentero feed list --json
-agentero feed remove <sub-id> -y --json
-```
-
-- **定时拉取推荐做法**：cron / launchd 每 15–30 分钟跑 `agentero feed refresh --stale --json`，再用 `feed items --filter unread --json` 增量消费；`stale` 阈值（15 分钟）与桌面端自动刷新一致，`--stale` 也适用于 `--id <sub-id>`（只在该源超过 15 分钟时刷新）。单源失败只记到该源的 `lastError`，不中断整批（结果里 `failed` 计数 + `subscriptions[].lastError`）。
-- `items` 默认剥掉 `contentHtml` / `bodyMarkdown`（重 HTML 省 token），`--full` 恢复；条目默认每源缓存最近 200 条。`--filter` 仅接受 `all` / `unread` / `paper` / `other`，`--limit` 限 `1..=200`，越界由参数解析直接拒绝。
-- 错误码：`feed_duplicate`（URL 已订阅）、`feed_not_found`、`feed_empty`、`feed_parse_error`（feed 不是合法 RSS/Atom/JSON）、`feed_not_found_in_page`、`feed_http_error`（带状态码）、`feed_fetch_failed`、`feed_too_large`；`feed remove` 在非 TTY 且未传 `-y` 时返回 `needs_confirmation`。底层 IO / JSON / SQLite 错误分别以 `io` / `json` / `sqlite` 透传。
-- 桌面端仍负责完整交互面（重命名、置顶、正文解析 `resolve body`、导入论文）；CLI 面只覆盖订阅与消费生命周期（见 [#962](https://github.com/poco-ai/Agentero/issues/962)）。
+- 本命令是 query-first、零依赖，供 headless / 管线使用。
 
 ## 论文导入
 
@@ -419,34 +367,6 @@ agentero paper open papers/nlp/attention --json
 
 - **Windows 资源管理器**：NSIS 安装钩子（`src-tauri/nsis/hooks.nsh`，经 `bundle.windows.nsis.installerHooks` 引入）在 `Software\Classes\Directory\shell` 与 `Directory\Background\shell` 下写入 `OpenWithAgentero` 条目，命令为 `"$INSTDIR\agentero.exe" "%1"`；卸载时仅清理指向本安装位置的条目。Win11 新式菜单中条目位于「显示更多选项」。
 - **macOS 访达**：Finder 对目录没有「打开方式」，改用 Quick Action。桌面 App 启动时自动安装/刷新 `~/Library/Services/Open with Agentero.workflow`（`features::finder_service`，shell 动作直接调用当前 App 二进制并传裸路径）；用户显式移除后写入配置标记（`finder-service.removed`），启动时不再自动恢复。设置 → 通用 → 系统 提供安装/更新/移除入口；App 移动位置后状态显示为过期，可一键更新。
-
-## 云同步（`sync`）
-
-无桌面环境（服务器等）下的双向 Vault 同步；与桌面端共用 `agentero-core::features::sync` 引擎与 XDG `sync.json` 绑定。S3/WebDAV 的冲突处理（三方合并 + 冲突副本）、条件写降级、断点续传与空转短路语义完全一致；Git 后端走独立的 work-tree 同步（原生 merge、冲突 abort），见 [sync.md](sync.md#git)。
-
-```bash
-# 服务器首次接入已有远端库（vault 从未同步过时自动采纳远端 vaultId 完成加入）
-agentero vault create ~/papers
-AGENTERO_SYNC_ACCESS_KEY=xxx AGENTERO_SYNC_SECRET_KEY=yyy \
-  agentero sync configure --vault ~/papers \
-    --backend s3 --endpoint https://<account>.r2.cloudflarestorage.com --bucket papers
-agentero sync now --vault ~/papers --json      # cron / 助理调用，退出码即成败
-agentero sync status --vault ~/papers --json   # lastError 给出上次失败原因
-agentero sync test --vault ~/papers --json     # 凭据/桶/条件写连通测试
-agentero sync disconnect --vault ~/papers -y   # 解绑（远端数据不动）
-
-# Git：Vault 即 work tree；认证走系统 credential helper / SSH agent
-agentero sync configure --vault ~/papers \
-  --backend git --git-remote git@github.com:you/papers.git --git-branch main
-agentero sync now --vault ~/papers --json
-```
-
-- **凭据安全**：secret 不进 argv——flag 只收 endpoint/bucket/prefix 等非敏感字段；secret 来源为 `AGENTERO_SYNC_ACCESS_KEY` / `AGENTERO_SYNC_SECRET_KEY` / `AGENTERO_SYNC_WEBDAV_PASSWORD`、TTY 交互提示（`--json` / 管道下绝不提示），或 `--stdin` 读完整配置 JSON（camelCase，脚本友好，不落 shell history）。所有输出经掩码（`*`），日志与 `remoteIdentity()` 均不含密钥；`sync.json` 以 0600 落盘。
-- **并发**：`sync now` 经 `.agentero/sync/lock` 跨进程文件锁与桌面端（及 cron）在同一 Vault 上互斥，冲突时返回 `sync_busy`（退出码 1）；进程崩溃锁自动释放。
-- **状态与错误码**：未配置 → `sync_not_configured`；配置非法（缺 secret 等，非交互下无法补提示时错误里附 secret 传入门径）→ `sync_config_invalid`；引擎错误透传 `AppError` 域码。`status` 输出 `configured` / `config`（掩码）/ `lastSyncAt` / `lastVersion` / `lastError`。
-- **进度**：`now` 的阶段进度（scan/pull/download/upload/finalize）打 stderr，stdout 始终纯 JSON；text 模式默认显示，`--progress` 在 `--json` 下开启。
-- **同步范围**：`configure --exclude pdf,source,attachments` 排除大体积可再生资产（与设置页「同步范围」一致）；笔记、sidecar、marks 永远同步。Git 把同一组排除项写进仓库 `.gitignore`，并取消跟踪。
-- **Git**：`--backend git --git-remote <url|path> [--git-branch main]`；不接收 secret flag、不做 TTY 提示，使用系统 Git 凭据。Vault 已有仓库时要求当前分支与 `--git-branch` 一致、`origin` 与配置一致，否则报错。冲突、`.agentero` 被跟踪、历史重写等分别返回 `sync_conflict` / `git_agentero_tracked` / `git_history_rewritten`；推送被非 fast-forward 拒绝会自动重试 fetch+merge+push。
 
 ## Doctor
 

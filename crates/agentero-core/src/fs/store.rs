@@ -209,7 +209,7 @@ mod tests {
         for temp in [&first, &second] {
             assert_eq!(temp.path().parent(), Some(dir.path()));
             let name = temp.path().file_name().unwrap().to_str().unwrap();
-            assert!(crate::features::sync::snapshot::is_ignored_name(name));
+            assert!(name.ends_with(".tmp"), "{name}");
         }
     }
 

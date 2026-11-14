@@ -172,22 +172,14 @@ pub async fn accept_run_once(
         }
     };
 
-    // Built-in agents are Host-internal (no external ACP process, no remote
-    // host). Skip remote resolution entirely so a local-only agent never fails
-    // on a remote-vault target.
-    let builtin = crate::features::agent::models::is_builtin_template(&desc.template);
-    let remote_target_early = if builtin {
-        None
-    } else {
-        match remote_hosts
-            .resolve_target(request.vault_path.as_deref())
-            .await
-        {
-            Ok(t) => t,
-            Err(e) => {
-                op.finish_err(&e);
-                return Err(e);
-            }
+    let remote_target_early = match remote_hosts
+        .resolve_target(request.vault_path.as_deref())
+        .await
+    {
+        Ok(t) => t,
+        Err(e) => {
+            op.finish_err(&e);
+            return Err(e);
         }
     };
     let (session_id, message_id) = new_ids();
@@ -213,48 +205,6 @@ pub async fn accept_run_once(
         "agent:status",
         AgentStatusEvent::starting(session_id.as_str()),
     );
-    // Built-in agents bypass the ACP spawn/stream chain entirely: the Host
-    // runs them itself and emits the same `agent:*` events the panel consumes.
-    if builtin {
-        let app_handle = window.app_handle().clone();
-        let secret = window
-            .app_handle()
-            .state::<crate::features::system::settings::AppSettingsStore>()
-            .zhihu_access_secret();
-        let log_session_id = session_id.clone();
-        let log_agent_id = desc.id.clone();
-        let finish_id = session_id.clone();
-        let session_for_log = log_session_id.clone();
-        let agent_for_log = log_agent_id.clone();
-        tauri::async_runtime::spawn(async move {
-            crate::features::zhihu::run_once(crate::features::zhihu::ZhihuRunOnce {
-                app: events,
-                session_id,
-                message_id,
-                agent_id: desc.id,
-                prompt: request.prompt,
-                resume_session_id: request.session_id,
-                model_id: request.model_id,
-                secret,
-                cancellation,
-            })
-            .await;
-            let _ = app_handle.state::<AgentRunController>().finish(&finish_id);
-            log::info!(
-                target: "agentero::op",
-                "op end agent_run_session session_id={} agent_id={}",
-                trunc(&session_for_log, 48),
-                trunc(&agent_for_log, 48)
-            );
-        });
-        op.finish_ok_extra(format!(
-            "session_id={} agent_id={} accepted=true builtin=true",
-            trunc(&log_session_id, 48),
-            trunc(&log_agent_id, 48)
-        ));
-        return Ok(accepted);
-    }
-
     let permission_gate = gate.clone();
     let elicitation_gate = elicitation_gate.clone();
     let ask_user_gate = ask_user_gate.clone();
@@ -368,15 +318,6 @@ pub async fn list_sessions(
             return Err(error);
         }
     };
-    // Built-in agents keep no server-side session list.
-    if crate::features::agent::models::is_builtin_template(&desc.template) {
-        op.finish_ok_extra(format!("agent_id={} builtin=true sessions=0", desc.id));
-        return Ok(AcpListSessionsResult {
-            sessions: Vec::new(),
-            next_cursor: None,
-            supported: false,
-        });
-    }
     if let Some(error) = warm_gate.blocked(&desc.id) {
         let error = AppError::message(error);
         op.finish_err(&error);
@@ -434,14 +375,6 @@ pub async fn load_session(
     vault_path: Option<String>,
 ) -> Result<AcpLoadSessionResult, AppError> {
     let desc = registry.resolve_default(agent_id.as_deref())?;
-    // Built-in agents have no ACP history to replay.
-    if crate::features::agent::models::is_builtin_template(&desc.template) {
-        return Ok(AcpLoadSessionResult {
-            session_id,
-            title: None,
-            lines: Vec::new(),
-        });
-    }
     let remote_target = remote_hosts.resolve_target(vault_path.as_deref()).await?;
     let cwd = agent_spawn_cwd(remote_target.as_deref(), vault_path.as_deref())?;
     load_acp_session(&desc, session_id, cwd, remote_target.as_deref()).await
@@ -469,14 +402,6 @@ pub async fn delete_session(
     pool.dismiss_session(&session_id);
     pool.drop_session(&desc.id, &session_id);
 
-    if crate::features::agent::models::is_builtin_template(&desc.template) {
-        return Ok(AcpDeleteSessionResult {
-            session_id,
-            deleted_on_agent: false,
-            agent_error: None,
-        });
-    }
-
     let remote_target = remote_hosts.resolve_target(vault_path.as_deref()).await?;
     let cwd = agent_spawn_cwd(remote_target.as_deref(), vault_path.as_deref())?;
     match delete_acp_session(&desc, &session_id, cwd, remote_target.as_deref()).await {
@@ -503,7 +428,6 @@ async fn local_delegate_hint(
     registry: &AgentRegistry,
 ) -> Option<String> {
     use crate::features::agent::delegate::policy::{self, AgentChoice, TargetChoice};
-    use crate::features::agent::models::is_builtin_template;
 
     let listed = hosts.list_targets().await.ok()?;
     let targets = listed
@@ -520,7 +444,7 @@ async fn local_delegate_hint(
     let mut agents = state
         .agents
         .into_iter()
-        .filter(|agent| !is_builtin_template(&agent.template) && !agent.command.trim().is_empty())
+        .filter(|agent| !agent.command.trim().is_empty())
         .map(|agent| AgentChoice {
             id: agent.id,
             name: agent.name,

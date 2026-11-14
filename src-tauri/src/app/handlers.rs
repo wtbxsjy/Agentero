@@ -115,7 +115,6 @@ macro_rules! common_commands {
             crate::features::paper::analyze::refs::commands::paper_refs_list,
             crate::features::paper::analyze::refs::commands::library_citing_scan,
             crate::features::paper::discovery::coolpapers::commands::paper_coolpapers_notes,
-            crate::features::paper::discovery::coolpapers::commands::paper_coolpapers_import,
                         crate::features::paper::catalog::commands::catalog_list_properties,
             crate::features::paper::catalog::commands::catalog_create_property,
             crate::features::paper::catalog::commands::catalog_update_property,
@@ -139,28 +138,10 @@ macro_rules! common_commands {
             crate::features::paper::catalog::commands::paper_set_page_counts,
             crate::features::paper::catalog::commands::paper_reading_activity_batch,
             crate::features::markdown::search::commands::vault_search,
-            crate::features::markdown::tables::commands::research_table_list,
-            crate::features::markdown::tables::commands::research_table_backlinks,
             crate::core::usage::commands::activity_record_events,
             crate::core::usage::commands::usage_clear,
             crate::app::logging::logs_clear,
-            crate::features::paper::discovery::feeds::commands::feeds_list,
-            crate::features::paper::discovery::feeds::commands::feeds_add,
-            crate::features::paper::discovery::feeds::commands::feeds_remove,
-            crate::features::paper::discovery::feeds::commands::feeds_rename,
-            crate::features::paper::discovery::feeds::commands::feeds_refresh,
-            crate::features::paper::discovery::feeds::commands::feeds_items,
-            crate::features::paper::discovery::feeds::commands::feeds_set_read,
-            crate::features::paper::discovery::feeds::commands::feeds_mark_imported,
-            crate::features::paper::discovery::pwc::commands::paper_pwc_import,
-            crate::features::paper::discovery::scratch::plaza_scratch_prepare,
-            crate::features::paper::discovery::scratch::plaza_scratch_stats,
-            crate::features::paper::discovery::scratch::plaza_scratch_clear,
-            crate::features::paper::discovery::feeds::commands::feeds_set_pinned,
-            crate::features::paper::discovery::feeds::commands::feeds_resolve_body,
-            crate::features::paper::discovery::recommend::commands::recommend_arxiv,
-            crate::features::paper::discovery::recommend::commands::recommend_arxiv_last,
-            crate::features::paper::discovery::recommend::commands::probe_embedding,
+            crate::features::paper::discovery::embedding_probe::probe_embedding,
             crate::app::menu::set_locale,
             crate::app::menu::set_menu_shortcut_recording,
             $($extra)*
@@ -170,7 +151,6 @@ macro_rules! common_commands {
 
 /// Attach the platform-appropriate invoke handler to the builder.
 pub fn attach_handlers(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
-    #[cfg(not(target_os = "ios"))]
     {
         builder.invoke_handler(common_commands![
             #[cfg(not(any(target_os = "ios", target_os = "android")))]
@@ -193,16 +173,6 @@ pub fn attach_handlers(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<ta
             crate::integration::plugins::plugin_unload,
             #[cfg(not(any(target_os = "ios", target_os = "android")))]
             crate::integration::plugins::plugin_run,
-            crate::integration::bridge::commands::bridge_start,
-            crate::integration::bridge::commands::bridge_stop,
-            crate::integration::bridge::commands::bridge_status,
-            crate::integration::bridge::commands::bridge_offer,
-            crate::integration::bridge::commands::bridge_pair_respond,
-            crate::integration::bridge::commands::bridge_devices,
-            crate::integration::bridge::commands::bridge_revoke_device,
-            crate::features::zhihu::commands::zhihu_probe,
-            crate::features::zhihu::commands::zhihu_search,
-            crate::features::zhihu::commands::zhihu_question_draft,
             crate::features::agent::commands::agent_run_tool_lifecycle,
             crate::features::agent::commands::agent_run_partial_uninstall,
             crate::features::agent::commands::agent_lifecycle_cancel,
@@ -216,26 +186,6 @@ pub fn attach_handlers(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<ta
             crate::features::agent::commands::agent_pi_project_trust_grant,
             crate::features::agent::commands::doctor_open_agent_login_terminal,
             crate::features::agent::commands::doctor_open_agent_cli_terminal,
-            crate::integration::remote::commands::remote_connect,
-            crate::integration::remote::commands::remote_ssh_config_hosts,
-            crate::integration::remote::commands::remote_disconnect,
-            crate::integration::remote::commands::remote_vault_ensure,
-            crate::integration::remote::commands::remote_list,
-            crate::integration::remote::commands::remote_read_text,
-            crate::integration::remote::commands::remote_write_text,
-            crate::integration::remote::commands::remote_mkdir,
-            crate::integration::remote::commands::remote_remove,
-            crate::integration::remote::commands::remote_write_bytes,
-            crate::integration::remote::commands::remote_paper_list,
-            crate::integration::remote::commands::remote_paper_get,
-            crate::integration::remote::commands::remote_paper_rescan,
-            crate::integration::remote::commands::remote_paper_set_tags,
-            crate::integration::remote::commands::remote_paper_set_is_read,
-            crate::integration::remote::commands::remote_cache_file,
-            crate::integration::remote::commands::remote_cache_clear,
-            crate::features::agent::commands::remote_agent_scan,
-            crate::features::agent::commands::remote_agent_probe,
-            crate::features::agent::commands::remote_agent_open_install_terminal,
             crate::app::terminal::commands::path_open_in_terminal,
             crate::app::terminal::commands::terminal_apps_probe,
             crate::app::window::commands::window_new,
@@ -245,18 +195,8 @@ pub fn attach_handlers(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<ta
             crate::features::paper::zotero::commands::zotero_scan,
             crate::features::paper::zotero::commands::zotero_migrate,
             crate::features::paper::zotero::sync::commands::zotero_sync,
-            crate::integration::sync::commands::sync_get_status,
-            crate::integration::sync::commands::sync_configure,
-            crate::integration::sync::commands::sync_disconnect,
-            crate::integration::sync::commands::sync_now,
-            crate::integration::sync::commands::sync_scope_sizes,
-            crate::integration::sync::commands::sync_cloud_usage,
             crate::features::vault::watcher::commands::fs_watch_start,
             crate::features::vault::watcher::commands::fs_watch_stop,
-            crate::integration::word::word_get_status,
-            crate::integration::word::word_set_enabled,
-            crate::integration::word::word_cancel,
-            crate::integration::word::word_submit,
             crate::integration::connector::commands::connector_get_status,
             crate::integration::connector::commands::connector_set_enabled,
             crate::integration::connector::commands::connector_set_vault,
@@ -274,7 +214,6 @@ pub fn attach_handlers(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<ta
             crate::app::open_request::commands::vault_open_take_pending,
             crate::app::open_request::commands::ui_request_take_pending,
             #[cfg(not(any(target_os = "ios", target_os = "android")))]
-            crate::features::system::updater::app_update_check,
             crate::features::cli_install::commands::cli_install_status,
             crate::features::cli_install::commands::cli_install_command,
             crate::features::cli_install::commands::cli_uninstall_command,
@@ -293,16 +232,6 @@ pub fn attach_handlers(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<ta
             crate::features::jobs::commands::job_jev_smart_highlights_enqueue,
             #[cfg(not(any(target_os = "ios", target_os = "android")))]
             crate::features::jev::commands::jev_probe_health,
-        ])
-    }
-    #[cfg(target_os = "ios")]
-    {
-        builder.invoke_handler(common_commands![
-            crate::integration::bridge::client_commands::bridge_connect,
-            crate::integration::bridge::client_commands::bridge_resume,
-            crate::integration::bridge::client_commands::bridge_disconnect,
-            crate::integration::bridge::client_commands::bridge_status,
-            crate::integration::bridge::client_commands::bridge_rpc,
         ])
     }
 }

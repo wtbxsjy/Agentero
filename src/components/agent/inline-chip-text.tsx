@@ -11,7 +11,6 @@ import {
 	mentionChipLabel,
 	parseInlineTokenParts,
 } from "@/lib/agent/composer-inline-tokens";
-import { isPlazaMentionPath } from "@/lib/agent/plaza-mention";
 import { cn } from "@/lib/core/utils";
 
 const CHIP_CLASS =
@@ -71,10 +70,7 @@ export function InlineChipText({
 		}
 		if (part.type === "mention") {
 			const label = mentionChipLabel(part.path);
-			const open =
-				onOpenPath && !isPlazaMentionPath(part.path)
-					? () => onOpenPath(part.path)
-					: undefined;
+			const open = onOpenPath ? () => onOpenPath(part.path) : undefined;
 			nodes.push(
 				<ChipShell
 					key={key}

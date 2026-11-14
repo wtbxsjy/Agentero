@@ -4,7 +4,6 @@ import {
 	type LucideIcon,
 	Settings2,
 	SquareTerminal,
-	Table,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -21,7 +20,6 @@ import {
 import type { PaperMetadata } from "@/lib/paper";
 import { paperDirFromPath } from "@/lib/paper/detect";
 import { editablePaperTags } from "@/lib/paper/tags";
-import { isResearchTablePath } from "@/lib/research-table/model";
 import { filterByFuzzy } from "@/lib/shell/commands/match";
 import { listCommands } from "@/lib/shell/commands/registry";
 import {
@@ -381,11 +379,7 @@ export function CommandPalette({
 											value={`hit:${hit.path}`}
 											onSelect={() => chooseHit(hit)}
 										>
-											{isResearchTablePath(hit.path) ? (
-												<Table className="text-muted-foreground" />
-											) : (
-												<FileText className="text-muted-foreground" />
-											)}
+											<FileText className="text-muted-foreground" />
 											<div className="flex min-w-0 flex-col">
 												<span className="truncate">{hit.title}</span>
 												<span className="truncate text-muted-foreground text-xs">

@@ -14,7 +14,6 @@ import {
 	sortFileTreeNodes,
 } from "@/lib/paper";
 import { LIBRARY_VIRTUAL_PATH } from "@/lib/paper/api";
-import { PLAZA_VIRTUAL_PATH, visiblePlazaSources } from "@/lib/plaza";
 import type { FileNode } from "@/lib/vault";
 import {
 	agentTreeHighlightPath,
@@ -208,16 +207,12 @@ export function useTreeRows({
 	expanded,
 	createDraft,
 	vaultPath,
-	plazaEnabled,
-	plazaHiddenSources,
 	zoteroCollectionReferences,
 }: {
 	displayNodes: FileNode[];
 	expanded: ReadonlySet<string>;
 	createDraft: TreeCreateDraft | null;
 	vaultPath: string | null;
-	plazaEnabled: boolean;
-	plazaHiddenSources: readonly string[];
 	zoteroCollectionReferences: ReadonlyMap<string, ZoteroCollectionReference[]>;
 }): TreeRows {
 	const selectableOrder = useMemo(() => {
@@ -240,21 +235,9 @@ export function useTreeRows({
 	}, [displayNodes, expanded, zoteroCollectionReferences]);
 
 	const flatRows = useMemo<FlatRow[]>(() => {
-		// Virtual rows sit at the top: Recycle Bin, then 广场 + its sources.
-		// The library has no virtual row — the `papers/` folder row represents it.
+		// The Recycle Bin virtual row sits at the top. The library has no
+		// virtual row — the `papers/` folder row represents it.
 		const out: FlatRow[] = [{ key: "__trash__", kind: "trash" }];
-		if (plazaEnabled) {
-			out.push({ key: "__plaza__", kind: "plaza" });
-			if (expanded.has(PLAZA_VIRTUAL_PATH)) {
-				for (const source of visiblePlazaSources(plazaHiddenSources)) {
-					out.push({
-						key: `__plaza__${source.id}`,
-						kind: "plazaSource",
-						source,
-					});
-				}
-			}
-		}
 		const draftAt = (parent: string) =>
 			Boolean(
 				createDraft && pathKey(createDraft.parentPath) === pathKey(parent),
@@ -308,8 +291,6 @@ export function useTreeRows({
 		expanded,
 		createDraft,
 		vaultPath,
-		plazaEnabled,
-		plazaHiddenSources,
 		zoteroCollectionReferences,
 	]);
 

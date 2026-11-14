@@ -332,13 +332,6 @@ export const commands = {
 	 *  A paper that cannot be resolved returns `found: false` and writes nothing.
 	 */
 	paperCoolpapersNotes: (args: CoolPapersNotesArgs) => typedError<ApiResult<CoolPapersNotes>, string>(__TAURI_INVOKE("paper_coolpapers_notes", { args })),
-	/**
-	 *  Import one papers.cool row straight from its page metadata.
-	 * 
-	 *  Bypasses the Translator: the page's `citation_*` fields cover every branch
-	 *  papers.cool aggregates and also carry the PDF URL.
-	 */
-	paperCoolpapersImport: (args: CoolPapersImportArgs) => typedError<ApiResult<PaperCommitResult>, string>(__TAURI_INVOKE("paper_coolpapers_import", { args })),
 	catalogListProperties: (args: CatalogListPropertiesArgs) => __TAURI_INVOKE<ApiResult<CustomProperty_Serialize[]>>("catalog_list_properties", { args }),
 	catalogCreateProperty: (args: CatalogCreatePropertyArgs_Deserialize) => __TAURI_INVOKE<ApiResult<CustomProperty_Serialize>>("catalog_create_property", { args }),
 	catalogUpdateProperty: (args: CatalogUpdatePropertyArgs_Deserialize) => __TAURI_INVOKE<ApiResult<CustomProperty_Serialize>>("catalog_update_property", { args }),
@@ -417,42 +410,10 @@ export const commands = {
 	 *  run on the main thread (Windows UI message pump).
 	 */
 	vaultSearch: (args: VaultSearchArgs) => __TAURI_INVOKE<ApiResult<VaultSearchResult_Serialize>>("vault_search", { args }),
-	/**
-	 *  Walk the vault for research tables. See `research_table::lookup`.
-	 * 
-	 *  Async + `run_blocking`: the walk reads table files and must not run on the
-	 *  main thread (Windows UI message pump).
-	 */
-	researchTableList: (args: ResearchTableListArgs) => __TAURI_INVOKE<ApiResult<ResearchTableListResult_Serialize>>("research_table_list", { args }),
-	/**  Notes that embed a research table by path or id. */
-	researchTableBacklinks: (args: ResearchTableBacklinkArgs) => __TAURI_INVOKE<ApiResult<ResearchTableBacklinkResult>>("research_table_backlinks", { args }),
 	activityRecordEvents: (args: ActivityRecordArgs) => typedError<ApiResult<number>, string>(__TAURI_INVOKE("activity_record_events", { args })),
 	usageClear: (args: UsageClearArgs) => __TAURI_INVOKE<ApiResult<number>>("usage_clear", { args }),
 	feedbackSubmit: (args: FeedbackSubmitArgs) => __TAURI_INVOKE<ApiResult<null>>("feedback_submit", { args }),
 	logsClear: () => __TAURI_INVOKE<ApiResult<number>>("logs_clear"),
-	feedsList: () => __TAURI_INVOKE<ApiResult<FeedList>>("feeds_list"),
-	feedsAdd: (args: FeedsAddArgs) => __TAURI_INVOKE<ApiResult<FeedSub>>("feeds_add", { args }),
-	feedsRemove: (args: FeedsIdArgs) => __TAURI_INVOKE<ApiResult<null>>("feeds_remove", { args }),
-	feedsRename: (args: FeedsRenameArgs) => __TAURI_INVOKE<ApiResult<FeedSub>>("feeds_rename", { args }),
-	feedsRefresh: (args: FeedsRefreshArgs) => __TAURI_INVOKE<ApiResult<FeedRefreshResult>>("feeds_refresh", { args }),
-	feedsItems: (args: FeedsItemsArgs) => __TAURI_INVOKE<ApiResult<FeedItemsPage>>("feeds_items", { args }),
-	feedsSetRead: (args: FeedsSetReadArgs) => __TAURI_INVOKE<ApiResult<FeedItem>>("feeds_set_read", { args }),
-	feedsMarkImported: (args: FeedsIdArgs) => __TAURI_INVOKE<ApiResult<FeedItem>>("feeds_mark_imported", { args }),
-	paperPwcImport: (args: PwcImportArgs) => typedError<ApiResult<PaperCommitResult>, string>(__TAURI_INVOKE("paper_pwc_import", { args })),
-	plazaScratchPrepare: (args: PlazaScratchPrepareArgs) => __TAURI_INVOKE<ApiResult<PlazaScratchEntry[]>>("plaza_scratch_prepare", { args }),
-	plazaScratchStats: () => __TAURI_INVOKE<ApiResult<ScratchStats>>("plaza_scratch_stats"),
-	plazaScratchClear: () => __TAURI_INVOKE<ApiResult<ScratchClearResult>>("plaza_scratch_clear"),
-	feedsSetPinned: (args: FeedsSetPinnedArgs) => __TAURI_INVOKE<ApiResult<FeedSub>>("feeds_set_pinned", { args }),
-	feedsResolveBody: (args: FeedsIdArgs) => __TAURI_INVOKE<ApiResult<FeedItem>>("feeds_resolve_body", { args }),
-	/**
-	 *  Rank today's arXiv papers against the Vault library.
-	 * 
-	 *  Reuses the stored same-day run unless `force` is set, so the vault-open
-	 *  prewarm and repeated page opens stay free.
-	 */
-	recommendArxiv: (args: RecommendArxivArgs) => __TAURI_INVOKE<ApiResult<RecommendResult>>("recommend_arxiv", { args }),
-	/**  Stored recommendation run, if any — lets the page render before refreshing. */
-	recommendArxivLast: (args: RecommendArxivLastArgs) => __TAURI_INVOKE<ApiResult<RecommendResult | null>>("recommend_arxiv_last", { args }),
 	/**
 	 *  Liveness check for the user's configured embedding endpoint.
 	 * 
@@ -479,13 +440,6 @@ export const commands = {
 	pluginDevLoad: (directory: string, vaultPath: string) => typedError<DevelopmentPluginInfo, string>(__TAURI_INVOKE("plugin_dev_load", { directory, vaultPath })),
 	pluginUnload: (instanceId: string | null) => __TAURI_INVOKE<void>("plugin_unload", { instanceId }),
 	pluginRun: (instanceId: string, commandId: string, context: DevelopmentPluginContext) => typedError<string, string>(__TAURI_INVOKE("plugin_run", { instanceId, commandId, context })),
-	bridgeStart: (args: BridgeStartArgs) => __TAURI_INVOKE<ApiResult<BridgeStatus>>("bridge_start", { args }),
-	bridgeStop: () => __TAURI_INVOKE<ApiResult<null>>("bridge_stop"),
-	bridgeStatus: () => __TAURI_INVOKE<ApiResult<BridgeStatus>>("bridge_status"),
-	bridgeOffer: () => __TAURI_INVOKE<ApiResult<BridgeOfferResult>>("bridge_offer"),
-	bridgePairRespond: (requestId: string, allowed: boolean) => __TAURI_INVOKE<ApiResult<boolean>>("bridge_pair_respond", { requestId, allowed }),
-	bridgeDevices: () => __TAURI_INVOKE<ApiResult<BridgeDevice[]>>("bridge_devices"),
-	bridgeRevokeDevice: (deviceId: string) => __TAURI_INVOKE<ApiResult<boolean>>("bridge_revoke_device", { deviceId }),
 	/**
 	 *  Silently install, update or uninstall a catalog Agent CLI (and ACP adapter
 	 *  when needed). Uninstall also removes the registry entry on success.
@@ -514,23 +468,6 @@ export const commands = {
 	 *  managed dirs); null when the template has no managed uninstall.
 	 */
 	agentToolUninstallInfo: (templateId: string) => __TAURI_INVOKE<ApiResult<UninstallInfo | null>>("agent_tool_uninstall_info", { templateId }),
-	/**
-	 *  探测已配置的知乎 Access Secret：发起一次最小检索，成功即视为可用。
-	 *  未配置或请求失败返回 false。
-	 */
-	zhihuProbe: () => __TAURI_INVOKE<ApiResult<boolean>>("zhihu_probe"),
-	/**
-	 *  按标题 / 关键词检索知乎内容，供知乎 Agent 空态的推荐卡片使用。
-	 *  只返回相关度达标的条目（`RankingScore ≥ SEARCH_SCORE_FLOOR`）；未配置凭证返回
-	 *  `zhihuNoSecret` 域错误，其余失败原样透传。
-	 */
-	zhihuSearch: (query: string, count: number | null) => __TAURI_INVOKE<ApiResult<ZhihuSearchItem[]>>("zhihu_search", { query, count }),
-	/**
-	 *  生成知乎提问草稿：标题优先用直答译成中文（未配凭证/失败时回退原标题），
-	 *  正文为论文信息 + 摘要。桌面端无法像扩展那样直接填知乎提问弹窗，前端拿到草稿后
-	 *  复制到剪贴板并打开知乎。
-	 */
-	zhihuQuestionDraft: (input: QuestionDraftInput) => __TAURI_INVOKE<ApiResult<ZhihuQuestionDraft>>("zhihu_question_draft", { input }),
 	agentRunOnce: (request: RunOnceRequest_Deserialize) => typedError<ApiResult<RunOnceAccepted>, string>(__TAURI_INVOKE("agent_run_once", { request })),
 	/**  List ACP sessions for an agent via `session/list`. */
 	agentListSessions: (agentId: string | null, vaultPath: string | null, cursor: string | null) => typedError<ApiResult<AcpListSessionsResult_Serialize>, string>(__TAURI_INVOKE("agent_list_sessions", { agentId, vaultPath, cursor })),
@@ -556,37 +493,6 @@ export const commands = {
 	 *  them on the next turn too.
 	 */
 	agentPiProjectTrustGrant: (agentId: string, vaultPath: string) => __TAURI_INVOKE<ApiResult<PiProjectTrustStatus>>("agent_pi_project_trust_grant", { agentId, vaultPath }),
-	remoteConnect: (args: RemoteConnectArgs) => typedError<ApiResult<RemoteSessionInfo>, string>(__TAURI_INVOKE("remote_connect", { args })),
-	/**  Host entries from `~/.ssh/config` for the connect dialog's suggestions (#339). */
-	remoteSshConfigHosts: () => typedError<ApiResult<SshConfigHost_Serialize[]>, string>(__TAURI_INVOKE("remote_ssh_config_hosts")),
-	remoteDisconnect: (args: RemoteSessionArgs) => typedError<ApiResult<null>, string>(__TAURI_INVOKE("remote_disconnect", { args })),
-	/**
-	 *  Seed bundled content and safely update untouched first-party skills in a
-	 *  remote vault without overwriting user files.
-	 */
-	remoteVaultEnsure: (args: RemoteSessionArgs) => typedError<ApiResult<CreateVaultResult>, string>(__TAURI_INVOKE("remote_vault_ensure", { args })),
-	remoteList: (args: RemotePathArgs) => typedError<ApiResult<FsDirEntry[]>, string>(__TAURI_INVOKE("remote_list", { args })),
-	remoteReadText: (args: RemotePathArgs) => typedError<ApiResult<string>, string>(__TAURI_INVOKE("remote_read_text", { args })),
-	remoteWriteText: (args: RemoteWriteTextArgs) => typedError<ApiResult<null>, string>(__TAURI_INVOKE("remote_write_text", { args })),
-	remoteMkdir: (args: RemotePathArgs) => typedError<ApiResult<null>, string>(__TAURI_INVOKE("remote_mkdir", { args })),
-	remoteRemove: (args: RemoteRemoveArgs) => typedError<ApiResult<null>, string>(__TAURI_INVOKE("remote_remove", { args })),
-	remoteWriteBytes: (args: RemoteWriteBytesArgs) => typedError<ApiResult<null>, string>(__TAURI_INVOKE("remote_write_bytes", { args })),
-	remotePaperList: (args: RemoteSessionArgs) => typedError<ApiResult<PaperRecord_Serialize[]>, string>(__TAURI_INVOKE("remote_paper_list", { args })),
-	remotePaperGet: (args: RemotePaperGetArgs) => typedError<ApiResult<PaperRecord_Serialize>, string>(__TAURI_INVOKE("remote_paper_get", { args })),
-	remotePaperRescan: (args: RemoteSessionArgs) => typedError<ApiResult<RemotePaperRescanResult>, string>(__TAURI_INVOKE("remote_paper_rescan", { args })),
-	remotePaperSetTags: (args: RemotePaperSetTagsArgs) => typedError<ApiResult<PaperRecord_Serialize>, string>(__TAURI_INVOKE("remote_paper_set_tags", { args })),
-	remotePaperSetIsRead: (args: RemotePaperSetIsReadArgs) => typedError<ApiResult<PaperRecord_Serialize>, string>(__TAURI_INVOKE("remote_paper_set_is_read", { args })),
-	remoteCacheFile: (args: RemoteCacheFileArgs) => typedError<ApiResult<RemoteCacheFileResult>, string>(__TAURI_INVOKE("remote_cache_file", { args })),
-	remoteCacheClear: (args: RemoteCacheClearArgs) => typedError<ApiResult<RemoteCacheClearResult>, string>(__TAURI_INVOKE("remote_cache_clear", { args })),
-	/**  Catalog-style scan of common agents on the remote host (`command -v`). */
-	remoteAgentScan: (args: RemoteAgentScanArgs) => typedError<ApiResult<RemoteAgentScanResponse_Serialize>, string>(__TAURI_INVOKE("remote_agent_scan", { args })),
-	/**  ACP initialize probe for one catalog template on the remote vault host. */
-	remoteAgentProbe: (args: RemoteAgentProbeArgs) => typedError<ApiResult<ProbeResult_Serialize>, string>(__TAURI_INVOKE("remote_agent_probe", { args })),
-	/**
-	 *  Open a local terminal that SSHes into the remote host and runs the template's
-	 *  install command after the user presses Enter (same confirm UX as local install).
-	 */
-	remoteAgentOpenInstallTerminal: (args: RemoteAgentInstallArgs) => typedError<ApiResult<Json>, string>(__TAURI_INVOKE("remote_agent_open_install_terminal", { args })),
 	/**
 	 *  Open the preferred terminal (or the system default when unset/unavailable)
 	 *  at `path`. Directories open as themselves; files open their parent directory.
@@ -640,20 +546,6 @@ export const commands = {
 	 *  is `Send` and keeps streaming from the blocking pool.
 	 */
 	zoteroSync: (args: ZoteroSyncArgs, onProgress: Channel<SyncProgress>) => __TAURI_INVOKE<ApiResult<ZoteroSyncResult>>("zotero_sync", { args, onProgress }),
-	/**  Current sync binding + last-pass info for the settings pane. */
-	syncGetStatus: (args: SyncVaultArgs) => typedError<ApiResult<SyncStatus_Serialize>, string>(__TAURI_INVOKE("sync_get_status", { args })),
-	/**  Validate + connection-test + persist the S3 binding for a vault. */
-	syncConfigure: (args: SyncConfigureArgs) => typedError<ApiResult<SyncStatus_Serialize>, string>(__TAURI_INVOKE("sync_configure", { args })),
-	/**  Remove the binding and local sync state (remote data stays untouched). */
-	syncDisconnect: (args: SyncVaultArgs) => typedError<ApiResult<null>, string>(__TAURI_INVOKE("sync_disconnect", { args })),
-	/**  One full sync pass (manual trigger from the settings pane). */
-	syncNow: (args: SyncVaultArgs) => typedError<ApiResult<SyncOutcome>, string>(__TAURI_INVOKE("sync_now", { args })),
-	syncScopeSizes: (args: SyncVaultArgs) => typedError<ApiResult<SyncScopeSizes>, string>(__TAURI_INVOKE("sync_scope_sizes", { args })),
-	/**
-	 *  Used and included bytes for the signed-in personal or team space.
-	 *  The bearer stays in the keychain; the webview only sees the numbers.
-	 */
-	syncCloudUsage: (args: SyncCloudUsageArgs) => typedError<ApiResult<SyncCloudUsage>, string>(__TAURI_INVOKE("sync_cloud_usage", { args })),
 	/**
 	 *  Start (or restart) watching `vault_path` for this window. Emits
 	 *  `vault:file-changed` to this window when files change on disk.
@@ -661,10 +553,6 @@ export const commands = {
 	fsWatchStart: (vaultPath: string) => typedError<null, string>(__TAURI_INVOKE("fs_watch_start", { vaultPath })),
 	/**  Stop watching for this window (no-op if not watching). */
 	fsWatchStop: () => typedError<null, string>(__TAURI_INVOKE("fs_watch_stop")),
-	wordGetStatus: () => __TAURI_INVOKE<WordStatus>("word_get_status"),
-	wordSetEnabled: (enabled: boolean) => typedError<WordStatus, string>(__TAURI_INVOKE("word_set_enabled", { enabled })),
-	wordCancel: (requestId: string) => typedError<null, string>(__TAURI_INVOKE("word_cancel", { requestId })),
-	wordSubmit: (args: WordSubmit) => typedError<null, string>(__TAURI_INVOKE("word_submit", { args })),
 	connectorGetStatus: () => __TAURI_INVOKE<ApiResult<ConnectorStatus>>("connector_get_status"),
 	connectorSetEnabled: (args: ConnectorSetEnabledArgs) => typedError<ApiResult<ConnectorStatus>, string>(__TAURI_INVOKE("connector_set_enabled", { args })),
 	connectorSetVault: (args: ConnectorSetVaultArgs) => __TAURI_INVOKE<ApiResult<null>>("connector_set_vault", { args }),
@@ -688,12 +576,6 @@ export const commands = {
 	vaultOpenTakePending: () => __TAURI_INVOKE<ApiResult<string | null>>("vault_open_take_pending"),
 	/**  Take the pending UI action request (startup race for `ui:request`). */
 	uiRequestTakePending: () => __TAURI_INVOKE<ApiResult<UiRequestPayload_Serialize | null>>("ui_request_take_pending"),
-	appUpdateCheck: (proxy: string | null, retryOnTimeout: boolean) => typedError<{
-	rid: number,
-	currentVersion: string,
-	version: string,
-	body: string | null,
-} | null, string>(__TAURI_INVOKE("app_update_check", { proxy, retryOnTimeout })),
 	cliInstallStatus: () => __TAURI_INVOKE<ApiResult<CliInstallStatus>>("cli_install_status"),
 	cliInstallCommand: () => __TAURI_INVOKE<ApiResult<CliInstallResult>>("cli_install_command"),
 	cliUninstallCommand: () => __TAURI_INVOKE<ApiResult<CliInstallResult>>("cli_uninstall_command"),
@@ -750,8 +632,6 @@ export const events = {
 	agentStream: makeEvent<AgentStreamEvt>("agent:stream"),
 	agentTool: makeEvent<AgentToolEvt_Deserialize>("agent:tool"),
 	agentUsage: makeEvent<AgentUsageEvt>("agent:usage"),
-	bridgeHostStatus: makeEvent<BridgeHostStatusEvent>("bridge:host-status"),
-	bridgePairRequest: makeEvent<BridgePairRequestEvent>("bridge:pair-request"),
 	connectorError: makeEvent<ConnectorErrorEvent>("connector:error"),
 	connectorItemSaved: makeEvent<ConnectorItemSavedEvent>("connector:item-saved"),
 	connectorProgress: makeEvent<ConnectorProgressEvent>("connector:progress"),
@@ -773,14 +653,11 @@ export const events = {
 	settingsChanged: makeEvent<SettingsChangedEvent_Deserialize>("settings:changed"),
 	settingsSectionRequested: makeEvent<SettingsSectionRequestedEvent>("settings:section-requested"),
 	settingsVaultRequested: makeEvent<SettingsVaultRequestedEvent>("settings:vault-requested"),
-	syncProgress: makeEvent<SyncProgressEvent>("sync:progress"),
-	syncState: makeEvent<SyncStateEvent_Deserialize>("sync:state"),
 	uiRequest: makeEvent<UiRequestEvent_Deserialize>("ui:request"),
 	vaultFileChanged: makeEvent<VaultFileChangedEvent_Deserialize>("vault:file-changed"),
 	vaultOpenError: makeEvent<VaultOpenErrorEvent>("vault:open-error"),
 	vaultOpenRequest: makeEvent<VaultOpenRequestEvent>("vault:open-request"),
 	windowClosed: makeEvent<WindowClosedEvent_Deserialize>("window:closed"),
-	wordChanged: makeEvent<WordChangedEvent>("word:changed"),
 };
 
 /* Types */
@@ -1463,12 +1340,7 @@ export type AgentTemplate = "opencode" |
  *  Tencent CodeBuddy Code CLI with native ACP (`codebuddy --acp`).
  *  Docs: https://www.codebuddy.ai/docs/cli/acp · npm package `@tencent-ai/codebuddy-code`
  */
-"codebuddy" | 
-/**
- *  内置「知乎」Agent：Host 内建，不 spawn 外部进程，直连知乎开放平台
- *  （直答 + 标题检索）。凭证来自 App settings。
- */
-"zhihu" | "custom";
+"codebuddy" | "custom";
 
 /**  ACP tool call create/update for UI (`Tool` element). */
 export type AgentToolEvent = AgentToolEvent_Serialize | AgentToolEvent_Deserialize;
@@ -1592,8 +1464,6 @@ export type AppSettings_Deserialize = {
 	shortcutOverrides?: { [key in string]: ShortcutBinding_Deserialize | null },
 	/**  EasyScholar key for journal ranking and impact-factor lookups. */
 	easyScholarKey?: string,
-	/**  知乎开放平台 Access Secret（内置「知乎」Agent 的直答 / 检索凭证）。 */
-	zhihuAccessSecret?: string,
 	networkProxyEnabled?: boolean,
 	networkProxyUrl?: string,
 	/**
@@ -1710,10 +1580,6 @@ export type AppSettings_Deserialize = {
 	layout?: LayoutSettings,
 	/**  PostHog product analytics opt-out (applies from the next launch). */
 	telemetryEnabled?: boolean,
-	/**  Plaza discovery sources in the sidebar. Default on. */
-	plazaEnabled?: boolean,
-	/**  Plaza source ids hidden from the sidebar / Plaza home (right-click toggle). */
-	plazaHiddenSources?: string[],
 	/**  First-run setup wizard completed. Default false → auto-show on fresh installs. */
 	onboardingDone?: boolean,
 	/**  Post-vault feature tour completed or skipped. Default false → auto-start once. */
@@ -1742,8 +1608,6 @@ export type AppSettings_Serialize = {
 	shortcutOverrides: { [key in string]: ShortcutBinding_Serialize | null },
 	/**  EasyScholar key for journal ranking and impact-factor lookups. */
 	easyScholarKey: string,
-	/**  知乎开放平台 Access Secret（内置「知乎」Agent 的直答 / 检索凭证）。 */
-	zhihuAccessSecret: string,
 	networkProxyEnabled: boolean,
 	networkProxyUrl: string,
 	/**
@@ -1863,10 +1727,6 @@ export type AppSettings_Serialize = {
 	layout: LayoutSettings,
 	/**  PostHog product analytics opt-out (applies from the next launch). */
 	telemetryEnabled: boolean,
-	/**  Plaza discovery sources in the sidebar. Default on. */
-	plazaEnabled: boolean,
-	/**  Plaza source ids hidden from the sidebar / Plaza home (right-click toggle). */
-	plazaHiddenSources: string[],
 	/**  First-run setup wizard completed. Default false → auto-show on fresh installs. */
 	onboardingDone: boolean,
 	/**  Post-vault feature tour completed or skipped. Default false → auto-start once. */
@@ -1876,13 +1736,6 @@ export type AppSettings_Serialize = {
 	 *  (`layout-local-model` | `network-proxy`). Unknown ids are dropped on save.
 	 */
 	dismissedReminders: string[],
-};
-
-export type AppUpdate = {
-	rid: number,
-	currentVersion: string,
-	version: string,
-	body: string | null,
 };
 
 export type AskUserOptionDto = AskUserOptionDto_Serialize | AskUserOptionDto_Deserialize;
@@ -2010,57 +1863,6 @@ export type Bbox = {
 	y: number | null,
 	w: number | null,
 	h: number | null,
-};
-
-/**  A client device that was manually approved by the desktop user. */
-export type BridgeDevice = {
-	deviceId: string,
-	name: string,
-	publicKeyB64: string,
-	pairedAt: string,
-	lastSeenAt: string | null,
-	revoked?: boolean,
-};
-
-/**  Desktop bridge host online flag (`bridge:host-status`, payload `bool`). */
-export type BridgeHostStatusEvent = boolean;
-
-/**
- *  QR payload. It intentionally carries no bearer token: desktop confirmation
- *  and a device signature turn a scanned offer into an approved pairing.
- */
-export type BridgeOffer = {
-	v: number,
-	serverId: string,
-	hostPublicKeyB64: string,
-	relay: RelayOffer,
-	hostName: string,
-	pin?: boolean,
-};
-
-export type BridgeOfferResult = {
-	offer: BridgeOffer,
-	url: string,
-};
-
-export type BridgePairRequestEvent = PairingRequest;
-
-export type BridgeStartArgs = {
-	vaultPath: string,
-	hostName: string,
-	relayEndpoint?: string | null,
-};
-
-export type BridgeStatus = {
-	enabled: boolean,
-	online: boolean,
-	serverId: string | null,
-	relayEndpoint: string,
-	hostName: string | null,
-	vaultPath: string | null,
-	activeConnections: number,
-	pendingPairings: PairingRequest[],
-	lastError: string | null,
 };
 
 /**  Non-secret snapshot for Host-side consumers resolving built-in credentials. */
@@ -2691,18 +2493,6 @@ export type ContextRequest_Serialize = {
 /**  Where the turn started. Quick Chat and the sidebar share one resolver. */
 export type ContextSurface = "quick_chat" | "sidebar";
 
-export type CoolPapersImportArgs = {
-	vaultPath: string,
-	/**  Vault-relative destination, e.g. `papers` or `papers/nlp`. */
-	parentDir: string,
-	/**  papers.cool branch (`arxiv` / `venue`). */
-	branch: string,
-	/**  Row id, e.g. `36962@AAAI`. */
-	id: string,
-	/**  Background task to report asset-download progress into. */
-	taskId?: string | null,
-};
-
 export type CoolPapersNotes = {
 	/**  False when the paper could not be resolved on papers.cool at all. */
 	found: boolean,
@@ -3105,89 +2895,11 @@ export type ExportFontPayload = {
 	bytesBase64: string,
 };
 
-export type FeedItem = {
-	id: string,
-	subscriptionId: string,
-	subscriptionTitle: string,
-	title: string,
-	url: string | null,
-	publishedAt: string | null,
-	summaryText: string,
-	contentHtml: string | null,
-	paperUrl: string | null,
-	importedAt: string | null,
-	readAt: string | null,
-	bodyMarkdown: string | null,
-};
-
-export type FeedItemsPage = {
-	items: FeedItem[],
-};
-
-export type FeedList = {
-	subscriptions: FeedSub[],
-};
-
-export type FeedRefreshResult = {
-	subscriptions: FeedSub[],
-	fetched: number,
-	failed: number,
-};
-
-export type FeedSub = {
-	id: string,
-	url: string,
-	title: string,
-	addedAt: string,
-	lastFetchedAt: string | null,
-	lastError: string | null,
-	itemCount: number,
-	pinned: boolean,
-	pinnedAt: string | null,
-};
-
 export type FeedbackSubmitArgs = {
 	category: string,
 	message: string,
 	contact?: string | null,
 	locale: string,
-};
-
-export type FeedsAddArgs = {
-	url: string,
-	title?: string | null,
-};
-
-export type FeedsIdArgs = {
-	id: string,
-};
-
-export type FeedsItemsArgs = {
-	subscriptionId?: string | null,
-	filter?: string | null,
-	limit?: number | null,
-	beforePublishedAt?: string | null,
-	beforeId?: string | null,
-};
-
-export type FeedsRefreshArgs = {
-	id?: string | null,
-	staleOnly?: boolean,
-};
-
-export type FeedsRenameArgs = {
-	id: string,
-	title: string,
-};
-
-export type FeedsSetPinnedArgs = {
-	id: string,
-	pinned: boolean,
-};
-
-export type FeedsSetReadArgs = {
-	id: string,
-	read: boolean,
 };
 
 /**  Payload for the `vault:file-changed` event (consumed by the renderer). */
@@ -3232,24 +2944,6 @@ export type FinderServiceStatus = {
 	/**  installed && baked-in bundle matches the current app bundle. */
 	current: boolean,
 	message: string | null,
-};
-
-/**  Capability flags so UI / business logic can degrade without guesswork. */
-export type FsCaps = {
-	atomicRename: boolean,
-	reliableWatch: boolean,
-	sqliteNative: boolean,
-	cheapRandomRead: boolean,
-	agentCwdLocal: boolean,
-	finderReveal: boolean,
-};
-
-export type FsDirEntry = {
-	name: string,
-	isDir: boolean,
-	isFile: boolean,
-	/**  Vault-relative path using `/`. */
-	path: string,
 };
 
 export type GraphApplyPathsArgs = {
@@ -4073,13 +3767,6 @@ export type OpenInTerminalResult = {
 	cwd: string,
 };
 
-export type PairingRequest = {
-	requestId: string,
-	deviceId: string,
-	deviceName: string,
-	verificationCode: string,
-};
-
 export type PaperAssetsReadyEvent = PaperFactPayload;
 
 /**
@@ -4090,23 +3777,6 @@ export type PaperAssetsStatus = {
 	pdf: boolean,
 	tex: boolean,
 	paperMd: boolean,
-};
-
-/**  Uniform result shape for every entry (camelCase matches the frontend). */
-export type PaperCommitResult = {
-	status: CommitStatus,
-	/**  Vault-relative paper folder. */
-	path: string,
-	id: string,
-	title: string,
-	/**  Absolute paper folder. */
-	paperDir: string,
-	pdf: boolean,
-	tex: boolean,
-	paperMd: boolean,
-	assetMessages: string[],
-	/**  True when assets are still downloading in the background (`Deferred`). */
-	assetsPending: boolean,
 };
 
 export type PaperCopyArgs = {
@@ -4645,19 +4315,6 @@ export type PiProjectTrustStatus = {
 	trusted: boolean,
 };
 
-/**  Per-id outcome: one failed paper never blocks the rest of the turn. */
-export type PlazaScratchEntry = {
-	arxivId: string,
-	ok: boolean,
-	markdownPath: string | null,
-	pdfPath: string | null,
-	error: string | null,
-};
-
-export type PlazaScratchPrepareArgs = {
-	arxivIds: string[],
-};
-
 export type PluginsChangedEvent = null;
 
 export type PluginsDataChangedEvent = string;
@@ -4724,28 +4381,6 @@ export type PropertyOption_Serialize = {
 	color?: string | null,
 };
 
-export type PwcImportArgs = {
-	vaultPath: string,
-	/**  Parent dir resolved by the renderer (`papers` or a paper group). */
-	parentDir: string,
-	/**  Numeric catalog id or arXiv id from the `/paper/<id>` URL. */
-	paperId: string,
-	taskId?: string | null,
-};
-
-/**  生成提问草稿所需的论文信息（均为公开元数据，前端从 catalog 取）。 */
-export type QuestionDraftInput = {
-	title: string,
-	authors?: string[],
-	venue?: string,
-	year?: string,
-	doi?: string,
-	arxivId?: string,
-	/**  论文主页链接；为空时按 DOI / arXiv 推导。 */
-	url?: string,
-	abstractText?: string,
-};
-
 /**
  *  Minimal activity point mirrored by `ReadingActivityPoint` in
  *  `src/lib/paper/reading-heatmap/types.ts`.
@@ -4765,205 +4400,6 @@ export type RebuildResult = {
 	indexedFiles: number,
 	edges: number,
 	nodes: number,
-};
-
-export type RecommendArxivArgs = {
-	vaultPath: string,
-	/**  Categories to fetch; falls back to the last run, then the defaults. */
-	categories?: string[] | null,
-	topN?: number | null,
-	/**  Recompute even when today's stored run covers the same categories. */
-	force?: boolean,
-};
-
-export type RecommendArxivLastArgs = {
-	vaultPath: string,
-};
-
-export type RecommendItem = {
-	arxivId: string,
-	title: string,
-	abstract: string,
-	url: string,
-	publishedAt: string | null,
-	score: number | null,
-};
-
-export type RecommendResult = {
-	items: RecommendItem[],
-	/**  RFC3339 timestamp of the run that produced `items`. */
-	computedAt: string,
-	categories: string[],
-	corpusSize: number,
-	/**  True when `items` came from the stored same-day run. */
-	reusedCache: boolean,
-};
-
-/**  Relay connection information embedded in a pairing offer. */
-export type RelayOffer = {
-	endpoint: string,
-};
-
-export type RemoteAgentInstallArgs = {
-	sessionId: string,
-	templateId: string,
-};
-
-export type RemoteAgentProbeArgs = {
-	sessionId: string,
-	templateId: string,
-};
-
-export type RemoteAgentScanArgs = {
-	sessionId: string,
-};
-
-export type RemoteAgentScanResponse = RemoteAgentScanResponse_Serialize | RemoteAgentScanResponse_Deserialize;
-
-export type RemoteAgentScanResponse_Deserialize = {
-	sessionId: string,
-	destination: string,
-	entries: CatalogEntry_Deserialize[],
-};
-
-export type RemoteAgentScanResponse_Serialize = {
-	sessionId: string,
-	destination: string,
-	entries: CatalogEntry_Serialize[],
-};
-
-export type RemoteCacheClearArgs = {
-	/**  When set, clear that session's blobs; otherwise all remote blob caches. */
-	sessionId?: string | null,
-};
-
-export type RemoteCacheClearResult = {
-	freedBytes: number,
-};
-
-/**  Ensure a remote PDF (or other file) is cached under the session blob dir; return local path. */
-export type RemoteCacheFileArgs = {
-	sessionId: string,
-	path: string,
-};
-
-export type RemoteCacheFileResult = {
-	/**  Absolute local path to cached bytes (ephemeral). */
-	localPath: string,
-};
-
-export type RemoteConnectArgs = {
-	/**  SSH host or config alias. Use `__local_sim__` with an absolute local path for tests. */
-	host: string,
-	user?: string | null,
-	remotePath: string,
-};
-
-export type RemotePaperGetArgs = {
-	sessionId: string,
-	path?: string | null,
-	id?: string | null,
-};
-
-export type RemotePaperRescanResult = {
-	count: number,
-};
-
-export type RemotePaperSetIsReadArgs = {
-	sessionId: string,
-	path: string,
-	isRead: boolean,
-};
-
-export type RemotePaperSetTagsArgs = {
-	sessionId: string,
-	path: string,
-	tags: PaperTag[],
-};
-
-export type RemotePathArgs = {
-	sessionId: string,
-	path?: string,
-};
-
-export type RemoteRemoveArgs = {
-	sessionId: string,
-	path: string,
-	recursive?: boolean,
-};
-
-export type RemoteSessionArgs = {
-	sessionId: string,
-	locale?: string | null,
-};
-
-export type RemoteSessionInfo = {
-	sessionId: string,
-	kind: string,
-	displayName: string,
-	host: string,
-	remotePath: string,
-	caps: FsCaps,
-	/**  Pseudo vault path for frontend: `remote:<sessionId>` */
-	vaultHandle: string,
-};
-
-export type RemoteWriteBytesArgs = {
-	sessionId: string,
-	path: string,
-	data: number[],
-};
-
-export type RemoteWriteTextArgs = {
-	sessionId: string,
-	path: string,
-	content: string,
-};
-
-export type ResearchTableBacklink = {
-	path: string,
-};
-
-export type ResearchTableBacklinkArgs = {
-	vaultPath: string,
-	path: string,
-	id?: string | null,
-};
-
-export type ResearchTableBacklinkResult = {
-	notes: ResearchTableBacklink[],
-};
-
-export type ResearchTableListArgs = {
-	vaultPath: string,
-};
-
-export type ResearchTableListResult = ResearchTableListResult_Serialize | ResearchTableListResult_Deserialize;
-
-export type ResearchTableListResult_Deserialize = {
-	tables: ResearchTableSummary_Deserialize[],
-	truncated: boolean,
-};
-
-export type ResearchTableListResult_Serialize = {
-	tables: ResearchTableSummary_Serialize[],
-	truncated: boolean,
-};
-
-export type ResearchTableSummary = ResearchTableSummary_Serialize | ResearchTableSummary_Deserialize;
-
-export type ResearchTableSummary_Deserialize = {
-	path: string,
-	id: string,
-	name: string,
-	idPrefix: string | null,
-};
-
-export type ResearchTableSummary_Serialize = {
-	path: string,
-	id: string,
-	name: string,
-	idPrefix?: string | null,
 };
 
 /**  A parsed occurrence enriched with one deterministic resolution result. */
@@ -5127,15 +4563,6 @@ export type RunOnceRequest_Serialize = {
 	resumeTranscript?: string | null,
 };
 
-export type ScratchClearResult = {
-	freedBytes: number,
-};
-
-export type ScratchStats = {
-	papers: number,
-	bytes: number,
-};
-
 export type SearchHit = SearchHit_Serialize | SearchHit_Deserialize;
 
 export type SearchHit_Deserialize = {
@@ -5264,22 +4691,6 @@ export type SourceRange = {
 	end: number,
 };
 
-export type SshConfigHost = SshConfigHost_Serialize | SshConfigHost_Deserialize;
-
-export type SshConfigHost_Deserialize = {
-	alias: string,
-	user: string | null,
-	hostname: string | null,
-	port: number | null,
-};
-
-export type SshConfigHost_Serialize = {
-	alias: string,
-	user?: string | null,
-	hostname?: string | null,
-	port?: number | null,
-};
-
 /**  Stage a dropped PDF (path-less WKWebView drop) into `~/.agentero/import-tmp/`. */
 export type StageImportFileArgs = {
 	/**  Original filename (used for stem + safe on-disk name). */
@@ -5293,92 +4704,6 @@ export type StageImportFileResult = {
 	path: string,
 };
 
-export type SyncBackendConfig = {
-	/**  Backend discriminator; S3 fields or WebDAV fields apply accordingly. */
-	backend?: SyncBackendKind,
-	/**  S3-compatible endpoint, e.g. `https://<account>.r2.cloudflarestorage.com`. */
-	endpoint?: string,
-	region?: string,
-	bucket?: string,
-	/**  Optional key prefix inside the bucket (multiple vaults per bucket). */
-	prefix?: string,
-	accessKey?: string,
-	secretKey?: string,
-	/**
-	 *  `{endpoint}/{bucket}/key` instead of `{bucket}.{endpoint}/key`.
-	 *  Path style works with R2 / MinIO / AWS alike, so it is the default.
-	 */
-	forcePathStyle?: boolean,
-	/**  WebDAV server directory, e.g. `https://dav.jianguoyun.com/dav/agentero/`. */
-	webdavUrl?: string,
-	webdavUsername?: string,
-	/**  Masked (`*`) on the way to the WebView, like the S3 secret key. */
-	webdavPassword?: string,
-	/**
-	 *  Git remote URL or local path. Credentials are never stored here; the
-	 *  system credential helper / SSH agent is used.
-	 */
-	gitRemote?: string,
-	/**
-	 *  Branch to sync. Defaults to `main`; the vault's current branch must
-	 *  already match when it is an existing repository.
-	 */
-	gitBranch?: string,
-	/**  `user` or `organization`. Official cloud only. */
-	agenteroSubject?: string,
-	/**  Organization id when [`Self::agentero_subject`] is `organization`. */
-	agenteroOrgId?: string,
-	/**  API origin, for example `https://api.agentero.app`. No trailing slash. */
-	agenteroApi?: string,
-	/**
-	 *  Automatic background sync: once on scheduler start (vault open), after
-	 *  30s of vault quiet, and every `interval_minutes`.
-	 */
-	autoSync?: boolean,
-	intervalMinutes?: number,
-	/**
-	 *  Connection-test probe result: `false` for backends whose PUT rejects
-	 *  or ignores conditional headers (e.g. Aliyun OSS 400 NotImplemented,
-	 *  most WebDAV servers). Sync then degrades to plain PUTs.
-	 */
-	conditionalWrites?: boolean,
-	/**
-	 *  Which bulky paper assets (PDF / LaTeX source / attachments) take part
-	 *  in sync. Notes, sidecars and marks always sync. Default: everything.
-	 */
-	scope?: SyncScope,
-};
-
-/**
- *  Which remote storage backend a vault syncs through. Legacy `sync.json`
- *  entries without the field deserialize as [`SyncBackendKind::S3`].
- */
-export type SyncBackendKind = "s3" | "webdav" | "git" | 
-/**
- *  Official Agentero cloud. The login token is attached at sync time and
- *  is never written to `sync.json`.
- */
-"agentero";
-
-export type SyncCloudUsage = {
-	signedIn: boolean,
-	used: number,
-	limit: number,
-	tier: string,
-	planKey: string,
-};
-
-export type SyncCloudUsageArgs = {
-	/**  `user` or `organization`. */
-	subject: string,
-	orgId: string | null,
-};
-
-export type SyncConfigureArgs = {
-	vaultPath: string,
-	config: SyncBackendConfig,
-};
-
 /**
  *  One paper where both sides changed since the last sync; notes pull is
  *  skipped for it and the user decides.
@@ -5389,100 +4714,11 @@ export type SyncConflict = {
 	reason: string,
 };
 
-export type SyncOutcome = {
-	version: number,
-	uploaded: number,
-	downloaded: number,
-	deletedLocal: number,
-	removedRemote: number,
-	conflictCopies: string[],
-};
-
 /**  Progress event streamed to the UI while a sync runs. */
 export type SyncProgress = {
 	current: number,
 	total: number,
 	phase: string,
-};
-
-/**
- *  Owned mirror of the private borrowed `SyncProgressEvent` in
- *  `integration::sync::commands`.
- */
-export type SyncProgressEvent = {
-	vaultPath: string,
-	phase: string,
-	current: number,
-	total: number,
-};
-
-/**
- *  Which bulky, re-derivable paper assets participate in sync. Notes,
- *  sidecars, marks and embedded images always sync — they are small and not
- *  recoverable from any upstream source.
- */
-export type SyncScope = {
-	/**  Paper-root PDFs: `papers/<id>/<id>.pdf`. */
-	pdf?: boolean,
-	/**  LaTeX / e-print trees: `papers/<id>/source/`. */
-	source?: boolean,
-	/**  Supplementary material: `papers/<id>/attachments/`. */
-	attachments?: boolean,
-};
-
-/**  Local disk usage per bulky-asset category (bytes), for the sync-scope UI. */
-export type SyncScopeSizes = {
-	pdf: number,
-	source: number,
-	attachments: number,
-};
-
-/**
- *  Owned mirror of the private borrowed `SyncStateEvent` in
- *  `integration::sync::commands`.
- */
-export type SyncStateEvent = SyncStateEvent_Serialize | SyncStateEvent_Deserialize;
-
-/**
- *  Owned mirror of the private borrowed `SyncStateEvent` in
- *  `integration::sync::commands`.
- */
-export type SyncStateEvent_Deserialize = {
-	vaultPath: string,
-	status: string,
-	error?: string | null,
-};
-
-/**
- *  Owned mirror of the private borrowed `SyncStateEvent` in
- *  `integration::sync::commands`.
- */
-export type SyncStateEvent_Serialize = {
-	vaultPath: string,
-	status: string,
-	error?: string | null,
-};
-
-export type SyncStatus = SyncStatus_Serialize | SyncStatus_Deserialize;
-
-export type SyncStatus_Deserialize = {
-	configured: boolean,
-	config: SyncBackendConfig | null,
-	running: boolean,
-	lastSyncAt: string | null,
-	lastVersion: number,
-};
-
-export type SyncStatus_Serialize = {
-	configured: boolean,
-	config?: SyncBackendConfig | null,
-	running: boolean,
-	lastSyncAt?: string | null,
-	lastVersion: number,
-};
-
-export type SyncVaultArgs = {
-	vaultPath: string,
 };
 
 /**  One row in Settings. `name` is a brand name shown verbatim. */
@@ -6285,59 +5521,6 @@ export type WindowClosedEvent_Deserialize = {
 export type WindowClosedEvent_Serialize = {
 	kind: string,
 	view?: string | null,
-};
-
-export type WordChangedEvent = null;
-
-export type WordPaper = {
-	id: string,
-	title: string,
-	authors: string[],
-	year: number | null,
-};
-
-export type WordRequest = {
-	id: string,
-	command: string,
-	document: string,
-	papers: WordPaper[],
-	selected: string[],
-	locator: string,
-	style: string,
-};
-
-export type WordStatus = {
-	supported: boolean,
-	enabled: boolean,
-	busy: boolean,
-	pending: WordRequest | null,
-	error: string | null,
-};
-
-export type WordSubmit = {
-	requestId: string,
-	selected: string[],
-	locator: string,
-	style: string,
-};
-
-/**  交给用户发布（或复制到剪贴板）的知乎提问草稿。 */
-export type ZhihuQuestionDraft = {
-	title: string,
-	body: string,
-};
-
-/**  检索结果条目（对齐开放平台 `zhihu_search` 的字段）。 */
-export type ZhihuSearchItem = {
-	/**  `answer` | `article` */
-	kind: string,
-	title: string,
-	url: string,
-	excerpt: string,
-	author: string,
-	votes: number,
-	/**  开放平台的 `RankingScore`。 */
-	score: number | null,
 };
 
 /**  A Zotero collection surfaced in the scan preview (for the folder picker). */

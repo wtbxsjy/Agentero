@@ -1,6 +1,5 @@
 import {
 	Bot,
-	CloudUpload,
 	Compass,
 	FlaskConical,
 	Info,
@@ -10,7 +9,6 @@ import {
 	Paintbrush,
 	Puzzle,
 	SlidersHorizontal,
-	Smartphone,
 	Stethoscope,
 	UserRound,
 	Wand2,
@@ -30,10 +28,7 @@ import {
 	useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import type {
-	SettingsHostContext,
-	SettingsSection,
-} from "@/components/settings/types";
+import type { SettingsSection } from "@/components/settings/types";
 import { Button } from "@/components/ui/button";
 import { accountSurfaceEnabled } from "@/features/account/visibility";
 import { scrollBehavior } from "@/lib/core/motion";
@@ -45,12 +40,6 @@ import {
 import { pluginsSurfaceEnabled } from "@/lib/plugins/visibility";
 import type { AppSettings } from "@/lib/settings";
 import { closeSettingsWindow } from "@/lib/shell/settings-window";
-import { surfaces } from "@/lib/surfaces";
-import {
-	getRemoteSessionMeta,
-	isRemoteVaultHandle,
-	remoteSessionIdFromHandle,
-} from "@/lib/vault/remote/remote-vault";
 
 // Panes load per section instead of riding along with the settings shell:
 // importing them statically pulled the whole surface (agent pane + model picker
@@ -68,9 +57,6 @@ const PANE_LOADERS = {
 	experimental: () => import("@/components/settings/panes/experimental-pane"),
 	doctor: () => import("@/components/settings/panes/doctor-pane"),
 	keyboard: () => import("@/components/settings/panes/keyboard-pane"),
-	"remote-access": () =>
-		import("@/components/settings/panes/remote-access-pane"),
-	sync: () => import("@/components/settings/panes/sync-pane"),
 	about: () => import("@/components/settings/panes/about-pane"),
 } satisfies Record<SettingsSection, () => Promise<unknown>>;
 
@@ -81,8 +67,6 @@ const PANE_LOADERS = {
 function sectionVisible(id: SettingsSection): boolean {
 	if (!pluginsSurfaceEnabled && id === "plugins") return false;
 	if (!accountSurfaceEnabled && id === "account") return false;
-	if (!surfaces.sync && id === "sync") return false;
-	if (!surfaces.remoteAccess && id === "remote-access") return false;
 	return true;
 }
 
@@ -114,11 +98,6 @@ const AppearancePane = memo(
 const AgentPane = memo(
 	lazy(() => PANE_LOADERS.agent().then((m) => ({ default: m.AgentPane }))),
 );
-const RemoteAgentPane = memo(
-	lazy(() =>
-		PANE_LOADERS.agent().then((m) => ({ default: m.RemoteAgentPane })),
-	),
-);
 const TranslatePane = memo(
 	lazy(() =>
 		PANE_LOADERS.translate().then((m) => ({ default: m.TranslatePane })),
@@ -142,16 +121,6 @@ const KeyboardPane = memo(
 		PANE_LOADERS.keyboard().then((m) => ({ default: m.KeyboardPane })),
 	),
 );
-const RemoteAccessPane = memo(
-	lazy(() =>
-		PANE_LOADERS["remote-access"]().then((m) => ({
-			default: m.RemoteAccessPane,
-		})),
-	),
-);
-const SyncPane = memo(
-	lazy(() => PANE_LOADERS.sync().then((m) => ({ default: m.SyncPane }))),
-);
 const AboutPane = memo(
 	lazy(() => PANE_LOADERS.about().then((m) => ({ default: m.AboutPane }))),
 );
@@ -167,8 +136,6 @@ const NAV: {
 	{ id: "agent", icon: Bot, dividerBefore: true },
 	{ id: "translate", icon: Languages },
 	{ id: "layout", icon: LayoutTemplate },
-	{ id: "remote-access", icon: Smartphone },
-	{ id: "sync", icon: CloudUpload },
 	{ id: "plugins", icon: Puzzle },
 	{ id: "experimental", icon: FlaskConical },
 	{ id: "doctor", icon: Stethoscope, dividerBefore: true },
@@ -190,7 +157,7 @@ type SettingsContentProps = {
 	onClose?: () => void;
 	/** aria-labelledby id supplied by a dialog wrapper. */
 	titleId?: string;
-	/** Active vault path — remote handles switch Agent settings to the SSH host. */
+	/** Active vault path. */
 	vaultPath?: string | null;
 };
 
@@ -297,36 +264,6 @@ export function SettingsContent({
 			window.removeEventListener("resize", measureNavIndicator);
 		};
 	}, [measureNavIndicator]);
-
-	const hostContext = useMemo((): SettingsHostContext => {
-		if (vaultPath && isRemoteVaultHandle(vaultPath)) {
-			const sessionId = remoteSessionIdFromHandle(vaultPath);
-			const meta = getRemoteSessionMeta();
-			if (sessionId && meta && meta.sessionId === sessionId) {
-				const label =
-					meta.host.trim() ||
-					meta.displayName.split(":")[0]?.trim() ||
-					t("host.remote");
-				return {
-					kind: "remote",
-					label,
-					sessionId,
-					host: meta.host,
-					remotePath: meta.remotePath,
-				};
-			}
-			if (sessionId) {
-				return {
-					kind: "remote",
-					label: t("host.remote"),
-					sessionId,
-					host: "",
-					remotePath: "",
-				};
-			}
-		}
-		return { kind: "local" };
-	}, [vaultPath, t]);
 
 	const patch = useCallback(
 		(partial: Partial<AppSettings>) => onChange({ ...settings, ...partial }),
@@ -511,7 +448,6 @@ export function SettingsContent({
 								<GeneralPane
 									settings={settings}
 									patch={patch}
-									hostContext={hostContext}
 									vaultPath={vaultPath}
 								/>
 							</Suspense>
@@ -549,19 +485,11 @@ export function SettingsContent({
 							hidden={activeSection !== "agent"}
 						>
 							<Suspense fallback={<PaneFallback />}>
-								{hostContext.kind === "remote" ? (
-									<RemoteAgentPane
-										settings={settings}
-										patch={patch}
-										hostContext={hostContext}
-									/>
-								) : (
-									<AgentPane
-										settings={settings}
-										patch={patch}
-										onOpenDiagnostics={() => onSectionChange("doctor")}
-									/>
-								)}
+								<AgentPane
+									settings={settings}
+									patch={patch}
+									onOpenDiagnostics={() => onSectionChange("doctor")}
+								/>
 							</Suspense>
 						</div>
 					)}
@@ -591,7 +519,6 @@ export function SettingsContent({
 									settings={settings}
 									patch={patch}
 									vaultPath={vaultPath}
-									hostContext={hostContext}
 								/>
 							</Suspense>
 						</div>
@@ -603,7 +530,7 @@ export function SettingsContent({
 							hidden={activeSection !== "doctor"}
 						>
 							<Suspense fallback={<PaneFallback />}>
-								<DoctorPane vaultPath={vaultPath} hostContext={hostContext} />
+								<DoctorPane vaultPath={vaultPath} />
 							</Suspense>
 						</div>
 					)}
@@ -619,28 +546,6 @@ export function SettingsContent({
 									shortcutOverrides={settings.shortcutOverrides}
 									patch={patch}
 								/>
-							</Suspense>
-						</div>
-					)}
-					{visitedSections.includes("remote-access") && (
-						<div
-							data-settings-pane
-							data-active={activeSection === "remote-access" ? "true" : "false"}
-							hidden={activeSection !== "remote-access"}
-						>
-							<Suspense fallback={<PaneFallback />}>
-								<RemoteAccessPane vaultPath={vaultPath} />
-							</Suspense>
-						</div>
-					)}
-					{visitedSections.includes("sync") && (
-						<div
-							data-settings-pane
-							data-active={activeSection === "sync" ? "true" : "false"}
-							hidden={activeSection !== "sync"}
-						>
-							<Suspense fallback={<PaneFallback />}>
-								<SyncPane vaultPath={vaultPath} />
 							</Suspense>
 						</div>
 					)}

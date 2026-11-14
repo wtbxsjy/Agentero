@@ -250,32 +250,6 @@ it("selects the new file basename while keeping the Markdown suffix", async () =
 	expect([input.selectionStart, input.selectionEnd]).toEqual([0, 21]);
 });
 
-it("starts a research table from a human name and appends .table.json", async () => {
-	const { input, onConfirm } = await mount("table");
-	expect(input.getAttribute("aria-label")).toBe("newTableLabel");
-	expect(input.value).toBe("Untitled table");
-	expect([input.selectionStart, input.selectionEnd]).toEqual([
-		0,
-		input.value.length,
-	]);
-	await key(input, "Enter");
-	expect(onConfirm).toHaveBeenCalledExactlyOnceWith(
-		"Untitled table.table.json",
-	);
-});
-
-it.each([
-	["循环结果", "循环结果.table.json"],
-	["results.table.json", "results.table.json"],
-	["results.TABLE.JSON", "results.TABLE.JSON"],
-	["results.json", "results.table.json"],
-])("creates research table %s as %s", async (name, expected) => {
-	const { input, onConfirm } = await mount("table");
-	await type(input, name);
-	await key(input, "Enter");
-	expect(onConfirm).toHaveBeenCalledExactlyOnceWith(expected);
-});
-
 it.each([
 	["读书笔记", "读书笔记.md"],
 	["note.md", "note.md"],

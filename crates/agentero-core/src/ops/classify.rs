@@ -124,32 +124,6 @@ const TABLE: &[OpClassification] = &[
         OpPermission::Unspecified,
     ),
     spec(
-        "feed.list",
-        OpStability::Internal,
-        OpPermission::Unspecified,
-    ),
-    spec("feed.add", OpStability::Internal, OpPermission::Unspecified),
-    spec(
-        "feed.remove",
-        OpStability::Internal,
-        OpPermission::Unspecified,
-    ),
-    spec(
-        "feed.refresh",
-        OpStability::Internal,
-        OpPermission::Unspecified,
-    ),
-    spec(
-        "feed.items",
-        OpStability::Internal,
-        OpPermission::Unspecified,
-    ),
-    spec(
-        "feed.read",
-        OpStability::Internal,
-        OpPermission::Unspecified,
-    ),
-    spec(
         "export.bib",
         OpStability::Internal,
         OpPermission::Unspecified,
@@ -227,19 +201,4 @@ const TABLE: &[OpClassification] = &[
     ),
     spec("ui.split", OpStability::Internal, OpPermission::Unspecified),
     spec("describe", OpStability::Internal, OpPermission::Unspecified),
-    spec(
-        "table.query",
-        OpStability::Internal,
-        OpPermission::VaultRead,
-    ),
-    spec(
-        "table.upsert",
-        OpStability::Internal,
-        OpPermission::VaultWrite,
-    ),
-    spec(
-        "table.update_cells",
-        OpStability::Internal,
-        OpPermission::VaultWrite,
-    ),
 ];

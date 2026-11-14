@@ -39,11 +39,9 @@ import type { AppSettings } from "@/lib/settings";
 export function McpSettingsBlock({
 	settings,
 	patch,
-	disabled,
 }: {
 	settings: AppSettings;
 	patch: (p: Partial<AppSettings>) => void;
-	disabled: boolean;
 }) {
 	const { t } = useTranslation(["settings", "common"]);
 	const [status, setStatus] = useState<McpStatus | null>(null);
@@ -109,7 +107,7 @@ export function McpSettingsBlock({
 					<Switch
 						id="mcp-enabled"
 						checked={settings.mcpEnabled}
-						disabled={busy || disabled}
+						disabled={busy}
 						onCheckedChange={(v) => void onToggle(v)}
 					/>
 				</SettingsRow>
@@ -120,7 +118,6 @@ export function McpSettingsBlock({
 					<Switch
 						id="mcp-expose-paper-text"
 						checked={settings.mcpExposePaperText}
-						disabled={disabled}
 						onCheckedChange={(mcpExposePaperText) =>
 							patch({ mcpExposePaperText })
 						}
@@ -148,7 +145,7 @@ export function McpSettingsBlock({
 							className="h-8 w-28"
 							defaultValue={settings.mcpPort}
 							onBlur={(e) => void onPortBlur(e.currentTarget.value)}
-							disabled={busy || disabled}
+							disabled={busy}
 						/>
 						{url ? (
 							<Tooltip>
@@ -183,7 +180,7 @@ export function McpSettingsBlock({
 					<McpTunnelRows
 						settings={settings}
 						patch={patch}
-						disabled={disabled || busy}
+						disabled={busy}
 						mcpListening={status?.listening ?? false}
 						mcpUrl={url}
 					/>

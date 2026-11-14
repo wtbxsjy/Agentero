@@ -34,8 +34,6 @@ desktop = [
   "dep:tauri-plugin-log",
   "dep:fern",
   "dep:tauri-plugin-opener",
-  "dep:tauri-plugin-updater",
-  "dep:tauri-plugin-process",
   "dep:tauri-plugin-single-instance",
   "dep:tauri-plugin-window-state",
 	"dep:tauri-plugin-better-auth",
@@ -115,26 +113,17 @@ encoding_rs = "0.8"
 urlencoding = "2"
 url = "2"
 os_info = "3"
-crypto_box = "0.9"
-ed25519-dalek = "2"
 # Used by lookup batch import (all platforms); also needed by Unix remote vault.
 futures-util = { version = "0.3.33", features = ["sink"] }
-tokio-tungstenite = { version = "0.26", features = ["rustls-tls-webpki-roots"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "logging", "std", "tls12"] }
 tauri-specta = { version = "2.0.0-rc.25", features = ["derive", "typescript"], optional = true }
 specta = { version = "2.0.0-rc.22", features = ["derive", "chrono"] }
 specta-typescript = { version = "0.0.12", optional = true }
 fontdb = "0.23"
-# Local CSL formatting for the Word integration; permissively licensed engine.
-hayagriva = { version = "0.10.1", default-features = false, features = ["archive", "csl-json"] }
 
-# Updates and process relaunch are desktop-only. Mobile distribution is owned by
-# its app stores, not the in-app updater.
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-better-auth = { version = "=0.1.2", optional = true }
 agentero-plugin-host = { path = "../crates/agentero-plugin-host", optional = true }
-tauri-plugin-updater = { version = "2.14.1", optional = true }
-tauri-plugin-process = { version = "2", optional = true }
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"], optional = true }
 tauri-plugin-window-state = { version = "2", optional = true }
 # Blocking client: telemetry flush happens in the synchronous RunEvent::Exit callback.
@@ -146,12 +135,6 @@ security-framework-sys = "2.17"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSWindow"] }
-
-# openssh / sendfd are Unix-only (ControlMaster fd passing). Remote vault SFTP
-# is therefore unavailable on Windows until a portable backend lands.
-[target.'cfg(unix)'.dependencies]
-openssh = { version = "0.11.6", features = ["native-mux"] }
-openssh-sftp-client = { version = "0.15.7", features = ["openssh"] }
 
 # Windows CLI install: add the shim dir to the user PATH (HKCU\Environment) so
 # new terminals can run `agentero-cli` without manual setup.

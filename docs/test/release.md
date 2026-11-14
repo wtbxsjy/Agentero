@@ -10,11 +10,11 @@
 
 推荐流程：
 
-1. 执行 `/bump <version>`，同步检查 `package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`、`crates/agentero-core/Cargo.toml`、`crates/agentero-mcp/Cargo.toml`、`cli/Cargo.toml`、`src-tauri/ios-project.yml` 和 `Cargo.lock`。
+1. 执行 `/bump <version>`，同步检查 `package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`、`crates/agentero-core/Cargo.toml`、`crates/agentero-mcp/Cargo.toml`、`cli/Cargo.toml` 和 `Cargo.lock`。
 2. 执行 `/commit`，将版本 bump 作为独立的 `chore(release): bump version to <version>` commit。
 3. 确认 tag `v<version>` 指向该版本 bump commit，且 tag 去掉 `v` 后与所有版本字段一致。
 4. 推送 tag，`.github/workflows/release.yml` 先复用 `ci.yml` 验证该 tag 对应的提交；所有检查通过后才创建 Draft Release 并构建 Tauri installers 和 CLI artifacts。验证失败时先修复并重新按版本流程发布，不会创建新的 Draft 或启动安装包构建。构建前确认 repository secret 已配齐：updater 签名（见下）与内置 provider 的 `AGENTERO_BUILTIN_API_KEY`（见 §内置 Provider 构建期注入）。
-5. 在 Draft Release 中确认桌面安装包、应用内版本、CLI `--version` 和 CLI 文件名没有混用不同版本；确认 `latest.json` 与 updater `.sig` 资产齐全后才发布 Release。发布动作即触发 AtomGit 同步（见下节）。
+5. 在 Draft Release 中确认桌面安装包、应用内版本、CLI `--version` 和 CLI 文件名没有混用不同版本后才发布 Release。发布动作即触发 AtomGit 同步（见下节）。
 
 `/bump` 和 `/commit` 默认只修改工作区或创建本地 commit，不会自动创建 tag、push 或发布 Release。
 
@@ -47,10 +47,9 @@ AtomGit 不会像 GitHub 那样用 `target_commitish` 自动建 tag，tag 缺失
 
 - 发布即同步：publish 事件触发时 GitHub Release 已发布，最新的稳定版直接标记 AtomGit `latest`；预发布版本（tag 含 `-`）与手动补传的旧稳定版为 `pre`（**预发布可公开访问，不是私有草稿**）。
 - GitHub Release `published` / `edited` 事件触发同步当前说明和附件；仅当来源是 GitHub 当前最新稳定版且所有附件校验通过，才标记 AtomGit `latest`。手动补传旧稳定版不会抢占最新版本；新建的历史版本保留 `pre`。
-- `scripts/sync-atomgit-release.mjs` 逐文件下载、上传并回读校验大小和 SHA-256，包括安装包、APK、CLI、`.sig`、`.sha256`、`latest.json`；GitHub 自动生成的 Source code 归档不是上传附件，不在此列表中。
+- `scripts/sync-atomgit-release.mjs` 逐文件下载、上传并回读校验大小和 SHA-256，包括安装包、CLI、`.sha256`；GitHub 自动生成的 Source code 归档不是上传附件，不在此列表中。
 - 重跑时相同内容跳过；同名不同内容的附件按 ID 删除后重新上传。发生中断可再次运行，不删除目标仓库其他附件。网络错误有限重试，任何附件失败会令 job 失败；只有全部成功才更新最终说明和状态。跨 tag 的同步串行执行。
 - 上传与回读校验不使用固定总时长上限：到 AtomGit 的路由在 ~8 MB/s 与数十分钟后 `HTTP 502` 之间摆动（#694），按快速情形定的上限必然饿死慢速情形。只有连续 5 分钟没有任何字节流动才判定为停滞并重试，整体时长由 job 的 `timeout-minutes`（当前 180）约束。日志中的 `Uploading: <name> (<size> bytes) via <host>` 只打印主机名（签名路径与 query 属于凭据），用于确认边缘节点固定是否真的覆盖了承载大文件的那个域名。
-- `latest.json` **原样镜像**，其中 URL 仍指向 GitHub。后续待办：landing 双源下载、应用 updater AtomGit 优先及下载失败回退、AtomGit 专用更新清单／稳定入口。本次不切换客户端更新源。
 
 补传／重试：GitHub Actions → **Sync release to AtomGit** → **Run workflow** → 填入已有、附件构建完成的 tag（如 `v0.11.3`）。无需重新编译。工作流须先进入默认分支。附件尚未上传完就发布 Release 时，同步只会带上当时已上传的附件，而通过 `GITHUB_TOKEN` 上传附件不会派生新的工作流（GitHub 防递归机制）——此时需手动 Run workflow 补传剩余附件；自动化改说明后同样需要手动补同步。
 
@@ -84,31 +83,6 @@ CLI 压缩包内部统一包含名为 `agentero`（Windows 为 `agentero.exe`）
 - CI：`ubuntu-22.04` / `ubuntu-24.04-arm`，依赖 `libwebkit2gtk-4.1-dev`。
 - 用户侧最低：Ubuntu **22.04+**（webkit2gtk 4.1）。20.04 不支持。
 - 用户文档：[`../usage/getting-started.md`](../usage/getting-started.md)（[#253](https://github.com/poco-ai/Agentero/issues/253)）。
-
-### 应用内更新签名
-
-Tauri Updater 的签名密钥与 Apple Developer ID 签名、公证凭据无关。应用内置的公钥位于 `src-tauri/tauri.conf.json`，私钥绝不能提交或写入本机项目配置。
-
-GitHub Actions 必须配置以下 repository secrets；`release.yml` 会在创建 Draft Release 前显式验证它们，缺失即失败：
-
-| Secret | 用途 |
-|---|---|
-| `TAURI_SIGNING_PRIVATE_KEY` | `tauri signer generate` 产生的完整 minisign 私钥内容 |
-| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | 生成该私钥时使用的密码 |
-
-发布工作流设置 `createUpdaterArtifacts`，由 `tauri-apps/tauri-action@v1` 上传签名更新包、`.sig` 和聚合后的 `latest.json`。客户端请求 `https://github.com/poco-ai/Agentero/releases/latest/download/latest.json`，因此：
-
-- Draft Release 用于验收，发布前不会被客户端读取；
-- 只有完整、已发布的稳定版 Release 才会成为更新源；
-- Windows metadata 优先采用 NSIS updater 包；macOS 与 Linux 使用 Tauri 生成的对应更新产物；
-- `tauri-action` 生成的 `latest.json` 使用 `api.github.com/.../releases/assets/<id>` 地址，匿名调用该接口按 IP 限 60 次/小时——共享出口网络下客户端下载会 403，而版本检查走 `releases/latest/download` 的 CDN 不受影响。`release.yml` 的 `updater-json` job 在安装包全部上传后运行 `scripts/rewrite-updater-json.mjs`，把各平台 URL 改写为 `github.com/.../releases/download/<tag>/<file>` 再覆盖上传；签名段保持原样，内置公钥验签不受影响；
-- 上述签名只证明更新包完整性，macOS 的 Developer ID 签名和 notarization 仍必须照常完成。
-
-生成或轮换密钥时，在安全位置执行以下命令，将公钥替换到 `tauri.conf.json`，并将私钥/密码写入 GitHub Actions Secrets：
-
-```bash
-pnpm tauri signer generate --password '<strong password>' --write-keys /secure/path/agentero-updater.key
-```
 
 ### 内置 Provider 构建期注入（`AGENTERO_BUILTIN_*`）
 
@@ -235,8 +209,6 @@ Apple 要求审核人员能够完整访问和验证 App 的核心功能。后端
 
 - **Sign-in required = No**，演示账号留空；不要为过审单独做假登录页或「输入测试网站账号」流程。
 - 核心能力依赖桌面端配对：在 **App Review Notes** 中写清扫码 / 粘贴配对链接步骤，并保证中继与（可选）演示桌面在审核窗口可用。
-- 可复制的元数据与 Notes 全文见 [ios-testflight.md](ios-testflight.md) 的
-  [Beta review: no login, no fake test page](ios-testflight.md#beta-review-no-login-no-fake-test-page)。
 
 ## 4. iPad 商店截图要求
 

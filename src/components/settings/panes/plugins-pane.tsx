@@ -29,17 +29,13 @@ import {
 	type PluginScope,
 	removePlugin,
 } from "@/lib/plugins/api";
-import { isRemoteVaultHandle } from "@/lib/vault/remote/remote-vault";
 
 export function PluginsPane({ vaultPath }: { vaultPath: string | null }) {
 	const { t, i18n } = useTranslation("settings");
 	const [plugins, setPlugins] = useState<InstalledPlugin[]>([]);
 	const [busy, setBusy] = useState(false);
 	const [editing, setEditing] = useState<InstalledPlugin | null>(null);
-	const available =
-		isTauri() &&
-		!isMobileApp() &&
-		Boolean(vaultPath && !isRemoteVaultHandle(vaultPath));
+	const available = isTauri() && !isMobileApp() && Boolean(vaultPath);
 	const fail = useCallback(
 		(error: unknown) =>
 			notifyError(t("plugins.failed"), { description: errorText(error) }),

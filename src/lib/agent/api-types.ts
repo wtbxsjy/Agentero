@@ -2,7 +2,7 @@
  * Pure type leaf for the Agent catalog API.
  *
  * `api.ts` re-exports these for backward compatibility; cross-domain modules
- * (e.g. remote vault) must import from here so type-only references do not
+ * must import from here so type-only references do not
  * create import cycles through the runtime module.
  */
 

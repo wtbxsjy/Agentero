@@ -1,6 +1,5 @@
 import { commands } from "@/lib/core/bindings";
 import { isTauri } from "@/lib/core/tauri";
-import { isRemoteVaultHandle } from "@/lib/vault/remote/remote-vault";
 
 /** In-flight / completed fs-scope grants, keyed by normalized vault root. */
 const fsScopeGrants = new Map<string, Promise<void>>();
@@ -16,7 +15,7 @@ const fsScopeGrants = new Map<string, Promise<void>>();
  * callers share one grant; no-op off Tauri or for remote handles.
  */
 export function ensureLocalFsScope(rootPath: string | null): Promise<void> {
-	if (!isTauri() || !rootPath || isRemoteVaultHandle(rootPath)) {
+	if (!isTauri() || !rootPath) {
 		return Promise.resolve();
 	}
 	const key = rootPath.replace(/[\\/]+$/, "");

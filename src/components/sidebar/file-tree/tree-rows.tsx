@@ -3,7 +3,6 @@ import {
 	ChevronRight,
 	Database,
 	Download,
-	Globe,
 	Library,
 	Link2,
 	Loader2,
@@ -16,10 +15,8 @@ import {
 import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { PaperTitle } from "@/components/paper/paper-title";
-import { PLAZA_SOURCE_ICONS } from "@/components/plaza/source-icons";
 import {
 	FileTreeActions,
-	FileTreeDisclosureIcon,
 	FileTreeFile,
 	FileTreeFolderRow,
 	FileTreeIcon,
@@ -34,11 +31,6 @@ import { contextPathIcon } from "@/lib/agent/context-path-icon";
 import { cn } from "@/lib/core/utils";
 import { isPapersRoot } from "@/lib/paper";
 import { TRASH_VIRTUAL_PATH } from "@/lib/paper/api";
-import {
-	PLAZA_VIRTUAL_PATH,
-	type PlazaSource,
-	plazaSourceLabel,
-} from "@/lib/plaza";
 import type { FileNode } from "@/lib/vault";
 import {
 	isVaultAgentRoot,
@@ -408,52 +400,6 @@ export function TrashRow() {
 			</FileTreeIcon>
 			<FileTreeName className="min-w-0 flex-1 truncate">
 				{t("recycleBin.title")}
-			</FileTreeName>
-		</FileTreeFile>
-	);
-}
-
-/** 广场 parent row — collapsible, with the discovery sources as children. */
-export function PlazaRow({ expanded }: { expanded: boolean }) {
-	const { t } = useTranslation("sidebar");
-	return (
-		<FileTreeFile
-			path={PLAZA_VIRTUAL_PATH}
-			name={t("plaza.plaza")}
-			aria-expanded={expanded}
-		>
-			<FileTreeDisclosureIcon
-				isExpanded={expanded}
-				icon={<Globe className="size-4 text-muted-foreground" aria-hidden />}
-			/>
-			<FileTreeName className="min-w-0 flex-1 truncate">
-				{t("plaza.plaza")}
-			</FileTreeName>
-		</FileTreeFile>
-	);
-}
-
-export function PlazaSourceRow({
-	source,
-	style,
-}: {
-	source: PlazaSource;
-	style?: CSSProperties;
-}) {
-	const Icon = PLAZA_SOURCE_ICONS[source.icon];
-	const label = plazaSourceLabel(source);
-	return (
-		<FileTreeFile
-			path={source.path}
-			name={label}
-			style={style}
-			{...(source.id === "cool-papers" ? { "data-cool-papers": "" } : {})}
-		>
-			<FileTreeIcon>
-				<Icon className="size-4" />
-			</FileTreeIcon>
-			<FileTreeName className="min-w-0 flex-1 truncate" title={label}>
-				{label}
 			</FileTreeName>
 		</FileTreeFile>
 	);

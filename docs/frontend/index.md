@@ -4,7 +4,6 @@ React 19 + TypeScript Webview UI。全局状态为按域 **zustand vanilla store
 
 > 整体架构与跨层工作流见 [../architecture.md](../architecture.md)。
 
-科研对象／结果表、字段编辑和 Notebook 实时引用见 [科研表格](research-tables.md)。
 
 ## 定位
 
@@ -107,8 +106,6 @@ UI (AI Elements: Conversation + Message + PromptInput + Sources)
 | 网页论文阅读与划词（内置代理 + 选区桥）；本地 HTML 预览 | [web-view.md](web-view.md) |
 | PDF 版面分析（Figures / Tables / Algorithms / Formulas） | [pdf-layout-analysis.md](pdf-layout-analysis.md) |
 | Agent 面板 | [agent.md](agent.md) |
-| 知乎 Agent（内置，直答 / 检索） | [zhihu.md](zhihu.md) |
-| 移动端壳与 Bridge 客户端 | [mobile.md](mobile.md) |
 | 双链 UI | [wiki.md](wiki.md) |
 | 命令面板 | [command-palette.md](command-palette.md) |
 | 翻译 | [translate.md](translate.md) |

@@ -31,7 +31,6 @@ import {
 	ComposerSlashMenu,
 } from "@/components/agent/composer/composer-quick-menus";
 import { ComposerToolbar } from "@/components/agent/composer/composer-toolbar";
-import { FeedReferenceCard } from "@/components/agent/composer/feed-reference-card";
 import {
 	PromptInput,
 	PromptInputBody,
@@ -43,10 +42,7 @@ import type { QueuedPrompt } from "@/components/agent/types";
 import { Popover, PopoverAnchor } from "@/components/ui/popover";
 import type { AgentSkill, PromptImage } from "@/lib/agent";
 import { annotationOrdinal } from "@/lib/agent/annotation-prompt";
-import {
-	extractMentionPaths,
-	extractVisualIds,
-} from "@/lib/agent/composer-inline-tokens";
+import { extractVisualIds } from "@/lib/agent/composer-inline-tokens";
 import { openMentionTarget } from "@/lib/agent/mention-open";
 import {
 	COMPOSER_IMAGE_ACCEPT,
@@ -111,7 +107,7 @@ export type AgentComposerProps = {
 };
 
 type ReferenceHover = {
-	kind: "selection" | "visual" | "plaza";
+	kind: "selection" | "visual";
 	id: string;
 	anchor: HTMLElement;
 };
@@ -230,20 +226,12 @@ export function AgentComposer(props: AgentComposerProps) {
 	const selectionHover: SelectionHoverAnchor | null =
 		referenceHover?.kind === "selection" ? referenceHover : null;
 	const visualHover = referenceHover?.kind === "visual" ? referenceHover : null;
-	const plazaHover = referenceHover?.kind === "plaza" ? referenceHover : null;
 	const hoveredVisual = visualHover
 		? (visualDrafts.find((draft) => draft.id === visualHover.id) ?? null)
 		: null;
 	useEffect(() => {
 		if (visualHover && !hoveredVisual) releaseReferenceHover();
 	}, [hoveredVisual, releaseReferenceHover, visualHover]);
-	// Backspace / drafting can drop the chip without a pointer leave.
-	const plazaPathAlive = plazaHover
-		? extractMentionPaths(composerText).includes(plazaHover.id)
-		: true;
-	useEffect(() => {
-		if (!plazaPathAlive) releaseReferenceHover();
-	}, [plazaPathAlive, releaseReferenceHover]);
 	const {
 		shellRef,
 		isFileDragOver,
@@ -313,15 +301,6 @@ export function AgentComposer(props: AgentComposerProps) {
 						onHoverHold={holdReferenceHover}
 						onHoverRelease={releaseReferenceHover}
 						onRemove={props.onRemoveVisualDraft}
-					/>
-				) : null}
-				{plazaHover ? (
-					<FeedReferenceCard
-						path={plazaHover.id}
-						anchor={plazaHover.anchor}
-						onHoverHold={holdReferenceHover}
-						onHoverRelease={releaseReferenceHover}
-						onRemove={props.onRemoveContextPath}
 					/>
 				) : null}
 				<div
@@ -449,9 +428,6 @@ export function AgentComposer(props: AgentComposerProps) {
 												onReferencePointer("visual", phase, id, anchor)
 											}
 											onOpenMention={openMentionTarget}
-											onPlazaFeedPointer={(phase, path, anchor) =>
-												onReferencePointer("plaza", phase, path, anchor)
-											}
 											skillLabel={(skillId) =>
 												props.selectedSkills.find((s) => s.id === skillId)
 													?.name ??

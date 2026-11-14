@@ -21,7 +21,6 @@ import {
 	runLookupImportJob,
 	runSkillImportJob,
 } from "@/lib/paper/import-actions";
-import { runPlazaImportJob } from "@/lib/plaza/import";
 
 export type ImportMode =
 	| "lookup"
@@ -29,7 +28,6 @@ export type ImportMode =
 	| "skillLookup"
 	| "skill"
 	| "localPdf"
-	| "plaza"
 	| "coolNotes";
 
 const HANDLERS: Record<
@@ -41,7 +39,6 @@ const HANDLERS: Record<
 	skillLookup: runLookupImportJob,
 	skill: runSkillImportJob,
 	localPdf: runLocalPdfImportJob,
-	plaza: runPlazaImportJob,
 	coolNotes: runCoolNotesImportJob,
 };
 

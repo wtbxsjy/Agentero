@@ -12,7 +12,6 @@ import {
 	noteWikiPath,
 	registerWikiRevisionBump,
 } from "@/lib/lifecycle/refresh-wave";
-import { isResearchTablePath } from "@/lib/research-table/model";
 import type { VaultFileChangedPayload } from "@/lib/vault/fs-watch";
 import { watchRefreshDelayMs } from "@/lib/vault/shell-activity";
 import { getVaultPath } from "@/lib/vault/store";
@@ -106,15 +105,9 @@ function queueEmbedRefresh(absPath: string): void {
 /**
  * Markdown files carry references; images and PDFs are canonical targets
  * whose create/remove/modify events also invalidate link resolution and
- * embedded attachment projections. Research tables are embed targets only:
- * a file change refreshes mounted previews and does not rebuild the link index.
+ * embedded attachment projections.
  */
 export function scheduleWikiRebuild(absPath: string): void {
-	if (isResearchTablePath(absPath)) {
-		if (!getVaultPath()) return;
-		queueEmbedRefresh(absPath);
-		return;
-	}
 	if (!isWikiTargetPath(absPath)) return;
 	// Autosave/⌘S echo: the save path already folded this file into the index,
 	// so the watcher only refreshes mounted embeds (#270).

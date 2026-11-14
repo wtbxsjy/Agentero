@@ -410,7 +410,6 @@ function catalogTemplateFromId(templateId: string): AgentTemplate | undefined {
 		case "mimo-code":
 		case "codebuddy":
 		case "qoder-cn":
-		case "zhihu":
 		case "custom":
 			return templateId;
 		default:

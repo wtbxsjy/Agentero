@@ -24,7 +24,7 @@ crates/agentero-core/src/   # tauri 无关基座 + 数据域（agentero-core cra
   error、fs、http、paths、log_util、perf、sqlite、time、blocking、usage（存储层）、decision…
   app_handle    # AppHandle + HostHooks（宿主回调抽象：emit / job spawn）
   features/     # catalog、vault（tree/trash/rename/doctor）、wiki、import、
-                # zotero codec/io、scholar_api、pdf_parse、refs、feeds、
+                # zotero codec/io、scholar_api、pdf_parse、refs、
                 # translate、pdf locate/marks、lifecycle、open_request
 src-tauri/src/
   app/          # run()、menu、logging、command 注册、open_request desktop 壳
@@ -91,7 +91,6 @@ ACP / SSH 子进程由 Rust 与 ACP SDK 启动，不注册 Tauri shell 插件。
 | Catalog SQLite | 论文集合 + metadata | `.agentero/catalog.sqlite` |
 | 应用设置 | UI / Agent 注册表 / 偏好 | XDG `~/.config/agentero/` |
 | 使用记录 | 打开 / 下载 / Agent 等活动 | XDG data `~/.local/share/agentero/usage.sqlite` |
-| 广场订阅 | 订阅名单 + 条目缓存 | XDG data `feeds.sqlite`（不进 catalog） |
 | 版面 ONNX | PP-DocLayoutV3（ModelScope → HF） | XDG cache `~/.cache/agentero/models/` |
 | 可重建索引 | 双链图 | 内存 / 可重建缓存，非业务权威 |
 
@@ -127,9 +126,6 @@ ACP / SSH 子进程由 Rust 与 ACP SDK 启动，不注册 Tauri shell 插件。
 | Vault Doctor | [doctor.md](doctor.md) |
 | Agent Host | [agent.md](agent.md) |
 | 研究上下文 | [context.md](context.md) |
-| 知乎接入（内置 Agent / 开放平台） | [zhihu.md](zhihu.md) |
-| 远程 Vault | [remote.md](remote.md) |
-| 云同步（S3 / WebDAV / Git） | [sync.md](sync.md) |
 | 搜索 | [search.md](search.md) |
 | 设置 | [settings.md](settings.md) |
 | 本地桌面应用检测 | [desktop-apps.md](desktop-apps.md) |
@@ -151,5 +147,3 @@ ACP / SSH 子进程由 Rust 与 ACP SDK 启动，不注册 Tauri shell 插件。
 ## 本地插件
 
 [本地插件系统](plugins.md)：安装、按 Vault 授权、进程隔离、受控数据 API、命令/菜单/事件、设置及私有存储。
-
-Word 官方插件兼容原型见 [word.md](word.md)：macOS 与 Windows 均为正文引文；Windows 尚未做真实 Word 验收。

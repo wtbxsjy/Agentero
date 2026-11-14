@@ -7,11 +7,6 @@ import {
 	paperVisibleChildren,
 } from "@/lib/paper";
 import { LIBRARY_VIRTUAL_PATH, TRASH_VIRTUAL_PATH } from "@/lib/paper/api";
-import { isPlazaVirtualPath, PLAZA_VIRTUAL_PATH } from "@/lib/plaza";
-import {
-	isResearchTablePath,
-	researchTableStem,
-} from "@/lib/research-table/model";
 import type { FileNode } from "@/lib/vault";
 import { isMarkdownPath } from "@/lib/vault/fs";
 import { normalizePathKey } from "@/lib/vault/path";
@@ -71,7 +66,6 @@ export function isVirtualTreePath(path: string): boolean {
 	return (
 		path === LIBRARY_VIRTUAL_PATH ||
 		path === TRASH_VIRTUAL_PATH ||
-		isPlazaVirtualPath(path) ||
 		isZoteroCollectionReferencePath(path)
 	);
 }
@@ -108,13 +102,12 @@ export function normalizeTreeSelection(paths: Iterable<string>): string[] {
  * Default open folders when a Vault is first opened:
  * expand `papers/` only so its first-level children (org folders) are listed,
  * but keep those subfolders collapsed. Deeper nesting, `notes/`, etc. stay
- * collapsed. 广场 also starts open so its sources are discoverable.
+ * collapsed.
  */
 export function collectDefaultExpanded(
 	nodes: FileNode[],
 	into: Set<string>,
 ): void {
-	into.add(PLAZA_VIRTUAL_PATH);
 	for (const n of nodes) {
 		if (n.kind !== "directory" || !isPapersRoot(n.path)) continue;
 		into.add(n.path);
@@ -160,11 +153,10 @@ export function isTreeExpandableDirectory(node: FileNode): boolean {
 }
 
 /**
- * Sidebar label for a file. Markdown and research tables hide the suffix;
+ * Sidebar label for a file. Markdown hides the suffix;
  * the row icon shows the type. The disk name is unchanged.
  */
 export function fileTreeDisplayName(name: string): string {
-	if (isResearchTablePath(name)) return researchTableStem(name) || name;
 	if (isMarkdownPath(name)) {
 		return name.replace(/\.(md|mdx|markdown)$/i, "") || name;
 	}
