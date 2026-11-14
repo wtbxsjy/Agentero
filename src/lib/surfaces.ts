@@ -10,8 +10,6 @@
  * (`lib/plugins/visibility.ts`, `features/account/visibility.ts`).
  */
 export const surfaces = {
-	/** Word add-in citation dialog. */
-	wordCitation: false,
 	/** In-app updater: it points at the official releases and would replace this fork. */
 	updater: false,
 } as const satisfies Record<string, boolean>;

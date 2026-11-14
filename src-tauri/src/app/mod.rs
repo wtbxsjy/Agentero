@@ -153,7 +153,6 @@ pub fn run() {
             .manage(FsWatchController::new())
             .manage(crate::features::paper::ingest::IngestQueue::default())
             .manage(Arc::new(ConnectorController::new()))
-            .manage(crate::integration::word::WordController::default())
             .manage(Arc::new(McpController::new()))
             .manage(Arc::new(McpTunnelController::new()))
             // The agent feature still threads an optional remote launch

@@ -25,7 +25,6 @@ directories, Rust commands, `bindings.ts` types, settings, i18n).
 
 | Switch | Module | Step 1 entry points hidden |
 |---|---|---|
-| `wordCitation` | Word add-in citations | Citation dialog not mounted |
 | `updater` | In-app updater (points at official releases) | Update check reports unsupported |
 
 Deleted in step 2 so far:
@@ -73,6 +72,10 @@ Deleted in step 2 so far:
   built-in / chat-only agent path (`is_builtin_template`, `isChatOnlyAgentTemplate` and the
   public paper-metadata block it sent instead of file paths). Saved registries drop the
   `builtin-zhihu` row on load through `REMOVED_TEMPLATE_IDS`.
+- **Word citations** (switch removed): the Microsoft Word plugin prototype (`integration/word/`
+  with its macOS/Windows drivers, the `word_*` commands and `word:changed` event, the Connector's
+  `/integration/macWordCommand` route, the citation dialog and the Settings → Connector toggle) and
+  the `hayagriva` CSL dependency it alone used.
 
 Already hidden upstream: plugins (`src/lib/plugins/visibility.ts`) and account / cloud writing
 (`src/features/account/visibility.ts`).

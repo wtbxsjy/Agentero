@@ -399,7 +399,6 @@ fn registered_event_names() -> BTreeSet<String> {
         SettingsChangedEvent::NAME,
         SettingsSectionRequestedEvent::NAME,
         SettingsVaultRequestedEvent::NAME,
-        WordChangedEvent::NAME,
         JobProgressEvent::NAME,
         LayoutRemoteProgressEvent::NAME,
         AgentLifecycleProgressEvent::NAME,
@@ -1252,7 +1251,3 @@ fn paper_renamed_mirror_matches_core_emit_shape() {
          (vaultId + PaperRenamedEvent + timestamp, camelCase)"
     );
 }
-
-#[derive(specta::Type, tauri_specta::Event)]
-#[tauri_specta(event_name = "word:changed")]
-pub struct WordChangedEvent(pub ());
