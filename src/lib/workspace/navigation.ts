@@ -982,15 +982,6 @@ registerDecision<{ node: FileNode }>({
 
 /** File-tree click dispatch: Library / Trash / Plaza / paper dir / org dir / file. */
 export function selectFileNode(node: FileNode): void {
-	const vault = getVaultPath();
-	if (
-		vault &&
-		normalizeTabPath(node.path) ===
-			normalizeTabPath(joinVaultPath(vault, "thesis"))
-	) {
-		setTreeSelectedPath(node.path);
-		return;
-	}
 	selectFileNodeNormally(node);
 }
 

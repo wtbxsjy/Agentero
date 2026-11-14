@@ -81,7 +81,6 @@
 		},
 		"vaultRoot": {
 			"notes": "笔记",
-			"thesis": "写作",
 			"data": "数据",
 			"agents": "Agent"
 		}

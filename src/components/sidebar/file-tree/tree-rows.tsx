@@ -395,8 +395,7 @@ function SkillTreeRow({
 }
 
 function VaultRootIcon({ face }: { face: VaultRootFace }) {
-	const Icon =
-		face === "notes" ? Notebook : face === "thesis" ? ScrollText : Database;
+	const Icon = face === "notes" ? Notebook : Database;
 	return <Icon className="size-4 text-muted-foreground" aria-hidden />;
 }
 
