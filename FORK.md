@@ -25,7 +25,6 @@ directories, Rust commands, `bindings.ts` types, settings, i18n).
 
 | Switch | Module | Step 1 entry points hidden |
 |---|---|---|
-| `zhihu` | Zhihu agent and paper action | Settings → Agent row, paper info "Zhihu" chip |
 | `wordCitation` | Word add-in citations | Citation dialog not mounted |
 | `updater` | In-app updater (points at official releases) | Update check reports unsupported |
 
@@ -68,6 +67,12 @@ Deleted in step 2 so far:
   `RemoteAgentHosts` / `RemoteAgentLaunch` traits, now backed by an empty `NoRemoteHosts`, the
   core `VaultFs` abstraction, and the `agentero-delegate` code. The delegate hub is no longer
   started, so ACP sessions do not get the delegate tools.
+- **Zhihu** (switch removed): the built-in Zhihu agent (core `features::zhihu`, the desktop
+  adapter and `zhihu_*` commands, the `zhihuAccessSecret` setting, Settings → Agent row, the
+  empty-state Zhihu discussions) and the "Ask on Zhihu" paper chip. With it went the whole
+  built-in / chat-only agent path (`is_builtin_template`, `isChatOnlyAgentTemplate` and the
+  public paper-metadata block it sent instead of file paths). Saved registries drop the
+  `builtin-zhihu` row on load through `REMOVED_TEMPLATE_IDS`.
 
 Already hidden upstream: plugins (`src/lib/plugins/visibility.ts`) and account / cloud writing
 (`src/features/account/visibility.ts`).

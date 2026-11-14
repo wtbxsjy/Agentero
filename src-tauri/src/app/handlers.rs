@@ -173,9 +173,6 @@ pub fn attach_handlers(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<ta
             crate::integration::plugins::plugin_unload,
             #[cfg(not(any(target_os = "ios", target_os = "android")))]
             crate::integration::plugins::plugin_run,
-            crate::features::zhihu::commands::zhihu_probe,
-            crate::features::zhihu::commands::zhihu_search,
-            crate::features::zhihu::commands::zhihu_question_draft,
             crate::features::agent::commands::agent_run_tool_lifecycle,
             crate::features::agent::commands::agent_run_partial_uninstall,
             crate::features::agent::commands::agent_lifecycle_cancel,

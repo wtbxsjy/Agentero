@@ -49,7 +49,6 @@ nav:
       - PDF 版面分析（实验）: frontend/pdf-layout-analysis.md
       - 网页论文阅读与划词: frontend/web-view.md
       - Agent 面板: frontend/agent.md
-      - 知乎 Agent: frontend/zhihu.md
       - 双链 UI: frontend/wiki.md
       - 命令面板: frontend/command-palette.md
       - 翻译: frontend/translate.md
@@ -71,7 +70,6 @@ nav:
       - MCP Server: backend/mcp.md
       - 双链索引: backend/wiki.md
       - Agent Host: backend/agent.md
-      - 知乎接入: backend/zhihu.md
       - 搜索: backend/search.md
       - 设置: backend/settings.md
       - 使用记录: backend/usage.md

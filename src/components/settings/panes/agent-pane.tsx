@@ -14,7 +14,6 @@ import { AgentUserAgentBlock } from "@/components/settings/panes/agent/agent-use
 import { useAgentCatalog } from "@/components/settings/panes/agent/use-agent-catalog";
 import { useAgentRegistry } from "@/components/settings/panes/agent/use-agent-registry";
 import { useAgentUninstall } from "@/components/settings/panes/agent/use-agent-uninstall";
-import { ZhihuAgentRow } from "@/components/settings/panes/agent/zhihu-agent-row";
 import { AgentUninstallDialog } from "@/components/settings/panes/agent-uninstall-dialog";
 import {
 	PageTitle,
@@ -32,7 +31,6 @@ import { errorText } from "@/lib/core/error";
 import { notifyError } from "@/lib/core/notify";
 import { isTauri } from "@/lib/core/tauri";
 import type { AppSettings } from "@/lib/settings";
-import { surfaces } from "@/lib/surfaces";
 
 export function AgentPane({
 	settings,
@@ -219,12 +217,6 @@ export function AgentPane({
 					onOpenCli={onOpenCli}
 					onEditCustom={handleAddCustom}
 				/>
-				{surfaces.zhihu ? (
-					<ZhihuAgentRow
-						savedSecret={settings.zhihuAccessSecret}
-						onCommit={(value) => patch({ zhihuAccessSecret: value })}
-					/>
-				) : null}
 				<AgentCustomForm busy={loading} onSubmit={handleAddCustom} />
 			</SettingsGroup>
 			<p className="mt-2 mb-3 px-0.5 text-muted-foreground text-xs leading-relaxed">

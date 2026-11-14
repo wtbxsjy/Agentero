@@ -20,7 +20,7 @@ use super::protocol::{
 #[cfg(unix)]
 use crate::features::agent::acp::interaction::PermissionPolicy;
 #[cfg(unix)]
-use crate::features::agent::models::{is_builtin_template, AgentResultPayload};
+use crate::features::agent::models::AgentResultPayload;
 #[cfg(unix)]
 use crate::features::agent::remote_host::RemoteAgentHosts;
 #[cfg(unix)]
@@ -480,7 +480,7 @@ async fn agent_choices(app: &tauri::AppHandle) -> Result<Vec<AgentChoice>, Strin
     let mut agents: Vec<AgentChoice> = state
         .agents
         .into_iter()
-        .filter(|agent| !is_builtin_template(&agent.template) && !agent.command.trim().is_empty())
+        .filter(|agent| !agent.command.trim().is_empty())
         .map(|agent| AgentChoice {
             id: agent.id,
             name: agent.name,
@@ -500,9 +500,6 @@ async fn base_params(
 ) -> Result<RunOnceParams, String> {
     let registry = app.state::<AgentRegistry>();
     let desc = registry.get(&agent.id).map_err(|error| error.to_string())?;
-    if is_builtin_template(&desc.template) {
-        return Err("built-in agents cannot run on a remote host".into());
-    }
     let hosts = app.state::<Arc<dyn RemoteAgentHosts>>();
     let remote = hosts
         .get_session(&target.session_id)

@@ -81,14 +81,6 @@
 		"placeholder": "今天想做些什么？",
 		"queueLabel": "等待发送",
 		"queueRemove": "从队列移除",
-		"paperContext": {
-			"heading": "当前论文（供参考）：",
-			"title": "标题",
-			"authors": "作者",
-			"venue": "期刊/来源",
-			"year": "年份",
-			"abstract": "摘要"
-		},
 		"resizeHandle": "调整输入区高度",
 		"openMention": "打开 {{title}}",
 		"removeContext": "从上下文移除 {{path}}",
@@ -139,18 +131,6 @@
 		"title": "与你的知识库对话",
 		"description": "消息将发送给你的 ACP Agent。点击上方的 Agent 名称可切换后端。",
 		"waiting": "正在等待 Agent……"
-	},
-	"zhihuDiscussions": {
-		"noPaper": "打开一篇论文后，这里会显示知乎上的相关讨论。",
-		"noSecret": "尚未配置知乎 Access Secret，请在 设置 → Agent → 知乎 中填入。",
-		"loading": "正在检索知乎……",
-		"empty": "知乎上暂无与本文相关的讨论。",
-		"note": "按论文标题检索知乎，结果可能与本文无关。",
-		"retry": "重试",
-		"refresh": "换一批",
-		"answer": "回答",
-		"article": "文章",
-		"votes": "{{votes}} 赞同"
 	},
 	"thinking": "思考中……",
 	"working": "执行中……",

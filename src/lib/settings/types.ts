@@ -155,8 +155,6 @@ export type AppSettings = {
 	// General
 	/** EasyScholar key for journal ranking and impact-factor lookups. */
 	easyScholarKey: string;
-	/** 知乎开放平台 Access Secret（内置「知乎」Agent 的直答 / 检索凭证）。 */
-	zhihuAccessSecret: string;
 	/** EZProxy/WebVPN prefix for paywalled PDF fallback ("" disables). */
 	institutionProxyPrefix: string;
 	/** Session cookie for institution proxy requests. */

@@ -126,7 +126,6 @@ ACP / SSH 子进程由 Rust 与 ACP SDK 启动，不注册 Tauri shell 插件。
 | Vault Doctor | [doctor.md](doctor.md) |
 | Agent Host | [agent.md](agent.md) |
 | 研究上下文 | [context.md](context.md) |
-| 知乎接入（内置 Agent / 开放平台） | [zhihu.md](zhihu.md) |
 | 搜索 | [search.md](search.md) |
 | 设置 | [settings.md](settings.md) |
 | 本地桌面应用检测 | [desktop-apps.md](desktop-apps.md) |

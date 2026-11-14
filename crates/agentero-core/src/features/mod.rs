@@ -12,7 +12,6 @@ pub mod paper;
 pub mod pdf;
 pub mod translate;
 pub mod vault;
-pub mod zhihu;
 
 // Stable historical `features::` paths, backed by the semantic module tree.
 pub use markdown::wiki;
