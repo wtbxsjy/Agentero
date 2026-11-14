@@ -8,7 +8,6 @@ pub mod mark;
 pub mod mcp;
 pub mod open;
 pub mod paper;
-pub mod sync;
 pub mod translate;
 pub mod ui;
 pub mod vault;

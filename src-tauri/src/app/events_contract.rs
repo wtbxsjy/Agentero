@@ -267,30 +267,6 @@ pub struct PluginsChangedEvent(pub ());
 #[tauri_specta(event_name = "plugins:data-changed")]
 pub struct PluginsDataChangedEvent(pub String);
 
-/// Owned mirror of the private borrowed `SyncStateEvent` in
-/// `integration::sync::commands`.
-#[derive(serde::Serialize, specta::Type, tauri_specta::Event)]
-#[serde(rename_all = "camelCase")]
-#[tauri_specta(event_name = "sync:state")]
-pub struct SyncStateEvent {
-    pub vault_path: String,
-    pub status: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
-}
-
-/// Owned mirror of the private borrowed `SyncProgressEvent` in
-/// `integration::sync::commands`.
-#[derive(serde::Serialize, specta::Type, tauri_specta::Event)]
-#[serde(rename_all = "camelCase")]
-#[tauri_specta(event_name = "sync:progress")]
-pub struct SyncProgressEvent {
-    pub vault_path: String,
-    pub phase: String,
-    pub current: usize,
-    pub total: usize,
-}
-
 /// Owned mirror of the private core `PaperEventPayload` envelope
 /// (`paper:imported` / `paper:assets-ready`).
 #[derive(serde::Serialize, specta::Type)]
@@ -470,8 +446,6 @@ fn registered_event_names() -> BTreeSet<String> {
         McpTunnelStatusEvent::NAME,
         PluginsChangedEvent::NAME,
         PluginsDataChangedEvent::NAME,
-        SyncStateEvent::NAME,
-        SyncProgressEvent::NAME,
         PaperImportedEvent::NAME,
         PaperAssetsReadyEvent::NAME,
         PaperRenamedEventPayload::NAME,
@@ -970,7 +944,6 @@ fn scanned_emit_event_names_match_registered_contract() {
 // payload by one of:
 // - serde shape equality tests in the *owning* module (private structs are
 //   only reachable there): `features::lifecycle` (JobTerminalPayload),
-//   `integration::sync::commands` (SyncState/SyncProgress),
 //   `features::paper::analyze::layout::{model_assets, hosted}`
 //   (LayoutModelTask/LayoutRemoteProgress), `features::agent::registry::
 //   lifecycle` (AgentLifecycleProgress), `app::window::commands`

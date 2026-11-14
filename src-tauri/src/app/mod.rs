@@ -147,7 +147,6 @@ pub fn run() {
         .manage(WikiIndexState::new())
         .manage(crate::features::vault::doctor::DoctorDirtyPathsState::default())
         .manage(ExternalRenameRepairStore::new())
-        .manage(crate::integration::sync::SyncService::default())
         .manage(crate::app::open_request::PendingVaultOpen::new())
         .manage(crate::app::open_request::PendingUiRequest::new())
         .manage(crate::features::web::html_preview::HtmlPreviewGrants::default());
@@ -469,10 +468,6 @@ pub fn run() {
             });
         }
 
-        // Auto sync: resume background schedulers for configured vaults.
-        app.state::<crate::integration::sync::SyncService>()
-            .start_all(app.handle());
-
         Ok(())
     });
 
@@ -606,11 +601,6 @@ pub fn run() {
                 #[cfg(not(any(target_os = "android", target_os = "ios")))]
                 app.state::<Arc<crate::core::telemetry::Telemetry>>()
                     .shutdown();
-            }
-            // Best-effort final push (bounded); only on Exit so it runs once.
-            if matches!(event, tauri::RunEvent::Exit) {
-                app.state::<crate::integration::sync::SyncService>()
-                    .flush_on_exit(app);
             }
         });
 }

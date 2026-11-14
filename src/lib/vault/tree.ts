@@ -52,21 +52,6 @@ export const TREE_EAGER_ROOT_NAMES = new Set(["papers", "notes", ".agents"]);
  */
 const TREE_ALLOWED_DOT_NAMES = new Set([".env.example", ".agents"]);
 
-/**
- * Cloud-sync store artifacts (`blobs/`, `manifests/`, `HEAD`, `vault.json` —
- * see Host `integration/sync/engine.rs`). When a WebDAV sync target is a
- * cloud folder a desktop client mirrors back into the vault, these land at
- * the vault root. Hidden at the root only — nested same-named folders are
- * user content — mirroring the Host tree rule
- * (`agentero-core/features/vault/tree.rs`).
- */
-const TREE_SYNC_STORE_ARTIFACT_NAMES = new Set([
-	"blobs",
-	"manifests",
-	"HEAD",
-	"vault.json",
-]);
-
 /** Any of these marks a directory as a paper unit whose `source/` is lazy. */
 const PAPER_MARKER_FILE_NAMES = new Set(["NOTES.md", "PAPER.md"]);
 
@@ -261,9 +246,6 @@ async function buildTree(
 
 	for (const entry of entries) {
 		if (shouldIgnoreTreeName(entry.name)) continue;
-		// Mirrored sync-store artifacts only ever sit at the vault root
-		// (`rel` is the listed directory's vault-relative path).
-		if (!rel && TREE_SYNC_STORE_ARTIFACT_NAMES.has(entry.name)) continue;
 		// The app's own sidecars inside a paper's `source/` bucket are never
 		// user content (references + PDF layout sidecars).
 		if (

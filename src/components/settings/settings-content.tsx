@@ -1,6 +1,5 @@
 import {
 	Bot,
-	CloudUpload,
 	Compass,
 	FlaskConical,
 	Info,
@@ -70,7 +69,6 @@ const PANE_LOADERS = {
 	keyboard: () => import("@/components/settings/panes/keyboard-pane"),
 	"remote-access": () =>
 		import("@/components/settings/panes/remote-access-pane"),
-	sync: () => import("@/components/settings/panes/sync-pane"),
 	about: () => import("@/components/settings/panes/about-pane"),
 } satisfies Record<SettingsSection, () => Promise<unknown>>;
 
@@ -81,7 +79,6 @@ const PANE_LOADERS = {
 function sectionVisible(id: SettingsSection): boolean {
 	if (!pluginsSurfaceEnabled && id === "plugins") return false;
 	if (!accountSurfaceEnabled && id === "account") return false;
-	if (!surfaces.sync && id === "sync") return false;
 	if (!surfaces.remoteAccess && id === "remote-access") return false;
 	return true;
 }
@@ -149,9 +146,6 @@ const RemoteAccessPane = memo(
 		})),
 	),
 );
-const SyncPane = memo(
-	lazy(() => PANE_LOADERS.sync().then((m) => ({ default: m.SyncPane }))),
-);
 const AboutPane = memo(
 	lazy(() => PANE_LOADERS.about().then((m) => ({ default: m.AboutPane }))),
 );
@@ -168,7 +162,6 @@ const NAV: {
 	{ id: "translate", icon: Languages },
 	{ id: "layout", icon: LayoutTemplate },
 	{ id: "remote-access", icon: Smartphone },
-	{ id: "sync", icon: CloudUpload },
 	{ id: "plugins", icon: Puzzle },
 	{ id: "experimental", icon: FlaskConical },
 	{ id: "doctor", icon: Stethoscope, dividerBefore: true },
@@ -630,17 +623,6 @@ export function SettingsContent({
 						>
 							<Suspense fallback={<PaneFallback />}>
 								<RemoteAccessPane vaultPath={vaultPath} />
-							</Suspense>
-						</div>
-					)}
-					{visitedSections.includes("sync") && (
-						<div
-							data-settings-pane
-							data-active={activeSection === "sync" ? "true" : "false"}
-							hidden={activeSection !== "sync"}
-						>
-							<Suspense fallback={<PaneFallback />}>
-								<SyncPane vaultPath={vaultPath} />
 							</Suspense>
 						</div>
 					)}

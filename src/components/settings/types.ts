@@ -10,7 +10,6 @@ export type SettingsSection =
 	| "doctor"
 	| "keyboard"
 	| "remote-access"
-	| "sync"
 	| "about";
 
 /** Which machine the Agent catalog / probe targets. */

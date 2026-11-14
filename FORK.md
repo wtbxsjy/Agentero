@@ -27,7 +27,6 @@ directories, Rust commands, `bindings.ts` types, settings, i18n).
 |---|---|---|
 | `zhihu` | Zhihu agent and paper action | Settings → Agent row, paper info "Zhihu" chip |
 | `remoteVault` | SSH/SFTP vaults | Welcome button, recent remotes, vault switcher entry |
-| `sync` | S3 sync | Settings → Sync |
 | `remoteAccess` | Mobile pairing | Settings → Remote access |
 | `wordCitation` | Word add-in citations | Citation dialog not mounted |
 | `updater` | In-app updater (points at official releases) | Update check reports unsupported |
@@ -52,6 +51,11 @@ Deleted in step 2 so far:
   `agentero table` CLI, the `use_table_ops` / `experiment_locked` write guards, table hits in
   `vault_search`, and table-path rewriting in wiki renames. Existing `*.table.json` files now open
   as plain JSON.
+- **Cloud sync** (switch removed): S3/R2, WebDAV and Git sync (core `features::sync`, the desktop
+  scheduler and commands, `agentero sync` CLI, Settings → Sync, account cloud usage), the
+  per-vault "don't download sources" sync scope (arXiv sources now always download), and the
+  hiding of mirrored sync-store files (`blobs/`, `manifests/`, `HEAD`, `vault.json`) at the vault
+  root.
 
 Already hidden upstream: plugins (`src/lib/plugins/visibility.ts`) and account / cloud writing
 (`src/features/account/visibility.ts`). The mobile app only ships in iOS builds.

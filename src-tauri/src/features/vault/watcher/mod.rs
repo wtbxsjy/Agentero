@@ -211,17 +211,9 @@ impl FsWatchController {
 }
 
 /// Ignore churn from internal state, VCS metadata, and dependencies.
-/// Sync-store artifacts (`blobs/`, `manifests/`, `HEAD`, `vault.json`)
-/// mirrored into the vault by a desktop WebDAV client are engine churn too,
-/// never user content — matched as any path segment, mirroring
-/// `snapshot::is_ignored_name` so the two never disagree.
 fn is_ignored(path: &str) -> bool {
     let p = path.replace('\\', "/");
-    p.contains("/.agentero/")
-        || p.contains("/.git/")
-        || p.contains("/node_modules/")
-        || p.split('/')
-            .any(crate::features::vault::tree::is_sync_store_artifact)
+    p.contains("/.agentero/") || p.contains("/.git/") || p.contains("/node_modules/")
 }
 
 /// Files whose presence decides `PaperCaps`: a PDF to parse, LaTeX source that

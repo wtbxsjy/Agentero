@@ -138,21 +138,6 @@ pub fn retry_due(paper_dir: &Path, arxiv_id: &str) -> bool {
         })
 }
 
-pub fn automatic_download_allowed(vault: &Path) -> bool {
-    download_allowed_in(vault, crate::features::sync::config::list_all())
-}
-
-fn download_allowed_in(
-    vault: &Path,
-    configs: HashMap<String, crate::features::sync::config::SyncBackendConfig>,
-) -> bool {
-    let canonical = crate::fs::canonicalize_best_effort(vault);
-    configs
-        .into_iter()
-        .find(|(path, _)| crate::fs::canonicalize_best_effort(Path::new(path)) == canonical)
-        .is_none_or(|(_, config)| config.scope.source)
-}
-
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum PreparationReason {
@@ -166,9 +151,7 @@ pub enum PreparationReason {
 pub fn preparation_reason(vault: &Path, paper: &papers::PaperRecord) -> Option<PreparationReason> {
     let dir = vault.join(&paper.path);
     let caps = super::capabilities::probe_paper_caps(&dir);
-    if automatic_download_allowed(vault)
-        && arxiv_request(paper).is_some_and(|id| retry_due(&dir, &id))
-    {
+    if arxiv_request(paper).is_some_and(|id| retry_due(&dir, &id)) {
         return Some(PreparationReason::DownloadSource);
     }
     if caps.needs_paper_md() {
@@ -542,19 +525,6 @@ mod tests {
         assert!(version_from_text("arXiv:2401.00001v3", "1706.03762").is_none());
         assert!(matches_request("1706.03762", "1706.03762v3"));
         assert!(!matches_request("1706.03762v1", "1706.03762v3"));
-    }
-
-    #[test]
-    fn excluded_source_policy_survives_canonical_vault_path_aliases() {
-        let dir = tempfile::tempdir().unwrap();
-        let mut config = crate::features::sync::config::SyncBackendConfig::default();
-        config.scope.source = false;
-        let configs =
-            HashMap::from([(dir.path().join(".").to_string_lossy().into_owned(), config)]);
-        assert!(!download_allowed_in(
-            &fs::canonicalize(dir.path()).unwrap(),
-            configs
-        ));
     }
 
     #[test]

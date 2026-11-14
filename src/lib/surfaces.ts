@@ -14,8 +14,6 @@ export const surfaces = {
 	zhihu: false,
 	/** Remote SSH/SFTP vaults. */
 	remoteVault: false,
-	/** S3 sync settings. */
-	sync: false,
 	/** Mobile pairing / remote access settings. */
 	remoteAccess: false,
 	/** Word add-in citation dialog. */
