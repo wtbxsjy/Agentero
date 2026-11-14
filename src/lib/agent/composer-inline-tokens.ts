@@ -7,7 +7,6 @@ import { normalizeQuoteContext } from "./selection-context";
  * kept on the user line so the transcript can redraw @ / $ / / chips after send.
  */
 
-import { plazaMentionTitle } from "@/lib/agent/plaza-mention";
 import type { SelectionContext } from "@/lib/agent/selection-store";
 import { basenameOf } from "@/lib/core/path";
 
@@ -392,9 +391,9 @@ export function commandInvocationLabel(invocation: string): string {
 	return name ? `${commandPrefix(invocation)}${name}` : "";
 }
 
-/** Visible label for an @ chip: plaza title, otherwise the path basename. */
+/** Visible label for an @ chip: the path basename. */
 export function mentionChipLabel(path: string): string {
-	return plazaMentionTitle(path) || basenameOf(path) || path;
+	return basenameOf(path) || path;
 }
 
 function chipTokenSource(part: InlineTokenPart): string {

@@ -62,7 +62,6 @@
 		"sections": {
 			"papers": "论文库",
 			"pdf": "PDF 阅读",
-			"plaza": "广场",
 			"system": "系统",
 			"network": "网络",
 			"integrations": "集成",
@@ -188,9 +187,6 @@
 			"probeOk": "可用",
 			"probeFail": "不可用",
 			"probeProbing": "检测中…"
-		},
-		"plaza": {
-			"label": "广场"
 		},
 		"connector": {
 			"label": "兼容 Zotero Connector",
@@ -932,13 +928,6 @@
 			"clear": "清理日志",
 			"clearDone": "已清理日志",
 			"clearFailed": "无法清理日志。"
-		},
-		"scratch": {
-			"label": "论文全文缓存",
-			"summary": "{{papers}} 篇 · {{size}}",
-			"clear": "清除缓存",
-			"clearDone": "缓存已清除",
-			"clearFailed": "清除论文全文缓存失败。"
 		},
 		"reflowCache": {
 			"label": "翻译缓存",

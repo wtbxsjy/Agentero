@@ -10,15 +10,12 @@ import {
 	encodeVisualToken,
 	type InlineTokenPart,
 } from "@/lib/agent/composer-inline-tokens";
-import { plazaMentionTitle } from "@/lib/agent/plaza-mention";
 import { selectionLineLabel } from "@/lib/agent/selection-line-label";
 import type { PdfVisualDraft } from "@/lib/agent/visual-context-store";
 import { basenameOf } from "@/lib/core/path";
-import { cn, truncateToChars } from "@/lib/core/utils";
-import { isFeedMentionPath } from "@/lib/plaza/feed-mention";
+import { cn } from "@/lib/core/utils";
 
 export const CHIP_ATTR = "data-composer-chip";
-const MAX_CHIP_TITLE_CHARS = 9;
 const TOKEN_ATTR = "data-composer-token";
 /** Zero-width, non-breaking padding after chips so the caret has a landing spot. */
 export const CARET_PAD = "\u2060";
@@ -668,15 +665,8 @@ export function renderChip(
 	if (part.type === "mention") {
 		chip.setAttribute(CHIP_ATTR, "mention");
 		chip.dataset.path = part.path;
-		// Plaza mentions show the paper title; vault paths keep the basename.
-		const plazaTitle = plazaMentionTitle(part.path);
-		const short = plazaTitle
-			? truncateToChars(plazaTitle, MAX_CHIP_TITLE_CHARS)
-			: basenameOf(part.path) || labelForPath(part.path) || part.path;
-		const feedReference = isFeedMentionPath(part.path);
-		// Feed references open their detail and own a hover card; the native
-		// path tooltip would sit on top of it.
-		appendPrefixLabel(chip, "@", short, feedReference ? undefined : part.path);
+		const short = basenameOf(part.path) || labelForPath(part.path) || part.path;
+		appendPrefixLabel(chip, "@", short, part.path);
 		chip.setAttribute(
 			"aria-label",
 			t("composer.openMention", { title: short }),

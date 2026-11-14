@@ -62,7 +62,6 @@
 		"sections": {
 			"papers": "Paper library",
 			"pdf": "PDF reading",
-			"plaza": "Plaza",
 			"system": "System",
 			"network": "Network",
 			"integrations": "Integrations",
@@ -188,9 +187,6 @@
 			"probeOk": "Available",
 			"probeFail": "Unavailable",
 			"probeProbing": "Checking…"
-		},
-		"plaza": {
-			"label": "Plaza"
 		},
 		"connector": {
 			"label": "Zotero Connector compatibility",
@@ -932,13 +928,6 @@
 			"clear": "Clear logs",
 			"clearDone": "Logs cleared",
 			"clearFailed": "Couldn't clear logs."
-		},
-		"scratch": {
-			"label": "Paper full-text cache",
-			"summary": "{{papers}} papers · {{size}}",
-			"clear": "Clear cache",
-			"clearDone": "Cache cleared",
-			"clearFailed": "Couldn't clear the paper full-text cache."
 		},
 		"reflowCache": {
 			"label": "Translation cache",

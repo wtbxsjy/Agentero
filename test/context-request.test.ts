@@ -28,9 +28,9 @@ it("sends the PDF quote, page, and translation to the shared resolver", () => {
 	});
 });
 
-it("turns sidebar selections and mentions into anchors without plaza paths", () => {
+it("turns sidebar selections and mentions into anchors", () => {
 	const request = sidebarContextRequest({
-		contextPaths: ["papers/attention", "agentero:plaza/today"],
+		contextPaths: ["papers/attention"],
 		selectionAnnotations: new Map([["sel-1", 1]]),
 		selections: [
 			{

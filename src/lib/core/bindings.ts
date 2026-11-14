@@ -332,13 +332,6 @@ export const commands = {
 	 *  A paper that cannot be resolved returns `found: false` and writes nothing.
 	 */
 	paperCoolpapersNotes: (args: CoolPapersNotesArgs) => typedError<ApiResult<CoolPapersNotes>, string>(__TAURI_INVOKE("paper_coolpapers_notes", { args })),
-	/**
-	 *  Import one papers.cool row straight from its page metadata.
-	 * 
-	 *  Bypasses the Translator: the page's `citation_*` fields cover every branch
-	 *  papers.cool aggregates and also carry the PDF URL.
-	 */
-	paperCoolpapersImport: (args: CoolPapersImportArgs) => typedError<ApiResult<PaperCommitResult>, string>(__TAURI_INVOKE("paper_coolpapers_import", { args })),
 	catalogListProperties: (args: CatalogListPropertiesArgs) => __TAURI_INVOKE<ApiResult<CustomProperty_Serialize[]>>("catalog_list_properties", { args }),
 	catalogCreateProperty: (args: CatalogCreatePropertyArgs_Deserialize) => __TAURI_INVOKE<ApiResult<CustomProperty_Serialize>>("catalog_create_property", { args }),
 	catalogUpdateProperty: (args: CatalogUpdatePropertyArgs_Deserialize) => __TAURI_INVOKE<ApiResult<CustomProperty_Serialize>>("catalog_update_property", { args }),
@@ -430,29 +423,6 @@ export const commands = {
 	usageClear: (args: UsageClearArgs) => __TAURI_INVOKE<ApiResult<number>>("usage_clear", { args }),
 	feedbackSubmit: (args: FeedbackSubmitArgs) => __TAURI_INVOKE<ApiResult<null>>("feedback_submit", { args }),
 	logsClear: () => __TAURI_INVOKE<ApiResult<number>>("logs_clear"),
-	feedsList: () => __TAURI_INVOKE<ApiResult<FeedList>>("feeds_list"),
-	feedsAdd: (args: FeedsAddArgs) => __TAURI_INVOKE<ApiResult<FeedSub>>("feeds_add", { args }),
-	feedsRemove: (args: FeedsIdArgs) => __TAURI_INVOKE<ApiResult<null>>("feeds_remove", { args }),
-	feedsRename: (args: FeedsRenameArgs) => __TAURI_INVOKE<ApiResult<FeedSub>>("feeds_rename", { args }),
-	feedsRefresh: (args: FeedsRefreshArgs) => __TAURI_INVOKE<ApiResult<FeedRefreshResult>>("feeds_refresh", { args }),
-	feedsItems: (args: FeedsItemsArgs) => __TAURI_INVOKE<ApiResult<FeedItemsPage>>("feeds_items", { args }),
-	feedsSetRead: (args: FeedsSetReadArgs) => __TAURI_INVOKE<ApiResult<FeedItem>>("feeds_set_read", { args }),
-	feedsMarkImported: (args: FeedsIdArgs) => __TAURI_INVOKE<ApiResult<FeedItem>>("feeds_mark_imported", { args }),
-	paperPwcImport: (args: PwcImportArgs) => typedError<ApiResult<PaperCommitResult>, string>(__TAURI_INVOKE("paper_pwc_import", { args })),
-	plazaScratchPrepare: (args: PlazaScratchPrepareArgs) => __TAURI_INVOKE<ApiResult<PlazaScratchEntry[]>>("plaza_scratch_prepare", { args }),
-	plazaScratchStats: () => __TAURI_INVOKE<ApiResult<ScratchStats>>("plaza_scratch_stats"),
-	plazaScratchClear: () => __TAURI_INVOKE<ApiResult<ScratchClearResult>>("plaza_scratch_clear"),
-	feedsSetPinned: (args: FeedsSetPinnedArgs) => __TAURI_INVOKE<ApiResult<FeedSub>>("feeds_set_pinned", { args }),
-	feedsResolveBody: (args: FeedsIdArgs) => __TAURI_INVOKE<ApiResult<FeedItem>>("feeds_resolve_body", { args }),
-	/**
-	 *  Rank today's arXiv papers against the Vault library.
-	 * 
-	 *  Reuses the stored same-day run unless `force` is set, so the vault-open
-	 *  prewarm and repeated page opens stay free.
-	 */
-	recommendArxiv: (args: RecommendArxivArgs) => __TAURI_INVOKE<ApiResult<RecommendResult>>("recommend_arxiv", { args }),
-	/**  Stored recommendation run, if any — lets the page render before refreshing. */
-	recommendArxivLast: (args: RecommendArxivLastArgs) => __TAURI_INVOKE<ApiResult<RecommendResult | null>>("recommend_arxiv_last", { args }),
 	/**
 	 *  Liveness check for the user's configured embedding endpoint.
 	 * 
@@ -1710,10 +1680,6 @@ export type AppSettings_Deserialize = {
 	layout?: LayoutSettings,
 	/**  PostHog product analytics opt-out (applies from the next launch). */
 	telemetryEnabled?: boolean,
-	/**  Plaza discovery sources in the sidebar. Default on. */
-	plazaEnabled?: boolean,
-	/**  Plaza source ids hidden from the sidebar / Plaza home (right-click toggle). */
-	plazaHiddenSources?: string[],
 	/**  First-run setup wizard completed. Default false → auto-show on fresh installs. */
 	onboardingDone?: boolean,
 	/**  Post-vault feature tour completed or skipped. Default false → auto-start once. */
@@ -1863,10 +1829,6 @@ export type AppSettings_Serialize = {
 	layout: LayoutSettings,
 	/**  PostHog product analytics opt-out (applies from the next launch). */
 	telemetryEnabled: boolean,
-	/**  Plaza discovery sources in the sidebar. Default on. */
-	plazaEnabled: boolean,
-	/**  Plaza source ids hidden from the sidebar / Plaza home (right-click toggle). */
-	plazaHiddenSources: string[],
 	/**  First-run setup wizard completed. Default false → auto-show on fresh installs. */
 	onboardingDone: boolean,
 	/**  Post-vault feature tour completed or skipped. Default false → auto-start once. */
@@ -2691,18 +2653,6 @@ export type ContextRequest_Serialize = {
 /**  Where the turn started. Quick Chat and the sidebar share one resolver. */
 export type ContextSurface = "quick_chat" | "sidebar";
 
-export type CoolPapersImportArgs = {
-	vaultPath: string,
-	/**  Vault-relative destination, e.g. `papers` or `papers/nlp`. */
-	parentDir: string,
-	/**  papers.cool branch (`arxiv` / `venue`). */
-	branch: string,
-	/**  Row id, e.g. `36962@AAAI`. */
-	id: string,
-	/**  Background task to report asset-download progress into. */
-	taskId?: string | null,
-};
-
 export type CoolPapersNotes = {
 	/**  False when the paper could not be resolved on papers.cool at all. */
 	found: boolean,
@@ -3105,89 +3055,11 @@ export type ExportFontPayload = {
 	bytesBase64: string,
 };
 
-export type FeedItem = {
-	id: string,
-	subscriptionId: string,
-	subscriptionTitle: string,
-	title: string,
-	url: string | null,
-	publishedAt: string | null,
-	summaryText: string,
-	contentHtml: string | null,
-	paperUrl: string | null,
-	importedAt: string | null,
-	readAt: string | null,
-	bodyMarkdown: string | null,
-};
-
-export type FeedItemsPage = {
-	items: FeedItem[],
-};
-
-export type FeedList = {
-	subscriptions: FeedSub[],
-};
-
-export type FeedRefreshResult = {
-	subscriptions: FeedSub[],
-	fetched: number,
-	failed: number,
-};
-
-export type FeedSub = {
-	id: string,
-	url: string,
-	title: string,
-	addedAt: string,
-	lastFetchedAt: string | null,
-	lastError: string | null,
-	itemCount: number,
-	pinned: boolean,
-	pinnedAt: string | null,
-};
-
 export type FeedbackSubmitArgs = {
 	category: string,
 	message: string,
 	contact?: string | null,
 	locale: string,
-};
-
-export type FeedsAddArgs = {
-	url: string,
-	title?: string | null,
-};
-
-export type FeedsIdArgs = {
-	id: string,
-};
-
-export type FeedsItemsArgs = {
-	subscriptionId?: string | null,
-	filter?: string | null,
-	limit?: number | null,
-	beforePublishedAt?: string | null,
-	beforeId?: string | null,
-};
-
-export type FeedsRefreshArgs = {
-	id?: string | null,
-	staleOnly?: boolean,
-};
-
-export type FeedsRenameArgs = {
-	id: string,
-	title: string,
-};
-
-export type FeedsSetPinnedArgs = {
-	id: string,
-	pinned: boolean,
-};
-
-export type FeedsSetReadArgs = {
-	id: string,
-	read: boolean,
 };
 
 /**  Payload for the `vault:file-changed` event (consumed by the renderer). */
@@ -4092,23 +3964,6 @@ export type PaperAssetsStatus = {
 	paperMd: boolean,
 };
 
-/**  Uniform result shape for every entry (camelCase matches the frontend). */
-export type PaperCommitResult = {
-	status: CommitStatus,
-	/**  Vault-relative paper folder. */
-	path: string,
-	id: string,
-	title: string,
-	/**  Absolute paper folder. */
-	paperDir: string,
-	pdf: boolean,
-	tex: boolean,
-	paperMd: boolean,
-	assetMessages: string[],
-	/**  True when assets are still downloading in the background (`Deferred`). */
-	assetsPending: boolean,
-};
-
 export type PaperCopyArgs = {
 	vaultPath: string,
 	/**  Vault-relative item to duplicate (paper or org folder under `papers/`). */
@@ -4645,19 +4500,6 @@ export type PiProjectTrustStatus = {
 	trusted: boolean,
 };
 
-/**  Per-id outcome: one failed paper never blocks the rest of the turn. */
-export type PlazaScratchEntry = {
-	arxivId: string,
-	ok: boolean,
-	markdownPath: string | null,
-	pdfPath: string | null,
-	error: string | null,
-};
-
-export type PlazaScratchPrepareArgs = {
-	arxivIds: string[],
-};
-
 export type PluginsChangedEvent = null;
 
 export type PluginsDataChangedEvent = string;
@@ -4724,15 +4566,6 @@ export type PropertyOption_Serialize = {
 	color?: string | null,
 };
 
-export type PwcImportArgs = {
-	vaultPath: string,
-	/**  Parent dir resolved by the renderer (`papers` or a paper group). */
-	parentDir: string,
-	/**  Numeric catalog id or arXiv id from the `/paper/<id>` URL. */
-	paperId: string,
-	taskId?: string | null,
-};
-
 /**  生成提问草稿所需的论文信息（均为公开元数据，前端从 catalog 取）。 */
 export type QuestionDraftInput = {
 	title: string,
@@ -4765,38 +4598,6 @@ export type RebuildResult = {
 	indexedFiles: number,
 	edges: number,
 	nodes: number,
-};
-
-export type RecommendArxivArgs = {
-	vaultPath: string,
-	/**  Categories to fetch; falls back to the last run, then the defaults. */
-	categories?: string[] | null,
-	topN?: number | null,
-	/**  Recompute even when today's stored run covers the same categories. */
-	force?: boolean,
-};
-
-export type RecommendArxivLastArgs = {
-	vaultPath: string,
-};
-
-export type RecommendItem = {
-	arxivId: string,
-	title: string,
-	abstract: string,
-	url: string,
-	publishedAt: string | null,
-	score: number | null,
-};
-
-export type RecommendResult = {
-	items: RecommendItem[],
-	/**  RFC3339 timestamp of the run that produced `items`. */
-	computedAt: string,
-	categories: string[],
-	corpusSize: number,
-	/**  True when `items` came from the stored same-day run. */
-	reusedCache: boolean,
 };
 
 /**  Relay connection information embedded in a pairing offer. */
@@ -5125,15 +4926,6 @@ export type RunOnceRequest_Serialize = {
 	 *  contains that transcript.
 	 */
 	resumeTranscript?: string | null,
-};
-
-export type ScratchClearResult = {
-	freedBytes: number,
-};
-
-export type ScratchStats = {
-	papers: number,
-	bytes: number,
 };
 
 export type SearchHit = SearchHit_Serialize | SearchHit_Deserialize;

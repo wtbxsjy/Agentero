@@ -77,7 +77,6 @@ import { loadDirChildren } from "@/lib/vault/store";
 import {
 	openPaper,
 	openPaperNotes,
-	openPlazaSource,
 	selectFileNode,
 	selectLibrary,
 	selectTrash,
@@ -309,7 +308,6 @@ export function VaultSidebar() {
 						onSelectFile={selectFileNode}
 						onSelectLibrary={selectLibrary}
 						onSelectTrash={selectTrash}
-						onSelectPlazaSource={openPlazaSource}
 						zoteroCollectionPapers={papers}
 						onOpenZoteroCollectionPaper={onOpenZoteroCollectionPaper}
 						onEmptyTrash={onEmptyTrash}

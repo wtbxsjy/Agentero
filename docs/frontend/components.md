@@ -38,8 +38,8 @@ Agent / Reasoning 消息里的 Markdown：`Streamdown` + `PlainTable` / `PlainCo
 
 | 组件 | 位置 | 用途 |
 |---|---|---|
-| `SelectionToolbar` + `SelectionToolbarAction` / `SelectionToolbarDivider` / `SelectionToolbarIconButton` | `components/selection/selection-toolbar.tsx` | PDF 文本选区、Plaza 选区、高亮标注菜单共用高度、描边、缩放与 dim 行为 |
-| `FloatingMenu` + `FloatingMenuItem` / `FloatingMenuShortcut` / `FloatingMenuSeparator` | `components/ui/floating-menu.tsx` | 屏幕坐标锚定的菜单（文件树右键、Plaza 卡片）；行距与快捷键对齐 Radix 菜单 |
+| `SelectionToolbar` + `SelectionToolbarAction` / `SelectionToolbarDivider` / `SelectionToolbarIconButton` | `components/selection/selection-toolbar.tsx` | PDF 文本选区、高亮标注菜单共用高度、描边、缩放与 dim 行为 |
+| `FloatingMenu` + `FloatingMenuItem` / `FloatingMenuShortcut` / `FloatingMenuSeparator` | `components/ui/floating-menu.tsx` | 屏幕坐标锚定的菜单（文件树右键）；行距与快捷键对齐 Radix 菜单 |
 | `PanelCard` + `PanelCardButton` / `PanelCardActions` / `PanelEmptyState` | `components/viewer/panels/panel-primitives.tsx` | PDF 右栏卡片、整卡跳转、hover 操作条与空态 |
 | `QuietIconButton` | `components/ui/quiet-icon-button.tsx` | 24px 静音图标按钮（面板头、hover 操作条、PDF 浮层） |
 | `EmptyState` | `components/ui/empty-state.tsx` | 查看器无内容时的居中提示 |

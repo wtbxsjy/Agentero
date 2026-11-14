@@ -14,7 +14,6 @@ import {
 	paperHasVisibleChildren,
 	paperNeedsRead,
 } from "@/lib/paper";
-import { PLAZA_VIRTUAL_PATH } from "@/lib/plaza";
 import type { FileNode } from "@/lib/vault";
 import {
 	isVaultAgentRoot,
@@ -28,9 +27,6 @@ import { TreeRenameInput } from "./tree-inputs";
 import {
 	NodeTreeRow,
 	PaperTreeRow,
-	PlazaRow,
-	PlazaSourceRow,
-	treeRowIndentStyle,
 	ZoteroCollectionReferenceRow,
 } from "./tree-rows";
 import type { FlatRow, TreeRenameDraft } from "./types";
@@ -141,12 +137,6 @@ function renderRow(
 	depth: number,
 ): ReactNode {
 	if (row.kind === "trash") return props.trashRow;
-	if (row.kind === "plaza")
-		return <PlazaRow expanded={props.expanded.has(PLAZA_VIRTUAL_PATH)} />;
-	if (row.kind === "plazaSource")
-		return (
-			<PlazaSourceRow source={row.source} style={treeRowIndentStyle(depth)} />
-		);
 	if (row.kind === "zoteroCollectionReference") {
 		return (
 			<ZoteroCollectionReferenceRow
@@ -197,12 +187,7 @@ export function TreeRowsViewport(props: TreeRowsViewportProps) {
 			{rowVirtualizer.getVirtualItems().map((vi) => {
 				const row = flatRows[vi.index];
 				if (!row) return null;
-				const depth =
-					row.kind === "trash" || row.kind === "plaza"
-						? 0
-						: row.kind === "plazaSource"
-							? 1
-							: row.depth;
+				const depth = row.kind === "trash" ? 0 : row.depth;
 				return (
 					<div
 						key={row.key}

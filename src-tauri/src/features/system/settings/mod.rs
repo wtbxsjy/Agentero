@@ -223,12 +223,6 @@ pub struct AppSettings {
     /// PostHog product analytics opt-out (applies from the next launch).
     #[serde(default = "default_true")]
     pub telemetry_enabled: bool,
-    /// Plaza discovery sources in the sidebar. Default on.
-    #[serde(default = "default_true")]
-    pub plaza_enabled: bool,
-    /// Plaza source ids hidden from the sidebar / Plaza home (right-click toggle).
-    #[serde(default)]
-    pub plaza_hidden_sources: Vec<String>,
     /// First-run setup wizard completed. Default false → auto-show on fresh installs.
     #[serde(default)]
     pub onboarding_done: bool,
@@ -539,8 +533,6 @@ impl Default for AppSettings {
             translate: TranslateSettings::default(),
             layout: LayoutSettings::default(),
             telemetry_enabled: default_true(),
-            plaza_enabled: default_true(),
-            plaza_hidden_sources: Vec::new(),
             onboarding_done: false,
             feature_tour_done: false,
             dismissed_reminders: Vec::new(),

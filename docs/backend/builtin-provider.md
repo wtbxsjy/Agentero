@@ -161,7 +161,7 @@
 
 也就是说：已经填过自定义端点的老用户**不会被静默切走**；真正全新 / 全空的配置只在官方这类已注入 key 的构建里变成内置。
 
-`embedding_config()` 在解析出的 source 非 `"custom"` 且 `builtin::available()` 时返回网关三元组；否则穿透到已存值。这条链路只服务 arXiv 每日推荐（[api.md](api.md) §3.10.5），Host 命令 `recommend_arxiv` 透明继承，无需改动。
+`embedding_config()` 在解析出的 source 非 `"custom"` 且 `builtin::available()` 时返回网关三元组；否则穿透到已存值。设置页的 `probe_embedding` 探测透明继承这条链路。
 
 向量缓存安全：`embed_cache` 的主键是 `(text_hash, model)`（`catalog/schema.rs` v6），所有读写都按 model 过滤，所以换 embedding 模型不会读到旧向量。
 

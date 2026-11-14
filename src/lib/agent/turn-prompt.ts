@@ -18,10 +18,6 @@ import {
 	inlineMarkupToPlain,
 	stripInlineTokens,
 } from "@/lib/agent/composer-inline-tokens";
-import {
-	plazaMentionPromptBlock,
-	splitContextPaths,
-} from "@/lib/agent/plaza-mention";
 import type { PdfVisualDraft } from "@/lib/agent/visual-context-store";
 import type { PaperMetadata } from "@/lib/paper";
 import { buildVisualAnnotationsPrompt } from "@/lib/pdf/agent-trace/prompt";
@@ -32,8 +28,6 @@ export type AssembleTurnPromptInput = {
 	visualDrafts: PdfVisualDraft[];
 	attachedImages: PromptImage[];
 	isAcpCommand: boolean;
-	/** Mention path → scratch full-text markdown path (plaza entries). */
-	plazaScratchByPath?: ReadonlyMap<string, string> | null;
 	/**
 	 * Current paper metadata for agents that cannot read Vault files (chat-only
 	 * built-ins such as the Zhihu agent). Only public catalog fields are sent —
@@ -88,11 +82,9 @@ export type AssembledTurnPrompt = {
 
 export function assembleTurnPrompt({
 	text,
-	contextPaths,
 	visualDrafts,
 	attachedImages,
 	isAcpCommand,
-	plazaScratchByPath,
 	paper,
 	t,
 }: AssembleTurnPromptInput): AssembledTurnPrompt {
@@ -114,18 +106,6 @@ export function assembleTurnPrompt({
 	if (paper && !isAcpCommand) {
 		const block = paperContextBlock(paper, t);
 		if (block) contextBlocks.push(block);
-	}
-	// Plaza mentions are virtual paths with no file for the agent to read —
-	// expand their metadata inline instead of the vault read-instruction list.
-	const { plazaPaths } = splitContextPaths(contextPaths);
-	if (plazaPaths.length) {
-		contextBlocks.push(
-			plazaMentionPromptBlock({
-				plazaPaths,
-				scratchByPath: plazaScratchByPath,
-				t,
-			}),
-		);
 	}
 	if (annotationRefs.length > 0) {
 		const appendix = annotationAppendix(

@@ -3,7 +3,6 @@
  * The host writes the minimum evidence and decides whether this session may
  * expand it. These surfaces no longer paste paper paths or quotes into the prompt.
  */
-import { isPlazaMentionPath } from "@/lib/agent/plaza-mention";
 import { isVaultSelection } from "@/lib/agent/selection-source-kind";
 import type { SelectionContext } from "@/lib/agent/selection-store";
 import { pairedAskTranslation } from "@/lib/pdf/ask/prompt";
@@ -75,7 +74,7 @@ export function pdfAskContextRequest(thread: PdfAskThread): ContextRequest {
 	};
 }
 
-/** Vault text Quick Chat. Web and plaza items are not vault sources. */
+/** Vault text Quick Chat. Web items are not vault sources. */
 export function textAskContextRequest(
 	thread: PdfAskThread,
 	filePath: string,
@@ -97,8 +96,7 @@ export function textAskContextRequest(
 /**
  * Sidebar turn. The caller passes selection annotation numbers; this module
  * does not plan them, so the request stays outside the annotation import cycle.
- * @ mentions and the focused file are source anchors. Plaza mentions stay on
- * the prompt path.
+ * @ mentions and the focused file are source anchors.
  */
 export function sidebarContextRequest(input: {
 	contextPaths: string[];
@@ -111,7 +109,7 @@ export function sidebarContextRequest(input: {
 			selectionAnchor(selection, input.selectionAnnotations?.get(selection.id)),
 		);
 	for (const path of input.contextPaths) {
-		if (!path.trim() || isPlazaMentionPath(path)) continue;
+		if (!path.trim()) continue;
 		anchors.push({ kind: "mention", filePath: path });
 	}
 	if (!anchors.length) return null;

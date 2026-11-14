@@ -31,5 +31,4 @@ pub use pdf::layout_index;
 #[cfg(not(any(target_os = "ios", target_os = "android")))]
 pub use pdf::locate as pdf_locate;
 
-pub use paper::discovery::feeds;
 pub use paper::import::sources::zotero;

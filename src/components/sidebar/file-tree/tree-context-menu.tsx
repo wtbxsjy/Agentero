@@ -16,11 +16,6 @@ import {
 } from "@/components/ui/floating-menu";
 import { cn } from "@/lib/core/utils";
 import { TRASH_VIRTUAL_PATH } from "@/lib/paper/api";
-import {
-	PLAZA_VIRTUAL_PATH,
-	type PlazaSource,
-	plazaSourceLabel,
-} from "@/lib/plaza";
 import type { MenuContext } from "@/lib/shell/commands/menu-contributions";
 import {
 	activateMenuContribution,
@@ -63,10 +58,6 @@ export type TreeContextMenuPortalProps = {
 	citingScanBusy: boolean;
 	libraryRescanning?: boolean;
 	canPasteAtTarget: boolean;
-	/** Plaza root menu: every source with its current hidden state. */
-	plazaSources?: { source: PlazaSource; hidden: boolean }[];
-	/** Toggle one Plaza source; menu stays open for multi-toggle. */
-	onTogglePlazaSource?: (id: string) => void;
 	onClose: () => void;
 	/** Each callback is optional — `undefined` hides the matching menu item. */
 	onExportLibrary?: () => void;
@@ -108,8 +99,6 @@ export function TreeContextMenuPortal({
 	citingScanBusy,
 	libraryRescanning,
 	canPasteAtTarget,
-	plazaSources,
-	onTogglePlazaSource,
 	onClose,
 	onExportLibrary,
 	onRescanLibrary,
@@ -163,10 +152,9 @@ export function TreeContextMenuPortal({
 	}, [menu]);
 
 	const isTrashMenu = menu.path === TRASH_VIRTUAL_PATH;
-	const isPlazaMenu = menu.path === PLAZA_VIRTUAL_PATH;
-	// Recycle / Plaza roots are different menus. Contributions attach only to
-	// the item menu that already has path-based actions.
-	const isItemMenu = !isTrashMenu && !isPlazaMenu;
+	// The Recycle root is a different menu. Contributions attach only to the
+	// item menu that already has path-based actions.
+	const isItemMenu = !isTrashMenu;
 	const itemContributions = isItemMenu
 		? visibleMenuContributions(
 				"fileTree.item",
@@ -267,30 +255,6 @@ export function TreeContextMenuPortal({
 						<span>{t("recycleBin.emptyTrash")}</span>
 					</FloatingMenuItem>
 				) : null
-			) : isPlazaMenu && plazaSources ? (
-				plazaSources.map(({ source, hidden }) => (
-					<FloatingMenuItem
-						key={source.id}
-						role="menuitemcheckbox"
-						aria-checked={!hidden}
-						onClick={() => onTogglePlazaSource?.(source.id)}
-					>
-						<span
-							className={cn(
-								"flex size-3.5 shrink-0 items-center justify-center rounded-sm border",
-								hidden
-									? "border-muted-foreground/40"
-									: "border-primary bg-primary text-primary-foreground",
-							)}
-							aria-hidden
-						>
-							{hidden ? null : (
-								<span className="text-caption leading-none">✓</span>
-							)}
-						</span>
-						<span>{plazaSourceLabel(source)}</span>
-					</FloatingMenuItem>
-				))
 			) : (
 				<>
 					{menuCount === 1 && isPaperMenu && onOpenNotes ? (

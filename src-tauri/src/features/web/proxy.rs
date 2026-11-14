@@ -25,26 +25,9 @@
 use super::allowlist;
 use tauri::http::{header, Response, StatusCode};
 
-/// Reuse the 广场 proxy's header filter (content negotiation only, never
+/// Reuse the site proxy's header filter (content negotiation only, never
 /// credential-bearing headers: the proxy carries no login state).
 use crate::features::paper::discovery::proxy::looks_like_document;
-
-/// Selection / shortcut / navigation bridge injected into proxied documents.
-///
-/// Shared selection IIFE with no namespace leakage. The app validates both
-/// `event.origin` and the sending iframe before consuming its messages.
-pub(crate) const SELECTION_BRIDGE: &str = concat!(
-    "<script>",
-    include_str!("../../../../src/lib/web-view/selection-bridge.js"),
-    "</script>"
-);
-
-pub(crate) fn inject_selection_bridge(html: &str) -> String {
-    match html.to_ascii_lowercase().find("</head>") {
-        Some(index) => format!("{}{}{}", &html[..index], SELECTION_BRIDGE, &html[index..]),
-        None => format!("{SELECTION_BRIDGE}{html}"),
-    }
-}
 
 const WEB_BRIDGE: &str = concat!(
     "<script>",

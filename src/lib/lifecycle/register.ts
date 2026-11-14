@@ -32,7 +32,6 @@ import {
 import { reconcileExternalLibraryChange } from "@/lib/paper/library-sync";
 import { clearAnnotationsVaultState } from "@/lib/pdf/annotations-store";
 import { clearLayoutVaultState } from "@/lib/pdf/layout/store";
-import { recommendArxiv } from "@/lib/recommend";
 import { isFeatureViewType } from "@/lib/shell/feature-window";
 import {
 	clearUiVaultState,
@@ -95,12 +94,6 @@ export function registerLifecycleHandlers(): () => void {
 					() => commands.paperIngestReconcile({ vaultPath: vaultId }),
 					{ fallback: "paper ingest reconcile failed" },
 				).catch(() => undefined);
-			}
-			if (isTauri() && !perfActive() && !isRemoteVaultHandle(vaultId)) {
-				// Warm today's arXiv ranking so the Plaza panel opens instantly. The
-				// Host returns its stored same-day run untouched and exits early when
-				// no embedding endpoint is configured, so this is usually free.
-				void recommendArxiv({ vaultPath: vaultId }).catch(() => undefined);
 			}
 			// `vaultId` is captured at setup, so this names the vault being closed.
 			// `activateVault` keeps its own synchronous clears: those stop the first

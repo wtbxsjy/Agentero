@@ -10,8 +10,6 @@
  * (`lib/plugins/visibility.ts`, `features/account/visibility.ts`).
  */
 export const surfaces = {
-	/** Plaza: Cool Papers, arXiv recommendations, RSS, CCF deadlines. */
-	plaza: false,
 	/** Research tables and experiment notes (`/` command, "New table"). */
 	researchTable: false,
 	/** Zhihu agent row and the "ask on Zhihu" paper action. */

@@ -53,7 +53,6 @@ import {
 	DEFAULT_NETWORK_PROXY_URL,
 	INSTITUTION_PROXY_PRESETS,
 } from "@/lib/settings/defaults";
-import { surfaces } from "@/lib/surfaces";
 import type { ProbeStatus } from "@/lib/ui/probe-status";
 import { notesTemplateSeed } from "@/lib/vault/note-template";
 import { ConnectorSettingsBlock } from "./general/connector-settings-block";
@@ -468,26 +467,6 @@ export function GeneralPane({
 					</Select>
 				</SettingsRow>
 			</SettingsGroup>
-
-			{surfaces.plaza ? (
-				<>
-					<SettingsSectionLabel className="mt-4">
-						{t("general.sections.plaza")}
-					</SettingsSectionLabel>
-					<SettingsGroup>
-						<SettingsRow
-							label={t("general.plaza.label")}
-							htmlFor="plaza-enabled"
-						>
-							<Switch
-								id="plaza-enabled"
-								checked={settings.plazaEnabled}
-								onCheckedChange={(v) => patch({ plazaEnabled: v })}
-							/>
-						</SettingsRow>
-					</SettingsGroup>
-				</>
-			) : null}
 
 			<SettingsSectionLabel className="mt-4">
 				{t("general.sections.system")}

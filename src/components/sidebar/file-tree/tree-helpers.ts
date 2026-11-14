@@ -7,7 +7,6 @@ import {
 	paperVisibleChildren,
 } from "@/lib/paper";
 import { LIBRARY_VIRTUAL_PATH, TRASH_VIRTUAL_PATH } from "@/lib/paper/api";
-import { isPlazaVirtualPath, PLAZA_VIRTUAL_PATH } from "@/lib/plaza";
 import {
 	isResearchTablePath,
 	researchTableStem,
@@ -71,7 +70,6 @@ export function isVirtualTreePath(path: string): boolean {
 	return (
 		path === LIBRARY_VIRTUAL_PATH ||
 		path === TRASH_VIRTUAL_PATH ||
-		isPlazaVirtualPath(path) ||
 		isZoteroCollectionReferencePath(path)
 	);
 }
@@ -108,13 +106,12 @@ export function normalizeTreeSelection(paths: Iterable<string>): string[] {
  * Default open folders when a Vault is first opened:
  * expand `papers/` only so its first-level children (org folders) are listed,
  * but keep those subfolders collapsed. Deeper nesting, `notes/`, etc. stay
- * collapsed. 广场 also starts open so its sources are discoverable.
+ * collapsed.
  */
 export function collectDefaultExpanded(
 	nodes: FileNode[],
 	into: Set<string>,
 ): void {
-	into.add(PLAZA_VIRTUAL_PATH);
 	for (const n of nodes) {
 		if (n.kind !== "directory" || !isPapersRoot(n.path)) continue;
 		into.add(n.path);

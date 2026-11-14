@@ -25,7 +25,6 @@ directories, Rust commands, `bindings.ts` types, settings, i18n).
 
 | Switch | Module | Step 1 entry points hidden |
 |---|---|---|
-| `plaza` | Plaza (Cool Papers, arXiv recs, RSS, CCF) | `plazaEnabled` forced off in settings normalisation; Settings → General toggle |
 | `researchTable` | Research tables, experiment notes | `/` command, "New table" / "New experiment" in the tree menu |
 | `zhihu` | Zhihu agent and paper action | Settings → Agent row, paper info "Zhihu" chip |
 | `remoteVault` | SSH/SFTP vaults | Welcome button, recent remotes, vault switcher entry |
@@ -40,6 +39,14 @@ Deleted in step 2 so far:
   and SyncTeX, realtime-tex live preview (`rtex-core` dependency and `src-tauri/rtex/` resources),
   the `latexCompile` job kind, and their i18n namespaces. `.tex` / `.bib` files still open in the
   plain text editor with syntax highlighting.
+- **Plaza** (switch removed): the Plaza sidebar node and tabs, Cool Papers / ModelScope / Papers
+  with Code / Skill browsing, arXiv Daily recommendations, RSS/Atom feeds (desktop commands, core
+  `feeds.sqlite` store, `agentero feed` CLI and `feed.*` ops), CCF deadlines, Plaza `@` mentions and
+  the full-text scratch cache, and the `plazaEnabled` / `plazaHiddenSources` settings. Kept because
+  other modules use them: `discover.arxiv` (MCP/CLI search), Papers with Code metadata enrichment,
+  Cool Papers notes fetch, the arXiv proxy, and the embedding endpoint probe in Settings (moved to
+  `discovery/embedding_probe.rs`). The catalog tables `embed_cache` / `discovery_runs` stay in the
+  schema history but are no longer written.
 
 Already hidden upstream: plugins (`src/lib/plugins/visibility.ts`) and account / cloud writing
 (`src/features/account/visibility.ts`). The mobile app only ships in iOS builds.

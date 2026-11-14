@@ -83,21 +83,6 @@ pub fn run() {
                 request, responder,
             );
         })
-        .register_asynchronous_uri_scheme_protocol(
-            "agentero-coolpapers",
-            |_ctx, request, responder| {
-                crate::features::paper::discovery::coolpapers::proxy::handle(request, responder);
-            },
-        )
-        .register_asynchronous_uri_scheme_protocol(
-            "agentero-modelscope",
-            |_ctx, request, responder| {
-                crate::features::paper::discovery::proxy::modelscope::handle(request, responder);
-            },
-        )
-        .register_asynchronous_uri_scheme_protocol("agentero-pwc", |_ctx, request, responder| {
-            crate::features::paper::discovery::proxy::pwc::handle(request, responder);
-        })
         .register_asynchronous_uri_scheme_protocol("agentero-web", |_ctx, request, responder| {
             crate::features::web::proxy::handle(request, responder);
         })

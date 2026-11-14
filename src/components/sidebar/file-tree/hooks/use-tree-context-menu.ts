@@ -17,8 +17,6 @@ import {
 	type PaperMetadata,
 } from "@/lib/paper";
 import { TRASH_VIRTUAL_PATH } from "@/lib/paper/api";
-import { PLAZA_SOURCES, PLAZA_VIRTUAL_PATH } from "@/lib/plaza";
-import { getSettings, patchSettings } from "@/lib/settings/react-store";
 import { surfaces } from "@/lib/surfaces";
 import {
 	type FileNode,
@@ -147,13 +145,8 @@ export function useTreeContextMenu({
 	const handleContextMenuPath = useCallback(
 		(path: string, event: ReactMouseEvent) => {
 			if (createDraft || renameDraft) return;
-			// Real vault paths + virtual Recycle Bin (empty) / Plaza root
-			// (source visibility toggles).
-			if (
-				!canRevealPath(path) &&
-				path !== TRASH_VIRTUAL_PATH &&
-				path !== PLAZA_VIRTUAL_PATH
-			) {
+			// Real vault paths + virtual Recycle Bin (empty).
+			if (!canRevealPath(path) && path !== TRASH_VIRTUAL_PATH) {
 				return;
 			}
 			event.preventDefault();
@@ -186,16 +179,6 @@ export function useTreeContextMenu({
 	const copyPath = useCallback((path: string) => {
 		setMenu(null);
 		copyFilePath(path);
-	}, []);
-
-	// Toggle a Plaza source without closing the menu (multi-toggle friendly).
-	const togglePlazaSource = useCallback((id: string) => {
-		const current = getSettings().plazaHiddenSources;
-		patchSettings({
-			plazaHiddenSources: current.includes(id)
-				? current.filter((s) => s !== id)
-				: [...current, id],
-		});
 	}, []);
 
 	if (!menu) {
@@ -243,15 +226,6 @@ export function useTreeContextMenu({
 		libraryRescanning,
 		citingScanBusy,
 		canPasteAtTarget,
-		plazaSources:
-			menu.path === PLAZA_VIRTUAL_PATH
-				? PLAZA_SOURCES.map((source) => ({
-						source,
-						hidden: getSettings().plazaHiddenSources.includes(source.id),
-					}))
-				: undefined,
-		onTogglePlazaSource:
-			menu.path === PLAZA_VIRTUAL_PATH ? togglePlazaSource : undefined,
 		onClose: close,
 		onRescanLibrary: onRescanLibrary
 			? () => {

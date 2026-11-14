@@ -219,15 +219,6 @@
 		"alreadyInNotes": "NOTES.md 中已有该解析，未重复写入",
 		"appended": "Cool Papers 解析已追加到 NOTES.md"
 	},
-	"plazaImport": {
-		"taskTitle": "导入到论文库",
-		"failed": "导入失败",
-		"imported": "已导入：{{name}}",
-		"importedNoPdf": "已导入（未取到 PDF）：{{name}}",
-		"duplicate": "论文库中已有这篇：{{name}}",
-		"needsVault": "请先打开一个知识库",
-		"missingId": "这条论文缺少来源标识，无法导入"
-	},
 	"tasks": {
 		"title": "后台任务",
 		"clearFinished": "清除已完成",

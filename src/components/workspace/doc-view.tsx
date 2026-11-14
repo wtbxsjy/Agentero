@@ -1,12 +1,10 @@
 import { lazy, memo, Suspense, useCallback } from "react";
 import { PapersLibrary } from "@/components/library/papers-library";
-import { PlazaTabView } from "@/components/plaza/plaza-tab-view";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PdfViewerHandle } from "@/components/viewer";
 import { HtmlViewer, ImageViewer } from "@/components/viewer";
 import { LocalHtmlViewer } from "@/components/viewer/local-html-viewer";
 import { RecycleBinView } from "@/components/workspace/recycle-bin-view";
-import { useSettings } from "@/hooks/use-app-stores";
 import type { PaperLibraryRow, PaperMetadata } from "@/lib/paper";
 import { isRemoteArxivPath } from "@/lib/paper";
 import type { PdfVisualSessionTrace } from "@/lib/pdf/agent-trace/types";
@@ -208,7 +206,6 @@ function docViewPropsEqual(prev: DocViewProps, next: DocViewProps): boolean {
 			prev.trashReloadSignal === next.trashReloadSignal
 		);
 	}
-	if (tab.kind === "plaza") return true;
 	switch (viewerModeSpec(tab.mode).props) {
 		case "editor":
 			return prev.editor === next.editor;
@@ -237,7 +234,6 @@ const DocumentContent = memo(function DocumentContent({
 	onTrashChanged,
 	trashReloadSignal = 0,
 }: DocViewProps) {
-	const plazaEnabled = useSettings((s) => s.plazaEnabled);
 	// Bind tab.id once per tab so PdfViewer's memo bails out when only the tab
 	// record changes (highlight / ask patches via updateTab).
 	const handlePdfHandle = useCallback(
@@ -305,20 +301,6 @@ const DocumentContent = memo(function DocumentContent({
 				reloadSignal={trashReloadSignal}
 				className="bg-background"
 			/>
-		);
-	}
-	if (tab.kind === "plaza") {
-		if (!plazaEnabled) return null;
-		// The tab owns its embedded page until close, independent of the editor LRU.
-		return (
-			<Suspense fallback={<TabLoadingSkeleton />}>
-				<PlazaTabView
-					key={`${tab.id}:${tab.path}`}
-					path={tab.path}
-					active={active}
-					className="bg-background"
-				/>
-			</Suspense>
 		);
 	}
 	if (tab.mode === "markdown") {

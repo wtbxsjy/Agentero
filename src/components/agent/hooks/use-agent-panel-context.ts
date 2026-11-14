@@ -23,7 +23,6 @@ import type { ThinkTagParser } from "@/lib/agent/stream-parse";
 import type { PaperMetadata } from "@/lib/paper";
 import { paperDirFromPath } from "@/lib/paper";
 import { isLibraryVirtualPath, isTrashVirtualPath } from "@/lib/paper/api";
-import { isPlazaVirtualPath } from "@/lib/plaza/sources";
 import { toVaultRelative } from "@/lib/wiki";
 
 /** Translate fn scoped to the `agent` i18n namespace (shared by sub-hooks). */
@@ -94,21 +93,13 @@ export function useAgentPanelContext({
 		if (!selectedPath) return null;
 		if (
 			isLibraryVirtualPath(selectedPath) ||
-			isTrashVirtualPath(selectedPath) ||
-			// Plaza tabs are virtual; with the whole-list collection a focused
-			// Daily tab must not silently inject the full abstract catalog
-			// into every prompt — plaza context is explicit `@` only.
-			isPlazaVirtualPath(selectedPath)
+			isTrashVirtualPath(selectedPath)
 		) {
 			return null;
 		}
 		const relative = toVaultRelative(vaultPath, selectedPath);
 		if (!relative) return null;
-		if (
-			isLibraryVirtualPath(relative) ||
-			isTrashVirtualPath(relative) ||
-			isPlazaVirtualPath(relative)
-		) {
+		if (isLibraryVirtualPath(relative) || isTrashVirtualPath(relative)) {
 			return null;
 		}
 		const paperDir = paperDirFromPath(relative, vaultPaperPaths);

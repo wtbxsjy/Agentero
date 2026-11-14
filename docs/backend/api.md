@@ -2393,38 +2393,6 @@ UI 入口见 `settings_window_open`：Settings 现为独立原生单例窗口，
 
 CLI 不再暴露 usage 命令；清除通过桌面端设置 / Host API 操作。前端入口：`src/lib/activity/`。
 
-### 3.10.4 广场订阅（XDG `feeds.sqlite`）
-
-用户 RSS / Atom / JSON Feed 订阅与条目缓存。**不写 catalog / Vault**。
-
-| Command | 说明 |
-|---|---|
-| `feeds_list` | 订阅列表（置顶在前） |
-| `feeds_add` | 添加（HTML 自动发现 + 首拉） |
-| `feeds_remove` / `feeds_rename` | 删除 / 改显示名 |
-| `feeds_set_pinned` | `{ id, pinned }` 钉到列表最上 |
-| `feeds_refresh` | `{ id?, staleOnly? }` 拉源 |
-| `feeds_items` | 时间线；`filter`: all / paper / other / unread（SQL 在 LIMIT 前筛选未读） |
-| `feeds_mark_imported` | 标记本机已入库 |
-| `feeds_set_read` | `{id, read}` 设置 / 清除 `readAt`；返回更新后的条目，重复标已读保留首次时间 |
-| `feeds_resolve_body` | 打开详情时抓全文 → Markdown |
-
-### 3.10.5 广场 arXiv 推荐（catalog `embed_cache` / `discovery_runs`）
-
-用 Vault 论文库摘要当语料，对当天 arXiv 新论文做 embedding 相似度 + 时间衰减排序。
-
-| Command | 说明 |
-|---|---|
-| `recommend_arxiv` | `{ vaultPath, categories?, topN?, force? }` → 排序结果。`categories` 缺省取上次运行、再缺省取 `cs.AI/cs.CL/cs.LG/cs.CV/stat.ML`；`topN` 默认 20（clamp 1–100） |
-| `recommend_arxiv_last` | `{ vaultPath }` → 上次结果或 `null`，只读不算 |
-
-- **陈旧短路**：非 `force` 且命中缓存键、`computed_at` 为当天、结果非空时，直接返回存量，不发任何网络请求。所以 `vault:opened` 的预热调用通常是零成本的。
-- **缓存**：`embed_cache(text_hash, model, dim, vector)` 按 sha256(title+abstract)+model 存小端 f32 向量，语料只 embed 一次；主键含 model，所以换 embedding 模型不会读到旧向量。运行结果落在多行表 `discovery_runs`（schema v8），`key = sha256(source|model|topN|分类)`：换 model / `topN` / 分类都是独立槽位，`recommend_arxiv_last` 取最新一行。旧的单行 `arxiv_rec_state`（v6）保留给旧库、不再写入。
-- **凭据**：读设置 `embedding`。`source`（`"builtin"` | `"custom"`）决定用哪一套：非 `custom` 且本次构建注入了内置 provider key 时用构建期网关三元组，否则用已存的 Base URL / API Key / Model；空配置会返回 `recommend.no_embedding`。请求都是 `POST {baseUrl}/embeddings`（OpenAI 兼容）。见 [builtin-provider.md](builtin-provider.md) §Embedding。
-- **结构化错误**（前端转空态）：`recommend.no_embedding` 端点未配置（自定义来源缺字段，或构建无内置 key 且未填 BYOK）、`recommend.empty_corpus` 库里没摘要、`recommend.no_candidates` 分类下无新论文。
-
-前端入口：`src/lib/recommend/`。
-
 ### 3.11 界面与本地化（UI / i18n）
 
 #### `set_locale`（已实现）

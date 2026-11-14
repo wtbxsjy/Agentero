@@ -219,15 +219,6 @@
 		"alreadyInNotes": "NOTES.md already contains this analysis; nothing was appended",
 		"appended": "Cool Papers analysis appended to NOTES.md"
 	},
-	"plazaImport": {
-		"taskTitle": "Import into library",
-		"failed": "Import failed",
-		"imported": "Imported: {{name}}",
-		"importedNoPdf": "Imported (no PDF retrieved): {{name}}",
-		"duplicate": "Already in the library: {{name}}",
-		"needsVault": "Open a vault first",
-		"missingId": "This paper has no source identifier and cannot be imported"
-	},
 	"tasks": {
 		"title": "Background Tasks",
 		"clearFinished": "Clear finished",
