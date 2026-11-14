@@ -151,7 +151,6 @@ macro_rules! common_commands {
 
 /// Attach the platform-appropriate invoke handler to the builder.
 pub fn attach_handlers(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
-    #[cfg(not(target_os = "ios"))]
     {
         builder.invoke_handler(common_commands![
             #[cfg(not(any(target_os = "ios", target_os = "android")))]
@@ -174,13 +173,6 @@ pub fn attach_handlers(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<ta
             crate::integration::plugins::plugin_unload,
             #[cfg(not(any(target_os = "ios", target_os = "android")))]
             crate::integration::plugins::plugin_run,
-            crate::integration::bridge::commands::bridge_start,
-            crate::integration::bridge::commands::bridge_stop,
-            crate::integration::bridge::commands::bridge_status,
-            crate::integration::bridge::commands::bridge_offer,
-            crate::integration::bridge::commands::bridge_pair_respond,
-            crate::integration::bridge::commands::bridge_devices,
-            crate::integration::bridge::commands::bridge_revoke_device,
             crate::features::zhihu::commands::zhihu_probe,
             crate::features::zhihu::commands::zhihu_search,
             crate::features::zhihu::commands::zhihu_question_draft,
@@ -268,16 +260,6 @@ pub fn attach_handlers(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<ta
             crate::features::jobs::commands::job_jev_smart_highlights_enqueue,
             #[cfg(not(any(target_os = "ios", target_os = "android")))]
             crate::features::jev::commands::jev_probe_health,
-        ])
-    }
-    #[cfg(target_os = "ios")]
-    {
-        builder.invoke_handler(common_commands![
-            crate::integration::bridge::client_commands::bridge_connect,
-            crate::integration::bridge::client_commands::bridge_resume,
-            crate::integration::bridge::client_commands::bridge_disconnect,
-            crate::integration::bridge::client_commands::bridge_status,
-            crate::integration::bridge::client_commands::bridge_rpc,
         ])
     }
 }

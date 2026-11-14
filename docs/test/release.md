@@ -10,7 +10,7 @@
 
 推荐流程：
 
-1. 执行 `/bump <version>`，同步检查 `package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`、`crates/agentero-core/Cargo.toml`、`crates/agentero-mcp/Cargo.toml`、`cli/Cargo.toml`、`src-tauri/ios-project.yml` 和 `Cargo.lock`。
+1. 执行 `/bump <version>`，同步检查 `package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`、`crates/agentero-core/Cargo.toml`、`crates/agentero-mcp/Cargo.toml`、`cli/Cargo.toml` 和 `Cargo.lock`。
 2. 执行 `/commit`，将版本 bump 作为独立的 `chore(release): bump version to <version>` commit。
 3. 确认 tag `v<version>` 指向该版本 bump commit，且 tag 去掉 `v` 后与所有版本字段一致。
 4. 推送 tag，`.github/workflows/release.yml` 先复用 `ci.yml` 验证该 tag 对应的提交；所有检查通过后才创建 Draft Release 并构建 Tauri installers 和 CLI artifacts。验证失败时先修复并重新按版本流程发布，不会创建新的 Draft 或启动安装包构建。构建前确认 repository secret 已配齐：updater 签名（见下）与内置 provider 的 `AGENTERO_BUILTIN_API_KEY`（见 §内置 Provider 构建期注入）。
@@ -235,8 +235,6 @@ Apple 要求审核人员能够完整访问和验证 App 的核心功能。后端
 
 - **Sign-in required = No**，演示账号留空；不要为过审单独做假登录页或「输入测试网站账号」流程。
 - 核心能力依赖桌面端配对：在 **App Review Notes** 中写清扫码 / 粘贴配对链接步骤，并保证中继与（可选）演示桌面在审核窗口可用。
-- 可复制的元数据与 Notes 全文见 [ios-testflight.md](ios-testflight.md) 的
-  [Beta review: no login, no fake test page](ios-testflight.md#beta-review-no-login-no-fake-test-page)。
 
 ## 4. iPad 商店截图要求
 

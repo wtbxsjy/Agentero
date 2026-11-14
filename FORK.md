@@ -27,7 +27,6 @@ directories, Rust commands, `bindings.ts` types, settings, i18n).
 |---|---|---|
 | `zhihu` | Zhihu agent and paper action | Settings → Agent row, paper info "Zhihu" chip |
 | `remoteVault` | SSH/SFTP vaults | Welcome button, recent remotes, vault switcher entry |
-| `remoteAccess` | Mobile pairing | Settings → Remote access |
 | `wordCitation` | Word add-in citations | Citation dialog not mounted |
 | `updater` | In-app updater (points at official releases) | Update check reports unsupported |
 
@@ -56,9 +55,15 @@ Deleted in step 2 so far:
   per-vault "don't download sources" sync scope (arXiv sources now always download), and the
   hiding of mirrored sync-store files (`blobs/`, `manifests/`, `HEAD`, `vault.json`) at the vault
   root.
+- **Mobile pairing and the mobile apps** (switch removed): the desktop Bridge host and relay,
+  Settings → Remote access, the iOS/Android client shell (`src/components/mobile/`,
+  `src/lib/bridge/`, `mobile` i18n), the `src-tauri/gen/apple` and `gen/android` projects and
+  their configs, the iOS TestFlight workflow and scripts, and the Android CI/release jobs. The
+  mobile clients only worked through pairing, so they went with it. `isMobileApp()` and the
+  `cfg(target_os = "ios" | "android")` gates are left in place; they are inert on desktop.
 
 Already hidden upstream: plugins (`src/lib/plugins/visibility.ts`) and account / cloud writing
-(`src/features/account/visibility.ts`). The mobile app only ships in iOS builds.
+(`src/features/account/visibility.ts`).
 
 Still open for step 2: the `agentero://` deep-link scheme is shared with the official app and is
 hard-coded in Rust and TS; change it together with the pairing/account code that uses it.

@@ -9,7 +9,6 @@ import {
 	Paintbrush,
 	Puzzle,
 	SlidersHorizontal,
-	Smartphone,
 	Stethoscope,
 	UserRound,
 	Wand2,
@@ -44,7 +43,6 @@ import {
 import { pluginsSurfaceEnabled } from "@/lib/plugins/visibility";
 import type { AppSettings } from "@/lib/settings";
 import { closeSettingsWindow } from "@/lib/shell/settings-window";
-import { surfaces } from "@/lib/surfaces";
 import {
 	getRemoteSessionMeta,
 	isRemoteVaultHandle,
@@ -67,8 +65,6 @@ const PANE_LOADERS = {
 	experimental: () => import("@/components/settings/panes/experimental-pane"),
 	doctor: () => import("@/components/settings/panes/doctor-pane"),
 	keyboard: () => import("@/components/settings/panes/keyboard-pane"),
-	"remote-access": () =>
-		import("@/components/settings/panes/remote-access-pane"),
 	about: () => import("@/components/settings/panes/about-pane"),
 } satisfies Record<SettingsSection, () => Promise<unknown>>;
 
@@ -79,7 +75,6 @@ const PANE_LOADERS = {
 function sectionVisible(id: SettingsSection): boolean {
 	if (!pluginsSurfaceEnabled && id === "plugins") return false;
 	if (!accountSurfaceEnabled && id === "account") return false;
-	if (!surfaces.remoteAccess && id === "remote-access") return false;
 	return true;
 }
 
@@ -139,13 +134,6 @@ const KeyboardPane = memo(
 		PANE_LOADERS.keyboard().then((m) => ({ default: m.KeyboardPane })),
 	),
 );
-const RemoteAccessPane = memo(
-	lazy(() =>
-		PANE_LOADERS["remote-access"]().then((m) => ({
-			default: m.RemoteAccessPane,
-		})),
-	),
-);
 const AboutPane = memo(
 	lazy(() => PANE_LOADERS.about().then((m) => ({ default: m.AboutPane }))),
 );
@@ -161,7 +149,6 @@ const NAV: {
 	{ id: "agent", icon: Bot, dividerBefore: true },
 	{ id: "translate", icon: Languages },
 	{ id: "layout", icon: LayoutTemplate },
-	{ id: "remote-access", icon: Smartphone },
 	{ id: "plugins", icon: Puzzle },
 	{ id: "experimental", icon: FlaskConical },
 	{ id: "doctor", icon: Stethoscope, dividerBefore: true },
@@ -612,17 +599,6 @@ export function SettingsContent({
 									shortcutOverrides={settings.shortcutOverrides}
 									patch={patch}
 								/>
-							</Suspense>
-						</div>
-					)}
-					{visitedSections.includes("remote-access") && (
-						<div
-							data-settings-pane
-							data-active={activeSection === "remote-access" ? "true" : "false"}
-							hidden={activeSection !== "remote-access"}
-						>
-							<Suspense fallback={<PaneFallback />}>
-								<RemoteAccessPane vaultPath={vaultPath} />
 							</Suspense>
 						</div>
 					)}

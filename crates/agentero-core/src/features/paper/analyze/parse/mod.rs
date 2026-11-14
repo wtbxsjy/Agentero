@@ -214,9 +214,10 @@ async fn parse_paper_body_inner(
     // PAPER.md short circuit. Acquisition shares its lock with asset downloads.
     if let Ok(Some(record)) = papers::get_by_path(vault, path_rel) {
         if let Some(id) = crate::features::paper::source::arxiv_request(&record) {
-            if let Err(error) =
-                crate::features::paper::import::download::prepare_arxiv_source(paper_dir, &id, task_id)
-                    .await
+            if let Err(error) = crate::features::paper::import::download::prepare_arxiv_source(
+                paper_dir, &id, task_id,
+            )
+            .await
             {
                 let _ = crate::features::paper::source::reconcile_body(vault, path_rel);
                 out.fail(format!("arXiv source preparation failed: {error}"));

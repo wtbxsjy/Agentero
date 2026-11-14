@@ -13,11 +13,7 @@
 //! natural `XEvent` name (agent ACP payloads), the wrapper is named `XEvt` to
 //! keep specta type names unique.
 //!
-//! Coverage: every event emitted on desktop. iOS-only bridge client events
-//! (`bridge:status`, `bridge:progress`, `bridge:pair-pending` and the
-//! dynamically re-emitted forwarded agent events in
-//! `integration::bridge::client`) are intentionally excluded — they exist only
-//! in the iOS branch, mirroring the command exclusion in `bindings_test.rs`.
+//! Coverage: every event emitted on desktop.
 //!
 //! `job:progress` is emitted from several sites with structurally compatible
 //! payloads (`AssetDownloadProgress`, model-assets `ProgressEvent`,
@@ -220,15 +216,6 @@ pub struct AgentStreamEvt(pub crate::features::agent::models::AgentStreamEvent);
 #[tauri_specta(event_name = "agent:completed")]
 pub struct AgentCompletedEvent(pub crate::features::agent::models::AgentResultPayload);
 
-/// Desktop bridge host online flag (`bridge:host-status`, payload `bool`).
-#[derive(specta::Type, tauri_specta::Event)]
-#[tauri_specta(event_name = "bridge:host-status")]
-pub struct BridgeHostStatusEvent(pub bool);
-
-#[derive(specta::Type, tauri_specta::Event)]
-#[tauri_specta(event_name = "bridge:pair-request")]
-pub struct BridgePairRequestEvent(pub crate::integration::bridge::PairingRequest);
-
 #[derive(specta::Type, tauri_specta::Event)]
 #[tauri_specta(event_name = "connector:status")]
 pub struct ConnectorStatusEvent(pub crate::integration::connector::ConnectorStatus);
@@ -389,9 +376,6 @@ fn event_names_match_emit_literals() {
 //   real Tauri emit happens inside them and is captured at that site.
 //
 // Excluded files (documented misses, see module header):
-// - `integration/bridge/client.rs`: iOS-only bridge client (`bridge:status`,
-//   `bridge:progress`, `bridge:pair-pending` + the dynamic `bridge:event:*`
-//   re-emits) — not part of the desktop contract;
 // - `app/bindings_test.rs` / `app/events_contract.rs`: test-only surfaces.
 // ---------------------------------------------------------------------------
 
@@ -436,8 +420,6 @@ fn registered_event_names() -> BTreeSet<String> {
         AgentStatusEvt::NAME,
         AgentStreamEvt::NAME,
         AgentCompletedEvent::NAME,
-        BridgeHostStatusEvent::NAME,
-        BridgePairRequestEvent::NAME,
         ConnectorStatusEvent::NAME,
         ConnectorItemSavedEvent::NAME,
         ConnectorProgressEvent::NAME,
@@ -825,11 +807,7 @@ fn scan_emit_event_names() -> BTreeSet<String> {
         .join("agentero-mcp")
         .join("src");
     // Relative to `src-tauri/src` (the shared crates have no exclusions).
-    let excluded = [
-        "integration/bridge/client.rs",
-        "app/bindings_test.rs",
-        "app/events_contract.rs",
-    ];
+    let excluded = ["app/bindings_test.rs", "app/events_contract.rs"];
     let mut files: Vec<PathBuf> = Vec::new();
     for root in [&host_root, &core_root, &mcp_root] {
         for entry in walkdir::WalkDir::new(root)

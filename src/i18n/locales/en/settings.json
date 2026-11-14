@@ -14,47 +14,10 @@
 		"experimental": "Experimental",
 		"doctor": "Doctor",
 		"keyboard": "Keyboard",
-		"remote-access": "Mobile access",
 		"about": "About",
 		"quickSetup": "Quick setup wizard",
 		"featureTour": "Feature tour",
 		"plugins": "Plugins"
-	},
-	"remoteAccess": {
-		"title": "Mobile access",
-		"localVaultRequired": "Open a local Vault to provide mobile access.",
-		"hostName": {
-			"label": "Computer name"
-		},
-		"status": {
-			"online": "Online",
-			"offline": "Offline"
-		},
-		"start": "Enable mobile access",
-		"stop": "Disable mobile access",
-		"qrAlt": "Pairing QR code",
-		"pairing": {
-			"title": "Pair an iPhone or iPad"
-		},
-		"copyLink": "Copy pairing link",
-		"copied": "Pairing link copied",
-		"copyFailed": "Could not copy pairing link",
-		"request": {
-			"title": "Pair {{device}}",
-			"code": "Confirmation code: {{code}}"
-		},
-		"approve": "Approve",
-		"deny": "Deny",
-		"devices": {
-			"revoke": "Revoke {{device}}"
-		},
-		"cache": {
-			"section": "Remote vault cache",
-			"label": "PDF preview cache",
-			"clear": "Clear remote cache",
-			"clearing": "Clearing…",
-			"clearFailed": "Failed to clear remote cache"
-		}
 	},
 	"general": {
 		"title": "General",

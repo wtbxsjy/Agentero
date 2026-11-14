@@ -4,13 +4,7 @@
 //! Coverage: every command registered for desktop in `app::handlers`
 //! (`common_commands!` + the desktop-only extras) is collected here, and every
 //! event emitted on desktop is declared in `app::events_contract`;
-//! `event_name` matches the emit literal, emit sites unchanged). The iOS-only
-//! bridge client commands (`integration::bridge::client_commands`) and client
-//! events (`bridge:status` / `bridge:progress` / `bridge:pair-pending`) are
-//! intentionally excluded: they are registered/emitted only in the iOS branch
-//! of `attach_handlers` / `integration::bridge::client`, and their
-//! `bridge_status` collides by command name with the desktop host
-//! `bridge_status`.
+//! `event_name` matches the emit literal, emit sites unchanged).
 //!
 //! By default this only verifies the committed file matches the Rust
 //! signatures without overwriting it, so `cargo test` does not dirty the
@@ -170,13 +164,6 @@ pub(crate) fn export_typescript_bindings() {
             crate::integration::plugins::plugin_dev_load,
             crate::integration::plugins::plugin_unload,
             crate::integration::plugins::plugin_run,
-            crate::integration::bridge::commands::bridge_start,
-            crate::integration::bridge::commands::bridge_stop,
-            crate::integration::bridge::commands::bridge_status,
-            crate::integration::bridge::commands::bridge_offer,
-            crate::integration::bridge::commands::bridge_pair_respond,
-            crate::integration::bridge::commands::bridge_devices,
-            crate::integration::bridge::commands::bridge_revoke_device,
             crate::features::agent::commands::agent_run_tool_lifecycle,
             crate::features::agent::commands::agent_run_partial_uninstall,
             crate::features::agent::commands::agent_lifecycle_cancel,
@@ -294,8 +281,6 @@ pub(crate) fn export_typescript_bindings() {
             crate::app::events_contract::AgentStatusEvt,
             crate::app::events_contract::AgentStreamEvt,
             crate::app::events_contract::AgentCompletedEvent,
-            crate::app::events_contract::BridgeHostStatusEvent,
-            crate::app::events_contract::BridgePairRequestEvent,
             crate::app::events_contract::ConnectorStatusEvent,
             crate::app::events_contract::WordChangedEvent,
             crate::app::events_contract::ConnectorItemSavedEvent,

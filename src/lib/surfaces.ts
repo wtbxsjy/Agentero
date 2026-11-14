@@ -14,8 +14,6 @@ export const surfaces = {
 	zhihu: false,
 	/** Remote SSH/SFTP vaults. */
 	remoteVault: false,
-	/** Mobile pairing / remote access settings. */
-	remoteAccess: false,
 	/** Word add-in citation dialog. */
 	wordCitation: false,
 	/** In-app updater: it points at the official releases and would replace this fork. */

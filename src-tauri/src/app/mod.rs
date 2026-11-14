@@ -135,8 +135,6 @@ pub fn run() {
         .manage(crate::features::agent::ElicitationGate::new())
         .manage(crate::features::agent::AskUserGate::new())
         .manage(crate::features::agent::delegate::DelegateBridge::new())
-        .manage(crate::integration::bridge::BridgeController::new())
-        .manage(crate::integration::bridge::BridgeClientController::new())
         .manage(
             crate::features::jobs::JobCenter::with_layout_backend(&layout_backend)
                 .with_import_concurrency(import_concurrency)
@@ -592,12 +590,6 @@ pub fn run() {
                     app.state::<Arc<McpController>>().stop_server();
                     app.state::<Arc<McpTunnelController>>().stop();
                 }
-                // Close the mobile relay rather than letting the socket die with
-                // the process, so paired clients see a clean shutdown. `stop`
-                // takes the runtime, so the second call in this arm is a no-op.
-                let _ = app
-                    .state::<crate::integration::bridge::BridgeController>()
-                    .stop();
                 #[cfg(not(any(target_os = "android", target_os = "ios")))]
                 app.state::<Arc<crate::core::telemetry::Telemetry>>()
                     .shutdown();

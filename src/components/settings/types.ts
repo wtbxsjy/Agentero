@@ -9,7 +9,6 @@ export type SettingsSection =
 	| "experimental"
 	| "doctor"
 	| "keyboard"
-	| "remote-access"
 	| "about";
 
 /** Which machine the Agent catalog / probe targets. */

@@ -2,7 +2,6 @@
 //! These depend on the desktop runtime and are not available to the headless CLI.
 
 #[cfg(feature = "desktop")]
-pub mod bridge;
 #[cfg(feature = "desktop")]
 pub mod connector;
 #[cfg(feature = "desktop")]
