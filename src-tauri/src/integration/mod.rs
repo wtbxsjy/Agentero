@@ -17,6 +17,5 @@ pub mod mcp;
 ))]
 pub mod plugins;
 #[cfg(feature = "desktop")]
-
 #[cfg(feature = "desktop")]
 pub mod word;

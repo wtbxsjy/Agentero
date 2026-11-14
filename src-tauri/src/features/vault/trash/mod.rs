@@ -8,4 +8,3 @@ pub use agentero_core::features::vault::trash::*;
 /// Tauri command shells for this feature.
 #[cfg(feature = "desktop")]
 pub mod commands;
-

@@ -72,7 +72,6 @@ pub async fn path_trash(
             Ok(map_err(e))
         }
     }
-
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -92,15 +91,12 @@ pub async fn path_list_trash(
         Ok(items) => Ok(ApiResult::ok(items)),
         Err(e) => Ok(map_err(e)),
     }
-
 }
 
 /// Empty the entire recycle bin (permanent).
 #[tauri::command]
 #[specta::specta]
-pub async fn path_purge_trash(
-    args: TrashVaultArgs,
-) -> Result<ApiResult<()>, String> {
+pub async fn path_purge_trash(args: TrashVaultArgs) -> Result<ApiResult<()>, String> {
     let op = OpTimer::start("path_purge_trash");
     let vault = PathBuf::from(args.vault_path.trim());
     match trash::purge_all(&vault) {
@@ -113,7 +109,6 @@ pub async fn path_purge_trash(
             Ok(map_err(e))
         }
     }
-
 }
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -157,15 +152,12 @@ pub async fn path_restore_item(
             Ok(map_err(e))
         }
     }
-
 }
 
 /// Permanently delete a single recycle-bin item.
 #[tauri::command]
 #[specta::specta]
-pub async fn path_purge_item(
-    args: TrashItemArgs,
-) -> Result<ApiResult<()>, String> {
+pub async fn path_purge_item(args: TrashItemArgs) -> Result<ApiResult<()>, String> {
     let op = OpTimer::start_with(
         "path_purge_item",
         format!(
@@ -185,5 +177,4 @@ pub async fn path_purge_item(
             Ok(map_err(e))
         }
     }
-
 }

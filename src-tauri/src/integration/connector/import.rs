@@ -377,7 +377,6 @@ async fn dispatch_standalone_import(
         note_mode,
     )
     .await
-
 }
 
 /// Finalize session tracking, record item paths, and notify UI/Connector.
@@ -568,7 +567,6 @@ pub async fn save_attachment_from_resolver(
     }
 
     let id = paper_rel.rsplit('/').next().unwrap_or("paper").to_string();
-
 
     let vault = PathBuf::from(&vault_handle);
     let paper_dir = vault.join(&paper_rel);

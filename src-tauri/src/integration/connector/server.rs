@@ -541,9 +541,8 @@ async fn save_snapshot(
         }
     };
     if let Some(html) = body.html.as_deref().filter(|s| !s.is_empty()) {
-        let write_result = {
-            write_snapshot_html(std::path::Path::new(&handle), &result.path, html).await
-        };
+        let write_result =
+            { write_snapshot_html(std::path::Path::new(&handle), &result.path, html).await };
         if let Err(e) = write_result {
             state.ctrl.emit_error(&e.to_string(), Some(&session_id));
         }
@@ -614,9 +613,7 @@ async fn save_single_file(
             json!({ "error": "SESSION_NOT_FOUND" }),
         );
     };
-    let result = {
-        write_snapshot_html(std::path::Path::new(&handle), &path, html).await
-    };
+    let result = { write_snapshot_html(std::path::Path::new(&handle), &path, html).await };
     match result {
         Ok(snapshot_path) => {
             state.ctrl.mark_session_done(&session_id);

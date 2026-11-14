@@ -194,7 +194,10 @@ impl ConnectorController {
                 .map(|s| s.to_string());
             g.vault_handle = raw.clone();
             // Clear a previous bind error when rebinding.
-            if g.last_error.as_deref().is_some_and(|e| e.contains("No vault open")) {
+            if g.last_error
+                .as_deref()
+                .is_some_and(|e| e.contains("No vault open"))
+            {
                 g.last_error = None;
             }
             log::debug!(
@@ -680,7 +683,6 @@ impl ConnectorController {
                 .ok_or_else(|| AppError::message("No vault open"))?
         };
 
-
         let vault = PathBuf::from(&handle);
         let paper_dir = vault.join(&rel);
         if !paper_dir.is_dir() {
@@ -941,10 +943,9 @@ impl ConnectorController {
             tags.iter().cloned().map(Into::into).collect();
         let vault = PathBuf::from(handle);
         for path in paths {
-            let _ =
-                crate::features::paper::catalog::papers::add_tags(&vault, &path, &paper_tags)?;
+            let _ = crate::features::paper::catalog::papers::add_tags(&vault, &path, &paper_tags)?;
         }
-    
+
         Ok(())
     }
 
@@ -964,7 +965,6 @@ impl ConnectorController {
 
         let targets = if let Some(h) = handle.as_deref() {
             super::targets::list_save_targets(Path::new(h))
-        
         } else {
             vec![super::targets::SaveTarget {
                 id: "L1".into(),
@@ -1070,7 +1070,6 @@ impl ConnectorController {
                     false,
                 );
             }
-        
         }
         if let Ok(g) = self.inner.lock() {
             if let Some(app) = &g.app {
