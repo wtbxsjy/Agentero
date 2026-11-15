@@ -23,7 +23,14 @@ import { FieldTable, SideBySideDiff, UnifiedDiff } from "./diff-view";
 import { openEvidence, resolveEvidenceCached } from "./evidence";
 import { fieldRows, splitFrontmatter } from "./frontmatter";
 import { reviewText } from "./i18n";
-import type { Evidence, Level, Proposal, ProposalPatch } from "./model";
+import type {
+	Evidence,
+	Level,
+	MergeInfo,
+	Proposal,
+	ProposalPatch,
+	RouteInfo,
+} from "./model";
 
 export const RISK_STYLE: Record<Level, string> = {
 	high: "border-red-500/40 text-red-700 dark:text-red-300",
@@ -87,6 +94,59 @@ function useTargetText(base: KbBase, target: string, revision: number) {
 		};
 	}, [base.dir, target, key]);
 	return state.key === key ? state : { ...state, loading: true };
+}
+
+/** merge_entity: which pages get folded in, which aliases get registered. */
+function MergeSummary({
+	merge,
+	base,
+	vaultPath,
+}: {
+	merge: MergeInfo;
+	base: KbBase;
+	vaultPath: string | null;
+}) {
+	const tx = reviewText();
+	return (
+		<section className="flex flex-col gap-1.5 rounded-md border border-violet-500/30 bg-violet-500/5 p-2.5 text-xs">
+			<div className="flex flex-wrap items-center gap-1.5">
+				<span className="text-muted-foreground">{tx.mergeFrom}</span>
+				{merge.from.map((f) => {
+					const abs = joinBase(base.dir, f.path);
+					const inVault = toVaultRel(abs, vaultPath) != null;
+					return (
+						<button
+							key={f.path}
+							type="button"
+							disabled={!inVault}
+							onClick={() => openPath(abs)}
+							title={f.path}
+							className="inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono hover:bg-muted disabled:cursor-default disabled:hover:bg-transparent"
+						>
+							{f.title && f.title !== f.id ? `${f.title} · ` : ""}
+							{f.id}
+						</button>
+					);
+				})}
+				{merge.basis && (
+					<Chip className="ml-auto border-border text-muted-foreground">
+						{tx.mergeBasis}: {tx.mergeBasisLabel[merge.basis] ?? merge.basis}
+					</Chip>
+				)}
+			</div>
+			{merge.aliases.length > 0 && (
+				<div className="flex flex-wrap items-center gap-1">
+					<span className="text-muted-foreground">{tx.mergeAliases}</span>
+					{merge.aliases.map((a) => (
+						<Chip key={a} className="border-border">
+							{a}
+						</Chip>
+					))}
+				</div>
+			)}
+			<div className="text-muted-foreground">{tx.mergeNote}</div>
+		</section>
+	);
 }
 
 function EvidenceItem({
@@ -206,6 +266,8 @@ export type DetailProps = {
 	vaultPath: string | null;
 	revision: number;
 	fresh: boolean | undefined;
+	/** Routing preview (or the stored route) for this proposal. */
+	route?: RouteInfo | null;
 	busy: boolean;
 	editing: boolean;
 	onEditingChange: (editing: boolean) => void;
@@ -220,6 +282,7 @@ export function ProposalDetail({
 	vaultPath,
 	revision,
 	fresh,
+	route,
 	busy,
 	editing,
 	onEditingChange,
@@ -361,6 +424,32 @@ export function ProposalDetail({
 						</span>
 					)}
 				</div>
+				{route && (
+					<div className="flex min-w-0 items-center gap-1.5 text-xs">
+						<span className="text-muted-foreground">{tx.routeLabel}</span>
+						<Chip
+							className={
+								route.mode === "auto"
+									? "border-sky-500/40 text-sky-700 dark:text-sky-300"
+									: "border-border text-muted-foreground"
+							}
+						>
+							{route.mode === "auto"
+								? tx.routeAuto(
+										tx.routeRule[route.rule ?? ""] ?? route.rule ?? "?",
+									)
+								: tx.routeInbox}
+						</Chip>
+						{route.why && (
+							<span
+								className="min-w-0 truncate text-muted-foreground"
+								title={route.why}
+							>
+								{route.why}
+							</span>
+						)}
+					</div>
+				)}
 				{p.rationale && (
 					<div className="rounded-md bg-muted/50 px-2.5 py-1.5 text-sm">
 						<span className="mr-1.5 text-xs text-muted-foreground">
@@ -373,6 +462,10 @@ export function ProposalDetail({
 
 			<div className="min-h-0 flex-1 overflow-y-auto">
 				<div className="flex flex-col gap-4 px-4 py-3">
+					{p.kind === "merge_entity" && p.merge && (
+						<MergeSummary merge={p.merge} base={base} vaultPath={vaultPath} />
+					)}
+
 					{/* evidence */}
 					<section className="flex flex-col gap-1.5">
 						<h3 className="text-xs font-medium text-muted-foreground">
@@ -563,7 +656,7 @@ export function ProposalDetail({
 						<Button
 							size="sm"
 							variant="outline"
-							disabled={busy || p.kind === "merge_entity"}
+							disabled={busy}
 							onClick={() => onEditingChange(true)}
 						>
 							<PencilIcon />

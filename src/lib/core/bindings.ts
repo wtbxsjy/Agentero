@@ -610,8 +610,12 @@ export const commands = {
 	kbWriteProposal: (kbDir: string, id: string, text: string) => __TAURI_INVOKE<ApiResult<boolean>>("kb_write_proposal", { kbDir, id, text }),
 	/**  Read a base-relative text file; `null` when it does not exist. */
 	kbReadFile: (kbDir: string, rel: string) => __TAURI_INVOKE<ApiResult<string | null>>("kb_read_file", { kbDir, rel }),
-	/**  Run `R/kb_merge.R` (list / show / accept / reject / check) in the base. */
+	/**  Run `R/kb_merge.R` (list / show / accept / reject / check / route / reasons) in the base. */
 	kbMerge: (kbDir: string, rscript: string | null, by: string | null, request: MergeRequest) => __TAURI_INVOKE<ApiResult<MergeOutput>>("kb_merge", { kbDir, rscript, by, request }),
+	/**  Run `R/kb_audit.R` (spot-check queue, sample, verdicts, report) in the base. */
+	kbAudit: (kbDir: string, rscript: string | null, by: string | null, request: AuditRequest) => __TAURI_INVOKE<ApiResult<MergeOutput>>("kb_audit", { kbDir, rscript, by, request }),
+	/**  Run `R/kb_dedupe.R` (duplicate scan, manual merge proposal) in the base. */
+	kbDedupe: (kbDir: string, rscript: string | null, request: DedupeRequest) => __TAURI_INVOKE<ApiResult<MergeOutput>>("kb_dedupe", { kbDir, rscript, request }),
 	/**
 	 *  Evidence entry → paragraph text, raw record, original PDF and the rect of
 	 *  that paragraph in the PDF (desktop PDFium).
@@ -1838,6 +1842,21 @@ export type AssetDownloadProgress_Serialize = {
 	totalCount?: number | null,
 };
 
+export type AuditRequest = 
+/**  `--list --json`: the spot-check queue. */
+{ action: "list" } | 
+/**  `--show ID`: the auto-merge commit (git show). */
+{ action: "show"; id: string } | 
+/**  `--sample --json`: sample new auto-merges into the queue. */
+{ action: "sample" } | 
+/**  `--ok ID` / `--wrong ID [--revert]`, with an optional `--note`. */
+{ action: "mark"; id: string; verdict: AuditVerdict; note: string | null; revert: boolean } | 
+/**  `--report --json`: per-rule error rates and disabled rules. */
+{ action: "report" };
+
+/**  Spot-check verdict for an auto-merged proposal. */
+export type AuditVerdict = "ok" | "wrong";
+
 export type BackfillPaper = {
 	path: string,
 	title: string,
@@ -2598,6 +2617,12 @@ export type DecisionSettings = {
 	/**  Whether the experimental smart-highlight toolbar action is enabled. */
 	smartHighlight?: boolean,
 };
+
+export type DedupeRequest = 
+/**  `--scan --json`: candidate duplicate pairs. */
+{ action: "scan" } | 
+/**  `--merge FROM --into INTO [--reason R] --json`: one manual merge proposal. */
+{ action: "merge"; from: string; into: string; reason: string | null };
 
 export type DepPolicy = "allSettled" | "allSucceeded";
 
@@ -3361,6 +3386,11 @@ export type KbBase = {
 	 *  channel need their `R/` refreshed from kb-template).
 	 */
 	hasMerge: boolean,
+	/**
+	 *  `R/kb_audit.R` and `R/kb_dedupe.R` exist (domain profile, routing and
+	 *  spot checks from kb-template P3).
+	 */
+	hasDomain: boolean,
 	pending: number,
 };
 
@@ -3732,16 +3762,23 @@ export type MergeOutput = {
 };
 
 export type MergeRequest = 
-/**  `--list --json`: pending proposals with `fresh` (base hash still matches). */
+/**
+ *  `--list --json`: pending proposals with `fresh` (base hash still matches)
+ *  and a `route` preview (auto rule or why it needs a human).
+ */
 { action: "list" } | 
 /**  `--show ID`: rationale, evidence and the unified diff as the merger sees it. */
 { action: "show"; id: string } | 
 /**  `--accept ID…` */
 { action: "accept"; ids: string[] } | 
-/**  `--reject ID… --reason R` */
-{ action: "reject"; ids: string[]; reason: string } | 
+/**  `--reject ID… --reason R [--reason-code C] [--duplicate-of PAGE]` */
+{ action: "reject"; ids: string[]; reason: string; reasonCode: string | null; duplicateOf: string | null } | 
 /**  `--check`: move proposals whose target changed to stale. */
-{ action: "check" };
+{ action: "check" } | 
+/**  `--route [--dry-run]`: auto-merge low-risk proposals, tag the rest for the inbox. */
+{ action: "route"; dryRun: boolean } | 
+/**  `--reasons --json`: rejection reason categories from the domain profile. */
+{ action: "reasons" };
 
 /**  Progress event streamed to the UI while a migration runs. */
 export type MigrateProgress = {

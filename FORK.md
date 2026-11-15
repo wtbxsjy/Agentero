@@ -137,6 +137,29 @@ proposal JSON in `<kb>/proposals/pending/` (contract `schema/proposal.schema.jso
   (kb-template PR #2). Without `R/kb_merge.R` the inbox is read-only.
 - Tests: `test/kb-review.test.ts`, `cargo test -p agentero-core features::kb`.
 
+## Domain profile and routing (P3)
+
+kb-template P3 adds `<kb>/domain/profile.yaml` (entity types, required fields, vocabularies,
+reject reasons, routing and audit settings) and `domain/aliases.yaml`. The inbox follows it:
+
+- **Routing**: `kb_merge.R --list --json` carries a route preview per proposal. Rows that would
+  auto-merge (links only, format only, alias-table merges) get a chip, a route filter, and the
+  toolbar's "Auto-route" button runs `kb_merge.R --route`. The rest stay with the reason why.
+- **Reject reasons**: the dialog offers the profile's categories (`--reasons --json`; digits
+  1–9 pick one) and sends `--reason-code` / `--duplicate-of`; `kb_feedback.R` turns them into
+  compile-prompt notes and alias suggestions.
+- **merge_entity**: the detail shows the pages folded in and the aliases registered; accepting
+  rewrites links in one commit (kb_merge.R).
+- **Spot checks** view (`kb_audit.R`): sample auto-merges per rule, read the merge commit, mark
+  it ok or wrong (optionally reverting it back into the inbox), per-rule error rate with a
+  Wilson upper bound against the 5% target; rules over target are disabled automatically.
+- **Duplicates** view (`kb_dedupe.R`): scan candidates, or name two pages, and write a
+  `merge_entity` proposal into the inbox.
+- **WSL**: the Rscript setting accepts `wsl`, `wsl:<distro>` or `wsl:<distro>:<Rscript path>`;
+  the base path is translated (`C:\…` → `/mnt/c/…`, `\\wsl$\<distro>\…` → `/…`).
+- Front end: `src/features/kb/review/` (`domain-store.ts`, `audit-view.tsx`, `dedupe-view.tsx`); Rust:
+  `kb_audit` / `kb_dedupe` commands. Without `R/kb_audit.R` the two views say so.
+
 ## Design constraints
 
 - Retrieval needs no Tauri commands: the search panel calls kb-rag's loopback HTTP mode

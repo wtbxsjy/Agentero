@@ -14,6 +14,7 @@ import {
 	type Proposal,
 	type ProposalBatch,
 	type ProposalKind,
+	type RouteInfo,
 	summarizeBatch,
 } from "./model";
 import { Chip, RISK_STYLE } from "./proposal-detail";
@@ -32,6 +33,8 @@ type ListProps = {
 	focusedId: string | null;
 	checked: ReadonlySet<string>;
 	fresh: ReadonlyMap<string, boolean>;
+	/** id → route (live preview or stored `route`). */
+	routes: ReadonlyMap<string, RouteInfo>;
 	busy: ReadonlySet<string>;
 	canDecide: boolean;
 	onFocus: (id: string) => void;
@@ -50,6 +53,7 @@ function Row({
 	focused,
 	checked,
 	stale,
+	route,
 	busy,
 	onFocus,
 	onToggle,
@@ -58,6 +62,7 @@ function Row({
 	focused: boolean;
 	checked: boolean;
 	stale: boolean;
+	route: RouteInfo | null;
 	busy: boolean;
 	onFocus: () => void;
 	onToggle: (on: boolean) => void;
@@ -111,6 +116,16 @@ function Row({
 						{tx.kind[p.kind]}
 					</Chip>
 					<Chip className={RISK_STYLE[p.risk]}>{tx.risk[p.risk]}</Chip>
+					{route?.mode === "auto" && (
+						<Chip
+							className="border-sky-500/40 text-sky-700 dark:text-sky-300"
+							title={route.why ?? undefined}
+						>
+							{tx.routeAuto(
+								tx.routeRule[route.rule ?? ""] ?? route.rule ?? "?",
+							)}
+						</Chip>
+					)}
 					{p.evidence.length > 0 && (
 						<Chip className="border-amber-500/30 text-amber-700 dark:text-amber-300">
 							¶{p.evidence.length}
@@ -227,6 +242,7 @@ function BatchCard({
 							focused={props.focusedId === p.id}
 							checked={props.checked.has(p.id)}
 							stale={props.fresh.get(p.id) === false}
+							route={props.routes.get(p.id) ?? p.route}
 							busy={props.busy.has(p.id)}
 							onFocus={() => props.onFocus(p.id)}
 							onToggle={(on) => props.onToggle(p.id, on)}
@@ -281,6 +297,7 @@ export function ProposalList(props: ListProps) {
 					focused={props.focusedId === p.id}
 					checked={props.checked.has(p.id)}
 					stale={props.fresh.get(p.id) === false}
+					route={props.routes.get(p.id) ?? p.route}
 					busy={props.busy.has(p.id)}
 					onFocus={() => props.onFocus(p.id)}
 					onToggle={(on) => props.onToggle(p.id, on)}
