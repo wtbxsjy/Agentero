@@ -42,6 +42,26 @@ export function isTrashVirtualPath(path: string | null | undefined): boolean {
 	return path === TRASH_VIRTUAL_PATH;
 }
 
+/** Virtual tab path for the knowledge-base review inbox (`src/features/kb/review`). */
+export const KB_REVIEW_VIRTUAL_PATH = "agentero:kb-review";
+
+/** Tab title before the inbox view renders its localized header. */
+export const KB_REVIEW_TAB_TITLE = "Review";
+
+export function isKbReviewVirtualPath(
+	path: string | null | undefined,
+): boolean {
+	return path === KB_REVIEW_VIRTUAL_PATH;
+}
+
+/**
+ * Any app-owned center view (Library, Recycle Bin, KB review inbox): not a
+ * filesystem path, never renamed, trashed, moved to a window or tracked.
+ */
+export function isVirtualDocPath(path: string | null | undefined): boolean {
+	return typeof path === "string" && path.startsWith("agentero:");
+}
+
 /** Normalize vault-relative path for library scope comparisons. */
 export function normalizeLibraryScope(path: string): string {
 	return normalizeRelPath(path).toLowerCase();

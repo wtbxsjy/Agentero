@@ -22,6 +22,7 @@ import {
 import {
 	isLibraryVirtualPath,
 	isTrashVirtualPath,
+	isVirtualDocPath,
 	LIBRARY_VIRTUAL_PATH,
 	resolveLibraryScopePath,
 	TRASH_VIRTUAL_PATH,
@@ -164,11 +165,7 @@ export function handleActivePanelChange(panelId: string | null): void {
 	}
 	const tab = activeTab;
 	if (!tab) return;
-	if (
-		!isLibraryVirtualPath(tab.path) &&
-		!isTrashVirtualPath(tab.path) &&
-		!isRemoteArxivPath(tab.path)
-	) {
+	if (!isVirtualDocPath(tab.path) && !isRemoteArxivPath(tab.path)) {
 		notePaperFocus(tab.path);
 	}
 
@@ -345,7 +342,7 @@ export function openTab(
 		if (res.didDownloadAssets && vault) {
 			await refreshTree(vault, { quiet: true });
 		}
-		if (!isLibraryVirtualPath(path) && !isTrashVirtualPath(path)) {
+		if (!isVirtualDocPath(path)) {
 			if (res.kind === "paper" && (res.mode === "pdf" || res.mode === "html")) {
 				track("paper.open", { path, mode: res.mode });
 			} else if (res.kind === "paper" || res.kind === "file") {
@@ -498,12 +495,7 @@ function rememberClosedTabs(idsToClose: readonly string[]): void {
 	);
 	pushClosedTabs(
 		closing
-			.filter(
-				(tab) =>
-					!companionIds.has(tab.id) &&
-					!isLibraryVirtualPath(tab.path) &&
-					!isTrashVirtualPath(tab.path),
-			)
+			.filter((tab) => !companionIds.has(tab.id) && !isVirtualDocPath(tab.path))
 			.map((tab) => ({ path: tab.path, mode: tab.mode })),
 	);
 }
@@ -863,7 +855,7 @@ export function rehydrateMisclassifiedPaperTabs(): void {
 	const ids: string[] = [];
 	for (const tab of getTabs()) {
 		if (!tab.loaded || tab.kind !== "library") continue;
-		if (isLibraryVirtualPath(tab.path) || isTrashVirtualPath(tab.path)) {
+		if (isVirtualDocPath(tab.path)) {
 			continue;
 		}
 		if (!isUnderPapers(tab.path)) continue;

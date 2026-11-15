@@ -1,4 +1,9 @@
-import { BookOpenIcon, RefreshCwIcon, SearchIcon } from "lucide-react";
+import {
+	BookOpenIcon,
+	InboxIcon,
+	RefreshCwIcon,
+	SearchIcon,
+} from "lucide-react";
 import {
 	type FormEvent,
 	useCallback,
@@ -33,6 +38,8 @@ import {
 	setKbRagUrl,
 } from "./client";
 import { kbText } from "./i18n";
+import { reviewText } from "./review/i18n";
+import { KbInboxRail, useKbPendingCount } from "./review/inbox-rail";
 import {
 	SOURCE_KINDS,
 	SOURCE_STYLE,
@@ -59,7 +66,7 @@ const STORE_FOR_FILTER: Record<"all" | SourceKind, KbStore> = {
 	other: "all",
 };
 
-export function KbPanel({ vaultPath, paperTitle, className }: Props) {
+function KbSearchPanel({ vaultPath, paperTitle, className }: Props) {
 	useTranslation(); // re-render on locale change
 	const tx = kbText();
 	const [status, setStatus] = useState<Status>("loading");
@@ -305,6 +312,57 @@ export function KbPanel({ vaultPath, paperTitle, className }: Props) {
 					})}
 				</div>
 			</ScrollArea>
+		</div>
+	);
+}
+
+type PanelTab = "search" | "inbox";
+
+/** KB rail: retrieval and the review inbox, as two tabs. */
+export function KbPanel({ vaultPath, paperTitle, className }: Props) {
+	useTranslation();
+	const tx = kbText();
+	const rtx = reviewText();
+	const [tab, setTab] = useState<PanelTab>("search");
+	const pending = useKbPendingCount();
+	return (
+		<div className={cn("flex min-h-0 flex-col", className)}>
+			<div className="flex shrink-0 gap-1 border-b px-2 py-1">
+				{(["search", "inbox"] as const).map((t) => (
+					<button
+						key={t}
+						type="button"
+						onClick={() => setTab(t)}
+						className={cn(
+							"inline-flex h-6 items-center gap-1.5 rounded-md px-2 text-xs",
+							tab === t
+								? "bg-muted text-foreground"
+								: "text-muted-foreground hover:bg-muted/60",
+						)}
+					>
+						{t === "search" ? (
+							<SearchIcon className="size-3.5" />
+						) : (
+							<InboxIcon className="size-3.5" />
+						)}
+						{t === "search" ? tx.search : rtx.railTab}
+						{t === "inbox" && pending > 0 && (
+							<span className="rounded-full bg-primary px-1.5 text-[10px] leading-4 text-primary-foreground tabular-nums">
+								{pending}
+							</span>
+						)}
+					</button>
+				))}
+			</div>
+			{/* Keep the search state when switching tabs. */}
+			<KbSearchPanel
+				vaultPath={vaultPath}
+				paperTitle={paperTitle}
+				className={cn("min-h-0 flex-1", tab !== "search" && "hidden")}
+			/>
+			{tab === "inbox" && (
+				<KbInboxRail vaultPath={vaultPath} className="min-h-0 flex-1" />
+			)}
 		</div>
 	);
 }

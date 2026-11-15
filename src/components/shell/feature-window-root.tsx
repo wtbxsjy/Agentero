@@ -23,7 +23,7 @@ import { applyAgentSessionHandoffOnce } from "@/lib/agent/agent-session-store";
 import { toVaultRelative } from "@/lib/core/path";
 import { isMacOS, isTauri } from "@/lib/core/tauri";
 import { toSafeDisposer } from "@/lib/core/tauri-events";
-import { isLibraryVirtualPath, isTrashVirtualPath } from "@/lib/paper/api";
+import { isVirtualDocPath } from "@/lib/paper/api";
 import { paperDirFromPath } from "@/lib/paper/detect";
 import { refreshLibrary } from "@/lib/paper/library-store";
 import { listPdfVisualTraces } from "@/lib/pdf/agent-trace/io";
@@ -110,10 +110,7 @@ function FeatureAnnotations({
 }) {
 	const paperAbs = useMemo(() => {
 		if (!selectedPath || !vaultPath) return null;
-		if (
-			isLibraryVirtualPath(selectedPath) ||
-			isTrashVirtualPath(selectedPath)
-		) {
+		if (isVirtualDocPath(selectedPath)) {
 			return null;
 		}
 		const relative = toVaultRelative(vaultPath, selectedPath);

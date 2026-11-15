@@ -6,6 +6,7 @@
 
 export { KbPanel } from "./kb-panel";
 export { KbRailSwitch, useKbRailView } from "./rail-switch";
+export { openKbReview } from "./review/inbox-rail";
 export {
 	SOURCE_STYLE,
 	type SourceKind,

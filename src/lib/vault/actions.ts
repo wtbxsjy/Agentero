@@ -18,8 +18,7 @@ import { dirnameOf, displayPath } from "@/lib/core/path";
 import { isTauri } from "@/lib/core/tauri";
 import { isPaperDirectory, isPapersRoot, isUnderPapers } from "@/lib/paper";
 import {
-	isLibraryVirtualPath,
-	isTrashVirtualPath,
+	isVirtualDocPath,
 	listTrash,
 	movePaperFolder,
 	purgeAllTrash,
@@ -255,7 +254,7 @@ export function seedVaultSkills(path: string): void {
 export function revealSelectedInFinder(): void {
 	const { treeSelectedPath } = vaultStore.getState();
 	const path = treeSelectedPath;
-	if (!path || isLibraryVirtualPath(path) || isTrashVirtualPath(path)) return;
+	if (!path || isVirtualDocPath(path)) return;
 	if (!isTauri()) {
 		notifyError(i18n.t("sidebar:fileTree.revealDesktopOnly"));
 		return;
@@ -273,7 +272,7 @@ export function revealSelectedInFinder(): void {
 export function openSelectedInTerminal(): void {
 	const { treeSelectedPath } = vaultStore.getState();
 	const path = treeSelectedPath;
-	if (!path || isLibraryVirtualPath(path) || isTrashVirtualPath(path)) return;
+	if (!path || isVirtualDocPath(path)) return;
 	if (!isTauri()) {
 		notifyError(i18n.t("sidebar:fileTree.openInTerminalDesktopOnly"));
 		return;
@@ -300,8 +299,7 @@ export async function trashPathsAndNotify(absPaths: string[]): Promise<void> {
 		.filter(
 			(p) =>
 				p &&
-				!isLibraryVirtualPath(p) &&
-				!isTrashVirtualPath(p) &&
+				!isVirtualDocPath(p) &&
 				p !== rootNorm &&
 				p.startsWith(`${rootNorm}/`),
 		);
@@ -346,7 +344,7 @@ export async function trashPathsAndNotify(absPaths: string[]): Promise<void> {
 
 export function deleteSelectedPath(): void {
 	const path = vaultStore.getState().treeSelectedPath;
-	if (!path || isLibraryVirtualPath(path) || isTrashVirtualPath(path)) {
+	if (!path || isVirtualDocPath(path)) {
 		notifyError(i18n.t("sidebar:fileTree.deleteNeedsSelection"));
 		return;
 	}
@@ -394,9 +392,7 @@ export async function movePathsTo(
 ): Promise<void> {
 	const vaultPath = getVaultPath();
 	if (!vaultPath) return;
-	const paths = rawPaths.filter(
-		(p) => !isLibraryVirtualPath(p) && !isTrashVirtualPath(p),
-	);
+	const paths = rawPaths.filter((p) => !isVirtualDocPath(p));
 	if (paths.length === 0) return;
 	setVaultBusy(true);
 	let failed = 0;
@@ -484,11 +480,7 @@ export function cutSelectedPaths(rawPaths: string[]): void {
 	const valid = rawPaths
 		.map((p) => p.replace(/\\/g, "/").replace(/\/+$/, ""))
 		.filter(
-			(p) =>
-				p &&
-				pathKey(p).startsWith(`${rootKey}/`) &&
-				!isLibraryVirtualPath(p) &&
-				!isTrashVirtualPath(p),
+			(p) => p && pathKey(p).startsWith(`${rootKey}/`) && !isVirtualDocPath(p),
 		);
 	if (valid.length === 0) {
 		notifyError(i18n.t("sidebar:fileTree.cutNeedsSelection"));
@@ -509,11 +501,7 @@ export function resolvePasteDestination(
 	tree: FileNode[],
 	targetPath: string | null | undefined,
 ): { abs: string; rel: string; isPaperLeaf: boolean } | null {
-	if (
-		!targetPath ||
-		isLibraryVirtualPath(targetPath) ||
-		isTrashVirtualPath(targetPath)
-	) {
+	if (!targetPath || isVirtualDocPath(targetPath)) {
 		// No selection / virtual target → paste at vault root.
 		return { abs: vaultPath, rel: "", isPaperLeaf: false };
 	}

@@ -1,6 +1,10 @@
 import {
+	isKbReviewVirtualPath,
 	isLibraryVirtualPath,
 	isTrashVirtualPath,
+	isVirtualDocPath,
+	KB_REVIEW_TAB_TITLE,
+	KB_REVIEW_VIRTUAL_PATH,
 	LIBRARY_VIRTUAL_PATH,
 	TRASH_VIRTUAL_PATH,
 } from "@/lib/paper/api";
@@ -20,6 +24,7 @@ export function tabTitleForPath(path: string): string {
 export function tabIdForPath(path: string): string {
 	if (isLibraryVirtualPath(path)) return LIBRARY_VIRTUAL_PATH;
 	if (isTrashVirtualPath(path)) return TRASH_VIRTUAL_PATH;
+	if (isKbReviewVirtualPath(path)) return KB_REVIEW_VIRTUAL_PATH;
 	return normalizePathKey(path);
 }
 
@@ -58,7 +63,7 @@ function remapTabIdForPath(
 
 /** Rewrite one absolute or Vault-relative path under a moved root. */
 export function remapPathUnder(path: string, from: string, to: string): string {
-	if (isLibraryVirtualPath(path) || isTrashVirtualPath(path)) return path;
+	if (isVirtualDocPath(path)) return path;
 	const current = path.replace(/\\/g, "/").replace(/\/+$/, "");
 	const oldRoot = from.replace(/\\/g, "/").replace(/\/+$/, "");
 	const newRoot = to.replace(/\\/g, "/").replace(/\/+$/, "");
@@ -124,19 +129,30 @@ export function createPlaceholderTab(
 ): DocTab {
 	const isLibrary = isLibraryVirtualPath(path);
 	const isTrash = isTrashVirtualPath(path);
+	const isKbReview = isKbReviewVirtualPath(path);
 	return {
 		id,
 		path: isLibrary
 			? LIBRARY_VIRTUAL_PATH
 			: isTrash
 				? TRASH_VIRTUAL_PATH
-				: path,
-		kind: isLibrary ? "library" : isTrash ? "trash" : "file",
+				: isKbReview
+					? KB_REVIEW_VIRTUAL_PATH
+					: path,
+		kind: isLibrary
+			? "library"
+			: isTrash
+				? "trash"
+				: isKbReview
+					? "kb-review"
+					: "file",
 		title: isLibrary
 			? "Library"
 			: isTrash
 				? "Recycle Bin"
-				: tabTitleForPath(path),
+				: isKbReview
+					? KB_REVIEW_TAB_TITLE
+					: tabTitleForPath(path),
 		mode: preferMode,
 		paperMeta: null,
 		pdfUrl: null,

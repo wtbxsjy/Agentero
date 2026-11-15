@@ -2,7 +2,7 @@ import type { PaperMetadata } from "@/lib/paper";
 import type { LinkFragment } from "@/lib/wiki";
 import type { CenterViewMode } from "@/lib/workspace/viewer";
 
-export type DocTabKind = "library" | "trash" | "paper" | "file";
+export type DocTabKind = "library" | "trash" | "kb-review" | "paper" | "file";
 
 /**
  * One open document panel in the center Dockview workspace.

@@ -51,7 +51,7 @@ import { errorText } from "@/lib/core/error";
 import { notifyError } from "@/lib/core/notify";
 import { displayPath } from "@/lib/core/path";
 import { cn } from "@/lib/core/utils";
-import { isLibraryVirtualPath, isTrashVirtualPath } from "@/lib/paper/api";
+import { isLibraryVirtualPath, isVirtualDocPath } from "@/lib/paper/api";
 import { moveDocToWindow } from "@/lib/shell/leaf";
 import { formatShortcutById } from "@/lib/shell/shortcuts";
 import { setLayoutMode, uiStore } from "@/lib/shell/ui-store";
@@ -141,11 +141,15 @@ function buildTabContextMenuItem(opts: {
 /** Virtual rows and `agentero:` paths have no filesystem location to copy. */
 function tabPathCopyable(tab: DocTab | null): tab is DocTab {
 	if (!tab?.path) return false;
-	if (tab.kind === "library" || tab.kind === "trash") {
+	if (
+		tab.kind === "library" ||
+		tab.kind === "trash" ||
+		tab.kind === "kb-review"
+	) {
 		return false;
 	}
 	if (tab.path.startsWith("agentero:")) return false;
-	if (isLibraryVirtualPath(tab.path) || isTrashVirtualPath(tab.path)) {
+	if (isVirtualDocPath(tab.path)) {
 		return false;
 	}
 	return true;
@@ -873,8 +877,8 @@ export const DockWorkspace = memo(
 					tab != null &&
 					tab.kind !== "library" &&
 					tab.kind !== "trash" &&
-					!isLibraryVirtualPath(tab.path) &&
-					!isTrashVirtualPath(tab.path);
+					tab.kind !== "kb-review" &&
+					!isVirtualDocPath(tab.path);
 				if (canMoveToWindow && tab) {
 					menu.push({
 						label: t("tabs.contextMoveToNewWindow"),

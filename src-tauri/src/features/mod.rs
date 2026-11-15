@@ -30,6 +30,8 @@ pub mod open_request;
     not(any(target_os = "ios", target_os = "android"))
 ))]
 pub mod jev;
+#[cfg(feature = "desktop")]
+pub mod kb;
 pub mod markdown;
 pub mod paper;
 pub mod pdf;

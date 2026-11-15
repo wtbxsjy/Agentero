@@ -25,7 +25,12 @@ import {
 	REMOTE_ARXIV_PREFIX,
 	revokePdfViewerSource,
 } from "@/lib/paper";
-import { isLibraryVirtualPath, isTrashVirtualPath } from "@/lib/paper/api";
+import {
+	isKbReviewVirtualPath,
+	isLibraryVirtualPath,
+	isTrashVirtualPath,
+	KB_REVIEW_TAB_TITLE,
+} from "@/lib/paper/api";
 import {
 	ensureLocalFsScope,
 	type FileNode,
@@ -148,6 +153,21 @@ export async function loadTabResources(
 	tree: FileNode[],
 	paperFolders: string[],
 ): Promise<TabResources> {
+	if (isKbReviewVirtualPath(path)) {
+		return {
+			kind: "kb-review",
+			title: KB_REVIEW_TAB_TITLE,
+			mode: "markdown",
+			paperMeta: null,
+			pdfUrl: null,
+			htmlUrl: null,
+			imageUrl: null,
+			notesPath: null,
+			notesSeed: "",
+			markdownSeed: "",
+			loaded: true,
+		};
+	}
 	if (isTrashVirtualPath(path)) {
 		return {
 			kind: "trash",

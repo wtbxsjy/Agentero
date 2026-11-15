@@ -20,7 +20,7 @@ import {
 } from "@/lib/agent/context-path-icon";
 import type { ThinkTagParser } from "@/lib/agent/stream-parse";
 import { paperDirFromPath } from "@/lib/paper";
-import { isLibraryVirtualPath, isTrashVirtualPath } from "@/lib/paper/api";
+import { isVirtualDocPath } from "@/lib/paper/api";
 import { toVaultRelative } from "@/lib/wiki";
 
 /** Translate fn scoped to the `agent` i18n namespace (shared by sub-hooks). */
@@ -83,15 +83,12 @@ export function useAgentPanelContext({
 	 */
 	const selectedVaultPath = useMemo(() => {
 		if (!selectedPath) return null;
-		if (
-			isLibraryVirtualPath(selectedPath) ||
-			isTrashVirtualPath(selectedPath)
-		) {
+		if (isVirtualDocPath(selectedPath)) {
 			return null;
 		}
 		const relative = toVaultRelative(vaultPath, selectedPath);
 		if (!relative) return null;
-		if (isLibraryVirtualPath(relative) || isTrashVirtualPath(relative)) {
+		if (isVirtualDocPath(relative)) {
 			return null;
 		}
 		const paperDir = paperDirFromPath(relative, vaultPaperPaths);
