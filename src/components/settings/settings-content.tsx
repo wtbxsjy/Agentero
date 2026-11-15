@@ -9,7 +9,6 @@ import {
 	Paintbrush,
 	SlidersHorizontal,
 	Stethoscope,
-	UserRound,
 	Wand2,
 	X,
 } from "lucide-react";
@@ -29,7 +28,6 @@ import {
 import { useTranslation } from "react-i18next";
 import type { SettingsSection } from "@/components/settings/types";
 import { Button } from "@/components/ui/button";
-import { accountSurfaceEnabled } from "@/features/account/visibility";
 import { scrollBehavior } from "@/lib/core/motion";
 import { cn } from "@/lib/core/utils";
 import {
@@ -45,7 +43,6 @@ import { closeSettingsWindow } from "@/lib/shell/settings-window";
 // the shell (see `preloadSettingsPane`), so only the sections you actually visit
 // pay for a chunk — a lazy default pane would just move the stall after render.
 const PANE_LOADERS = {
-	account: () => import("@/components/settings/panes/account-pane"),
 	general: () => import("@/components/settings/panes/general-pane"),
 	appearance: () => import("@/components/settings/panes/appearance-pane"),
 	agent: () => import("@/components/settings/panes/agent-pane"),
@@ -62,8 +59,7 @@ const PANE_LOADERS = {
  * cached, so the matching `lazy()` below resolves without a second request.
  */
 function sectionVisible(id: SettingsSection): boolean {
-	if (!accountSurfaceEnabled && id === "account") return false;
-	return true;
+	return id in PANE_LOADERS;
 }
 
 export function preloadSettingsPane(section: string): Promise<unknown> {
@@ -77,9 +73,6 @@ export function preloadSettingsPane(section: string): Promise<unknown> {
 
 // memo(): visited panes stay mounted across section switches; without this
 // every switch re-rendered ALL mounted panes (agent pane is ~1.5k lines).
-const AccountPane = memo(
-	lazy(() => PANE_LOADERS.account().then((m) => ({ default: m.AccountPane }))),
-);
 const GeneralPane = memo(
 	lazy(() => PANE_LOADERS.general().then((m) => ({ default: m.GeneralPane }))),
 );
@@ -123,7 +116,6 @@ const NAV: {
 	icon: typeof Bot;
 	dividerBefore?: boolean;
 }[] = [
-	{ id: "account", icon: UserRound },
 	{ id: "general", icon: SlidersHorizontal },
 	{ id: "appearance", icon: Paintbrush },
 	{ id: "agent", icon: Bot, dividerBefore: true },
@@ -549,17 +541,6 @@ export function SettingsContent({
 						>
 							<Suspense fallback={<PaneFallback />}>
 								<ExperimentalPane settings={settings} patch={patch} />
-							</Suspense>
-						</div>
-					)}
-					{visitedSections.includes("account") && (
-						<div
-							data-settings-pane
-							data-active={activeSection === "account" ? "true" : "false"}
-							hidden={activeSection !== "account"}
-						>
-							<Suspense fallback={<PaneFallback />}>
-								<AccountPane />
 							</Suspense>
 						</div>
 					)}

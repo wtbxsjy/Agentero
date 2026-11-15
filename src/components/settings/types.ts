@@ -1,5 +1,4 @@
 export type SettingsSection =
-	| "account"
 	| "general"
 	| "appearance"
 	| "agent"

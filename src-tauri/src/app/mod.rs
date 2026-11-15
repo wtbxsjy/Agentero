@@ -6,7 +6,6 @@ pub(crate) mod bindings_test;
 // of the private payload structs and reference the mirrors from here. Test
 // builds only — the module does not exist otherwise.
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
-mod account;
 pub(crate) mod command_util;
 #[cfg(any(test, feature = "bindings-export"))]
 pub(crate) mod events_contract;
@@ -100,7 +99,6 @@ pub fn run() {
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
         builder = builder
-            .plugin(account::plugin())
             // Only the main window remembers geometry; settings / feature /
             // doc popouts keep their own fixed sizes.
             .plugin(

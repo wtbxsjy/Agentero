@@ -83,14 +83,15 @@ Deleted in step 2:
   and its QuickJS worker sidecar (`externalBin`, `plugin-worker:stage` scripts, CI staging),
   `integration/plugins` with the `plugin_*` commands and `plugins:*` events, `src/lib/plugins/`,
   Settings → Plugins and the dev-plugin palette commands. Extensions go through skills + MCP.
-
-Already hidden upstream: plugins (`src/lib/plugins/visibility.ts`) and account / cloud writing
-(`src/features/account/visibility.ts`).
+- **Account / sign-in** (hidden upstream by `accountSurfaceEnabled`): `tauri-plugin-better-auth`
+  and the better-auth JS packages, `app/account.rs`, `src/features/account/`, Settings → Account,
+  the `account` i18n namespace and the Better Auth UI attribution in `THIRD_PARTY.md`. The app
+  has no sign-in; model providers are configured with local keys.
 
 Still open after step 2:
 
 - The `agentero://` deep-link scheme is shared with the official app and is hard-coded in Rust
-  and TS; change it together with the account code that uses it.
+  and TS. After the account removal only the CLI `open` / `ui` hand-off uses it.
 - Settings → About still points at upstream: "Install CLI" downloads the official
   `agentero-cli` archive for the same version from `poco-ai/Agentero` releases, and the GitHub
   star link and Homebrew hint name the upstream repo and tap.
