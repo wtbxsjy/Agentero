@@ -14,7 +14,7 @@ const en = {
 	noBase:
 		"No knowledge base in this vault. Create one under kb/<topic>/ with kb-template's kb_init.R.",
 	noMerge:
-		"This base has no R/kb_merge.R. Copy R/ from a kb-template checkout with the proposal channel; until then the inbox is read-only.",
+		"This base has no R/kb_merge.R. Set the kb-template folder in the inbox settings (or recreate the base with kb_init --scripts shared); until then the inbox is read-only.",
 	empty:
 		"No pending proposals. Run kb_compile.R or kb_link.R to generate some.",
 	emptyFiltered: "No proposal matches the filters.",
@@ -26,8 +26,30 @@ const en = {
 	rscript: "Rscript path",
 	rscriptHint:
 		"Empty = Rscript on PATH. On Windows, wsl or wsl:<distro> runs it inside WSL (wsl:<distro>:<path> for a custom Rscript).",
+	template: "kb-template folder",
+	templateHint:
+		"The kb-template checkout the scripts run from (merge, audit, dedupe, compile). Empty = the base's own R/. With a WSL Rscript, a Linux path (/home/…) is used inside WSL.",
 	decider: "Reviewer name",
 	deciderHint: "Recorded as decided_by; empty = git user.name",
+	compile: "Compile…",
+	compileTitle: "Compile plan",
+	compileHint:
+		"kb_compile.R --dry-run: sources waiting to compile (value_gate keep, status raw / stale). Tick the ones to compile; each one calls the model.",
+	compileEmpty:
+		"Nothing to compile. Mark sources keep with kb_gate.R, or ingest new ones.",
+	compileUndecided: (n: number) =>
+		`${n} source(s) still undecided (kb_gate.R) and not listed`,
+	compileBudget: (pages: number, tokens: number) =>
+		`Budget per run: ${pages} sources, ${tokens.toLocaleString()} tokens`,
+	compileModel: (provider: string, model: string | null) =>
+		`Model: ${provider}${model ? ` / ${model}` : ""}`,
+	compileEst: (tokens: number) => `≈ ${tokens.toLocaleString()} tokens`,
+	compileOverBudget: "Over the per-run budget: only the first ones will run",
+	compileRun: (n: number) => `Compile ${n}`,
+	compileRunning: "Compiling… this calls the model and can take minutes",
+	compileDone:
+		"Compile finished; new proposals are in the inbox (routing ran if configured).",
+	compileBack: "Back to inbox",
 	save: "Save",
 	cancel: "Cancel",
 	filterAll: "All",
@@ -225,7 +247,7 @@ const zh: typeof en = {
 	noBase:
 		"当前 Vault 里没有知识库。用 kb-template 的 kb_init.R 在 kb/<topic>/ 下新建。",
 	noMerge:
-		"这个库里没有 R/kb_merge.R。请从带提案通道的 kb-template 复制 R/ 目录；在此之前收件箱只读。",
+		"这个库里没有 R/kb_merge.R。请在收件箱设置里填 kb-template 目录（或用 kb_init --scripts shared 重建库）；在此之前收件箱只读。",
 	empty: "没有待审提案。运行 kb_compile.R 或 kb_link.R 生成。",
 	emptyFiltered: "没有符合筛选条件的提案。",
 	refresh: "刷新",
@@ -236,8 +258,29 @@ const zh: typeof en = {
 	rscript: "Rscript 路径",
 	rscriptHint:
 		"留空 = 使用 PATH 里的 Rscript。Windows 上填 wsl 或 wsl:<发行版> 在 WSL 里运行（自定义路径用 wsl:<发行版>:<路径>）。",
+	template: "kb-template 目录",
+	templateHint:
+		"脚本（合并、抽检、去重、编译）从这个 kb-template 检出目录运行。留空 = 用库里自己的 R/。Rscript 设为 WSL 时，Linux 路径（/home/…）在 WSL 里直接用。",
 	decider: "审阅人",
 	deciderHint: "记入 decided_by；留空 = git user.name",
+	compile: "编译…",
+	compileTitle: "编译计划",
+	compileHint:
+		"kb_compile.R --dry-run：待编译的来源（value_gate 为 keep、状态 raw / stale）。勾选要编译的；每条都会调用模型。",
+	compileEmpty:
+		"没有待编译的来源。先用 kb_gate.R 把来源标为 keep，或导入新来源。",
+	compileUndecided: (n: number) =>
+		`还有 ${n} 条来源未判定（kb_gate.R），未列出`,
+	compileBudget: (pages: number, tokens: number) =>
+		`每次预算：${pages} 条来源，${tokens.toLocaleString()} token`,
+	compileModel: (provider: string, model: string | null) =>
+		`模型：${provider}${model ? ` / ${model}` : ""}`,
+	compileEst: (tokens: number) => `约 ${tokens.toLocaleString()} token`,
+	compileOverBudget: "超过单次预算：只会编译前面几条",
+	compileRun: (n: number) => `编译 ${n} 条`,
+	compileRunning: "正在编译……会调用模型，可能要几分钟",
+	compileDone: "编译完成，新提案已进收件箱（配置了分流时已自动分流）。",
+	compileBack: "回到收件箱",
 	save: "保存",
 	cancel: "取消",
 	filterAll: "全部",

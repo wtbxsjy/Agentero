@@ -168,6 +168,24 @@ function SettingsPopover() {
 					/>
 					<span className="text-muted-foreground">{tx.rscriptHint}</span>
 				</label>
+				<label htmlFor="kb-review-template" className="flex flex-col gap-1">
+					{tx.template}
+					<Input
+						id="kb-review-template"
+						value={s.template}
+						placeholder="/path/to/kb-template"
+						onChange={(e) => setS({ ...s, template: e.target.value })}
+						onBlur={() => {
+							const template = s.template.trim();
+							if (template === reviewSettings().template) return;
+							saveReviewSettings({ template });
+							void loadBases(reviewStore.getState().vaultPath).then(() =>
+								reload(),
+							);
+						}}
+					/>
+					<span className="text-muted-foreground">{tx.templateHint}</span>
+				</label>
 				<label htmlFor="kb-review-decider" className="flex flex-col gap-1">
 					{tx.decider}
 					<Input

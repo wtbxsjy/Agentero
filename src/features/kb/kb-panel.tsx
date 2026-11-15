@@ -1,6 +1,7 @@
 import {
 	BookOpenIcon,
 	InboxIcon,
+	MessageSquareTextIcon,
 	RefreshCwIcon,
 	SearchIcon,
 } from "lucide-react";
@@ -38,6 +39,7 @@ import {
 	setKbRagUrl,
 } from "./client";
 import { kbText } from "./i18n";
+import { KbAskPanel } from "./qa/qa-panel";
 import { reviewText } from "./review/i18n";
 import { KbInboxRail, useKbPendingCount } from "./review/inbox-rail";
 import {
@@ -316,9 +318,15 @@ function KbSearchPanel({ vaultPath, paperTitle, className }: Props) {
 	);
 }
 
-type PanelTab = "search" | "inbox";
+type PanelTab = "search" | "ask" | "inbox";
 
-/** KB rail: retrieval and the review inbox, as two tabs. */
+const TAB_ICON = {
+	search: SearchIcon,
+	ask: MessageSquareTextIcon,
+	inbox: InboxIcon,
+} as const;
+
+/** KB rail: retrieval, Q&A and the review inbox, as three tabs. */
 export function KbPanel({ vaultPath, paperTitle, className }: Props) {
 	useTranslation();
 	const tx = kbText();
@@ -328,37 +336,41 @@ export function KbPanel({ vaultPath, paperTitle, className }: Props) {
 	return (
 		<div className={cn("flex min-h-0 flex-col", className)}>
 			<div className="flex shrink-0 gap-1 border-b px-2 py-1">
-				{(["search", "inbox"] as const).map((t) => (
-					<button
-						key={t}
-						type="button"
-						onClick={() => setTab(t)}
-						className={cn(
-							"inline-flex h-6 items-center gap-1.5 rounded-md px-2 text-xs",
-							tab === t
-								? "bg-muted text-foreground"
-								: "text-muted-foreground hover:bg-muted/60",
-						)}
-					>
-						{t === "search" ? (
-							<SearchIcon className="size-3.5" />
-						) : (
-							<InboxIcon className="size-3.5" />
-						)}
-						{t === "search" ? tx.search : rtx.railTab}
-						{t === "inbox" && pending > 0 && (
-							<span className="rounded-full bg-primary px-1.5 text-[10px] leading-4 text-primary-foreground tabular-nums">
-								{pending}
-							</span>
-						)}
-					</button>
-				))}
+				{(["search", "ask", "inbox"] as const).map((t) => {
+					const Icon = TAB_ICON[t];
+					return (
+						<button
+							key={t}
+							type="button"
+							onClick={() => setTab(t)}
+							className={cn(
+								"inline-flex h-6 items-center gap-1.5 rounded-md px-2 text-xs",
+								tab === t
+									? "bg-muted text-foreground"
+									: "text-muted-foreground hover:bg-muted/60",
+							)}
+						>
+							<Icon className="size-3.5" />
+							{t === "search" ? tx.search : t === "ask" ? tx.ask : rtx.railTab}
+							{t === "inbox" && pending > 0 && (
+								<span className="rounded-full bg-primary px-1.5 text-[10px] leading-4 text-primary-foreground tabular-nums">
+									{pending}
+								</span>
+							)}
+						</button>
+					);
+				})}
 			</div>
 			{/* Keep the search state when switching tabs. */}
 			<KbSearchPanel
 				vaultPath={vaultPath}
 				paperTitle={paperTitle}
 				className={cn("min-h-0 flex-1", tab !== "search" && "hidden")}
+			/>
+			{/* Keep the last answer when switching tabs. */}
+			<KbAskPanel
+				vaultPath={vaultPath}
+				className={cn("min-h-0 flex-1", tab !== "ask" && "hidden")}
 			/>
 			{tab === "inbox" && (
 				<KbInboxRail vaultPath={vaultPath} className="min-h-0 flex-1" />

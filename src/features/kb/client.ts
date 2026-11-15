@@ -3,6 +3,7 @@
  * The service lives outside Agentero, so nothing here goes through Tauri IPC.
  */
 
+import type { AskLevel, AskResult } from "./qa/model";
 import type { SourceKind } from "./sources";
 
 const URL_KEY = "agentero-kb-rag-url";
@@ -113,4 +114,42 @@ export function kbQuery(args: {
 		mode: args.mode,
 		k: String(args.k ?? 12),
 	});
+}
+
+/**
+ * `POST /ask` (kb-template P4): multi-hop retrieval over the wiki, an answer
+ * with `[n]` citations and a proposal draft. `kb` may be an absolute base
+ * root under the service's KB_RAG_ROOTS, so unindexed bases work too.
+ * Calls the model: the service only accepts this from the desktop webview.
+ */
+export async function kbAsk(args: {
+	kb: string;
+	q: string;
+	level: AskLevel;
+	hops: number;
+	chars?: number;
+}): Promise<AskResult> {
+	let res: Response;
+	try {
+		res = await fetch(new URL("/ask", kbRagUrl()), {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				kb: args.kb,
+				q: args.q,
+				level: args.level,
+				hops: args.hops,
+				chars: args.chars ?? 6000,
+			}),
+			signal: AbortSignal.timeout(300_000),
+		});
+	} catch (err) {
+		throw new KbRagError(String(err), true);
+	}
+	const body = (await res.json().catch(() => ({}))) as AskResult & {
+		error?: string;
+	};
+	if (res.status === 404) throw new KbRagError("HTTP 404 /ask", true);
+	if (!res.ok) throw new KbRagError(body.error ?? `HTTP ${res.status}`);
+	return body;
 }

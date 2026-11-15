@@ -5,6 +5,7 @@
 
 import type {
 	AuditRequest,
+	CompileRequest,
 	DedupeRequest,
 	EvidenceTarget,
 	KbBase,
@@ -14,22 +15,25 @@ import type {
 } from "@/lib/core/bindings";
 import { commands } from "@/lib/core/bindings";
 import { callApi } from "@/lib/core/ipc";
-import { reviewSettings } from "./settings";
+import { reviewSettings, withTemplate } from "./settings";
 
 export type {
 	AuditRequest,
+	CompileRequest,
 	DedupeRequest,
 	EvidenceTarget,
 	KbBase,
 	MergeOutput,
 };
 
-export function listBases(vaultPath: string): Promise<KbBase[]> {
-	return callApi(() => commands.kbListBases(vaultPath));
+export async function listBases(vaultPath: string): Promise<KbBase[]> {
+	const bases = await callApi(() => commands.kbListBases(vaultPath));
+	return withTemplate(bases, reviewSettings().template);
 }
 
-export function describeBase(kbDir: string): Promise<KbBase> {
-	return callApi(() => commands.kbDescribeBase(kbDir));
+export async function describeBase(kbDir: string): Promise<KbBase> {
+	const base = await callApi(() => commands.kbDescribeBase(kbDir));
+	return withTemplate([base], reviewSettings().template)[0];
 }
 
 export function readProposals(
@@ -72,7 +76,13 @@ export async function runMerge(
 ): Promise<MergeOutput> {
 	const s = reviewSettings();
 	const out = await callApi(() =>
-		commands.kbMerge(kbDir, s.rscript || null, s.decider || null, request),
+		commands.kbMerge(
+			kbDir,
+			s.rscript || null,
+			s.template || null,
+			s.decider || null,
+			request,
+		),
 	);
 	if (out.code !== 0 && !opts.allowFail)
 		throw new MergeFailed(failTail(out), out);
@@ -92,7 +102,13 @@ export async function runAudit(
 ): Promise<MergeOutput> {
 	const s = reviewSettings();
 	const out = await callApi(() =>
-		commands.kbAudit(kbDir, s.rscript || null, s.decider || null, request),
+		commands.kbAudit(
+			kbDir,
+			s.rscript || null,
+			s.template || null,
+			s.decider || null,
+			request,
+		),
 	);
 	if (out.code !== 0 && !opts.allowFail)
 		throw new MergeFailed(failTail(out), out);
@@ -106,7 +122,20 @@ export async function runDedupe(
 ): Promise<MergeOutput> {
 	const s = reviewSettings();
 	const out = await callApi(() =>
-		commands.kbDedupe(kbDir, s.rscript || null, request),
+		commands.kbDedupe(kbDir, s.rscript || null, s.template || null, request),
+	);
+	if (out.code !== 0) throw new MergeFailed(failTail(out), out);
+	return out;
+}
+
+/** Run kb_compile.R: the compile plan, or a run of the ticked raw records. */
+export async function runCompile(
+	kbDir: string,
+	request: CompileRequest,
+): Promise<MergeOutput> {
+	const s = reviewSettings();
+	const out = await callApi(() =>
+		commands.kbCompile(kbDir, s.rscript || null, s.template || null, request),
 	);
 	if (out.code !== 0) throw new MergeFailed(failTail(out), out);
 	return out;

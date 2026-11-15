@@ -6,8 +6,8 @@
 use crate::core::blocking::run_blocking;
 use crate::core::error::{map_err, ApiResult, AppError};
 use agentero_core::features::kb::{
-    self, AuditRequest, DedupeRequest, EvidenceTarget, KbBase, MergeOutput, MergeRequest,
-    ProposalFile, ProposalState,
+    self, AuditRequest, CompileRequest, DedupeRequest, EvidenceTarget, KbBase, MergeOutput,
+    MergeRequest, ProposalFile, ProposalState,
 };
 use std::path::PathBuf;
 
@@ -94,6 +94,7 @@ pub async fn kb_read_file(kb_dir: String, rel: String) -> ApiResult<Option<Strin
 pub async fn kb_merge(
     kb_dir: String,
     rscript: Option<String>,
+    template: Option<String>,
     by: Option<String>,
     request: MergeRequest,
 ) -> ApiResult<MergeOutput> {
@@ -101,7 +102,7 @@ pub async fn kb_merge(
         Ok(d) => d,
         Err(e) => return map_err(e),
     };
-    wrap(kb::run_merge(&dir, rscript.as_deref(), by.as_deref(), &request).await)
+    wrap(kb::run_merge(&dir, runner(&rscript, &template), by.as_deref(), &request).await)
 }
 
 /// Run `R/kb_audit.R` (spot-check queue, sample, verdicts, report) in the base.
@@ -110,6 +111,7 @@ pub async fn kb_merge(
 pub async fn kb_audit(
     kb_dir: String,
     rscript: Option<String>,
+    template: Option<String>,
     by: Option<String>,
     request: AuditRequest,
 ) -> ApiResult<MergeOutput> {
@@ -117,7 +119,7 @@ pub async fn kb_audit(
         Ok(d) => d,
         Err(e) => return map_err(e),
     };
-    wrap(kb::run_audit(&dir, rscript.as_deref(), by.as_deref(), &request).await)
+    wrap(kb::run_audit(&dir, runner(&rscript, &template), by.as_deref(), &request).await)
 }
 
 /// Run `R/kb_dedupe.R` (duplicate scan, manual merge proposal) in the base.
@@ -126,13 +128,38 @@ pub async fn kb_audit(
 pub async fn kb_dedupe(
     kb_dir: String,
     rscript: Option<String>,
+    template: Option<String>,
     request: DedupeRequest,
 ) -> ApiResult<MergeOutput> {
     let dir = match base_dir(&kb_dir) {
         Ok(d) => d,
         Err(e) => return map_err(e),
     };
-    wrap(kb::run_dedupe(&dir, rscript.as_deref(), &request).await)
+    wrap(kb::run_dedupe(&dir, runner(&rscript, &template), &request).await)
+}
+
+/// Run `R/kb_compile.R`: the compile plan (`--dry-run --json`) or a run of
+/// the ticked raw records (`--ids`).
+#[tauri::command]
+#[specta::specta]
+pub async fn kb_compile(
+    kb_dir: String,
+    rscript: Option<String>,
+    template: Option<String>,
+    request: CompileRequest,
+) -> ApiResult<MergeOutput> {
+    let dir = match base_dir(&kb_dir) {
+        Ok(d) => d,
+        Err(e) => return map_err(e),
+    };
+    wrap(kb::run_compile(&dir, runner(&rscript, &template), &request).await)
+}
+
+fn runner<'a>(rscript: &'a Option<String>, template: &'a Option<String>) -> kb::Runner<'a> {
+    kb::Runner {
+        rscript: rscript.as_deref(),
+        template: template.as_deref(),
+    }
 }
 
 /// Evidence entry → paragraph text, raw record, original PDF and the rect of

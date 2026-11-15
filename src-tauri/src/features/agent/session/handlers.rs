@@ -12,7 +12,7 @@
 //!   forward commands / config so the Chat panel stays fresh between turns.
 
 use crate::features::agent::acp::interaction::{
-    await_user_permission, permission_response, PermissionPolicy,
+    await_user_permission, kb_wiki_writes, permission_response, PermissionPolicy,
 };
 use crate::features::agent::acp::updates::{
     emit_rich_session_update, emit_session_config_options, models_from_config_options,
@@ -158,6 +158,11 @@ pub(crate) async fn decide_permission(
 ) -> RequestPermissionResponse {
     match policy {
         PermissionPolicy::Restricted => permission_response(request, false),
+        // Writes into a knowledge base's wiki/ bypass the review inbox: ask even
+        // in auto mode (kb-template: only the merger writes the wiki).
+        PermissionPolicy::Auto if !kb_wiki_writes(request).is_empty() => {
+            await_user_permission(app, gate, session_id, host, user_wait, request).await
+        }
         PermissionPolicy::Auto => permission_response(request, true),
         PermissionPolicy::Ask => {
             await_user_permission(app, gate, session_id, host, user_wait, request).await

@@ -220,6 +220,7 @@ pub fn attach_handlers(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<ta
             crate::features::kb::commands::kb_merge,
             crate::features::kb::commands::kb_audit,
             crate::features::kb::commands::kb_dedupe,
+            crate::features::kb::commands::kb_compile,
             crate::features::kb::commands::kb_resolve_evidence,
         ])
     }

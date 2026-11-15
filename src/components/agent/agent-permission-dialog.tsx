@@ -8,6 +8,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { KbWikiWriteWarning } from "@/features/kb/wiki-write-warning";
 import { type PermissionRequest, respondPermission } from "@/lib/agent";
 
 function formatPermissionKind(
@@ -66,6 +67,7 @@ export function AgentPermissionDialog({
 								{t("permission.remoteHost", { host: permissionRequest.host })}
 							</p>
 						) : null}
+						<KbWikiWriteWarning paths={permissionRequest.kbWikiPaths} />
 						{permissionRequest.paths.length ? (
 							<div className="flex flex-col gap-1">
 								{permissionRequest.paths.map((p) => (
