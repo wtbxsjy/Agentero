@@ -388,6 +388,8 @@ export type PermissionRequest = {
 	options: PermissionOption[];
 	/** Remote host when the request came from a delegated run. */
 	host?: string | null;
+	/** Paths inside a knowledge base's wiki/ (asked even in auto mode). */
+	kbWikiPaths?: string[];
 };
 
 /** Shared non-Tauri guard message for every agent Host call. */

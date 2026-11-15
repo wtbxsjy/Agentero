@@ -206,3 +206,50 @@ fn locates_evidence_paragraph_in_pdf() {
 
     assert!(locate_evidence_in_pdf(&pdf, "Completely different sentence here", None).is_none());
 }
+
+#[test]
+fn reads_template_dir_and_forwarders() {
+    assert_eq!(
+        parse_template_dir("name: x\ntemplate_dir: \"/src/kb-template\"\npaths:\n  wiki: w\n")
+            .as_deref(),
+        Some("/src/kb-template")
+    );
+    assert_eq!(parse_template_dir("template_dir: ~\n"), None);
+    assert_eq!(parse_template_dir("paths:\n  template_dir: x\n"), None);
+    let d = tempdir().unwrap();
+    make_base(d.path());
+    fs::create_dir_all(d.path().join("R")).unwrap();
+    fs::write(
+        d.path().join("R/kb_merge.R"),
+        "#!/usr/bin/env Rscript\n## kb-template forwarder (kb_init --scripts shared)\n",
+    )
+    .unwrap();
+    fs::write(
+        d.path().join(CONFIG_FILE),
+        "name: a\ntemplate_dir: /src/kb-template\npaths:\n  wiki: wiki_Ribo\n",
+    )
+    .unwrap();
+    let b = describe(d.path()).unwrap();
+    assert!(b.has_merge && b.shared_scripts);
+    assert_eq!(b.template_dir.as_deref(), Some("/src/kb-template"));
+}
+
+#[test]
+fn finds_wiki_targets() {
+    let d = tempdir().unwrap();
+    make_base(d.path());
+    let root = d.path().to_path_buf();
+    assert_eq!(
+        kb_wiki_target(&root.join("wiki_Ribo/concepts/new.md")),
+        Some(root.clone())
+    );
+    assert_eq!(kb_wiki_target(&root.join("raw/x.md")), None);
+    assert_eq!(kb_wiki_target(&root.join("proposals/pending/p.json")), None);
+    assert_eq!(
+        kb_wiki_target(&root.join("raw/../wiki_Ribo/a.md")),
+        Some(root.clone())
+    );
+    assert_eq!(kb_wiki_target(Path::new("wiki_Ribo/a.md")), None);
+    let outside = tempdir().unwrap();
+    assert_eq!(kb_wiki_target(&outside.path().join("wiki_Ribo/a.md")), None);
+}

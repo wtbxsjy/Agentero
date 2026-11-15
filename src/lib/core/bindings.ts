@@ -611,11 +611,16 @@ export const commands = {
 	/**  Read a base-relative text file; `null` when it does not exist. */
 	kbReadFile: (kbDir: string, rel: string) => __TAURI_INVOKE<ApiResult<string | null>>("kb_read_file", { kbDir, rel }),
 	/**  Run `R/kb_merge.R` (list / show / accept / reject / check / route / reasons) in the base. */
-	kbMerge: (kbDir: string, rscript: string | null, by: string | null, request: MergeRequest) => __TAURI_INVOKE<ApiResult<MergeOutput>>("kb_merge", { kbDir, rscript, by, request }),
+	kbMerge: (kbDir: string, rscript: string | null, template: string | null, by: string | null, request: MergeRequest) => __TAURI_INVOKE<ApiResult<MergeOutput>>("kb_merge", { kbDir, rscript, template, by, request }),
 	/**  Run `R/kb_audit.R` (spot-check queue, sample, verdicts, report) in the base. */
-	kbAudit: (kbDir: string, rscript: string | null, by: string | null, request: AuditRequest) => __TAURI_INVOKE<ApiResult<MergeOutput>>("kb_audit", { kbDir, rscript, by, request }),
+	kbAudit: (kbDir: string, rscript: string | null, template: string | null, by: string | null, request: AuditRequest) => __TAURI_INVOKE<ApiResult<MergeOutput>>("kb_audit", { kbDir, rscript, template, by, request }),
 	/**  Run `R/kb_dedupe.R` (duplicate scan, manual merge proposal) in the base. */
-	kbDedupe: (kbDir: string, rscript: string | null, request: DedupeRequest) => __TAURI_INVOKE<ApiResult<MergeOutput>>("kb_dedupe", { kbDir, rscript, request }),
+	kbDedupe: (kbDir: string, rscript: string | null, template: string | null, request: DedupeRequest) => __TAURI_INVOKE<ApiResult<MergeOutput>>("kb_dedupe", { kbDir, rscript, template, request }),
+	/**
+	 *  Run `R/kb_compile.R`: the compile plan (`--dry-run --json`) or a run of
+	 *  the ticked raw records (`--ids`).
+	 */
+	kbCompile: (kbDir: string, rscript: string | null, template: string | null, request: CompileRequest) => __TAURI_INVOKE<ApiResult<MergeOutput>>("kb_compile", { kbDir, rscript, template, request }),
 	/**
 	 *  Evidence entry → paragraph text, raw record, original PDF and the rect of
 	 *  that paragraph in the PDF (desktop PDFium).
@@ -2388,6 +2393,19 @@ export type CommitStatus =
 "skipped";
 
 /**
+ *  `R/kb_compile.R`: the plan card lists the queue, the reviewer ticks
+ *  sources, and only those are compiled.
+ */
+export type CompileRequest = 
+/**
+ *  `--dry-run --json`: queue (value_gate keep, status raw/stale), budget,
+ *  rough token estimates, provider and model.
+ */
+{ action: "plan" } | 
+/**  `--ids A,B,C`: compile exactly these raw records into proposals. */
+{ action: "run"; ids: string[] };
+
+/**
  *  Mirror of the inline `json!({ "message", "sessionId" })` in
  *  `integration::connector::state::emit_error`.
  */
@@ -3391,6 +3409,13 @@ export type KbBase = {
 	 *  spot checks from kb-template P3).
 	 */
 	hasDomain: boolean,
+	/**
+	 *  `R/` holds kb-template forwarders (`kb_init --scripts shared`): the code
+	 *  lives in the kb-template checkout named by `template_dir`.
+	 */
+	sharedScripts: boolean,
+	/**  Top-level `template_dir:` of the config (where kb_init found kb-template). */
+	templateDir: string | null,
 	pending: number,
 };
 
@@ -3778,7 +3803,13 @@ export type MergeRequest =
 /**  `--route [--dry-run]`: auto-merge low-risk proposals, tag the rest for the inbox. */
 { action: "route"; dryRun: boolean } | 
 /**  `--reasons --json`: rejection reason categories from the domain profile. */
-{ action: "reasons" };
+{ action: "reasons" } | 
+/**
+ *  `--submit FILE --json`: register a draft (a Q&A answer saved as a
+ *  proposal) as a pending proposal. `draft` is the JSON text; the merger
+ *  computes id, hashes and risk.
+ */
+{ action: "submit"; draft: string };
 
 /**  Progress event streamed to the UI while a migration runs. */
 export type MigrateProgress = {
@@ -4372,6 +4403,11 @@ export type PermissionRequestEvent = {
 	options: PermissionOptionView[],
 	/**  Remote host when this request came from a delegated run. */
 	host?: string | null,
+	/**
+	 *  Paths of this call inside a knowledge base's `wiki/`: wiki pages should
+	 *  change through proposals (review inbox), so the prompt warns.
+	 */
+	kbWikiPaths?: string[],
 };
 
 export type PermissionRequestEvt = PermissionRequestEvent;

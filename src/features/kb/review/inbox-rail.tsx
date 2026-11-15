@@ -1,5 +1,10 @@
-import { AlertTriangleIcon, InboxIcon, RefreshCwIcon } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import {
+	AlertTriangleIcon,
+	HammerIcon,
+	InboxIcon,
+	RefreshCwIcon,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { Button } from "@/components/ui/button";
@@ -8,6 +13,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/core/utils";
 import { KB_REVIEW_VIRTUAL_PATH } from "@/lib/paper/api";
 import { openTab } from "@/lib/workspace/actions";
+import { CompilePlanCard } from "../qa/compile-plan";
 import { reviewText } from "./i18n";
 import { Chip, RISK_STYLE } from "./proposal-detail";
 import { focus, loadBases, reload, reviewStore, selectBase } from "./store";
@@ -38,6 +44,8 @@ export function KbInboxRail({
 	const proposals = useStore(reviewStore, (s) => s.proposals);
 	const fresh = useStore(reviewStore, (s) => s.fresh);
 	const loading = useStore(reviewStore, (s) => s.loading);
+	const [planning, setPlanning] = useState(false);
+	const base = bases.find((b) => b.dir === baseDir) ?? null;
 
 	useEffect(() => {
 		void loadBases(vaultPath).then(() => reload());
@@ -61,6 +69,16 @@ export function KbInboxRail({
 			<div className={cn("p-4 text-sm text-muted-foreground", className)}>
 				{tx.noBase}
 			</div>
+		);
+	}
+	if (planning && base) {
+		return (
+			<CompilePlanCard
+				key={base.dir}
+				base={base}
+				onDone={() => setPlanning(false)}
+				className={className}
+			/>
 		);
 	}
 	return (
@@ -99,7 +117,17 @@ export function KbInboxRail({
 							{tx.risk[r]} {counts[r]}
 						</Chip>
 					))}
-					<Button size="xs" className="ml-auto" onClick={() => openKbReview()}>
+					<Button
+						size="xs"
+						variant="ghost"
+						className="ml-auto"
+						title={tx.compileHint}
+						onClick={() => setPlanning(true)}
+					>
+						<HammerIcon />
+						{tx.compile}
+					</Button>
+					<Button size="xs" onClick={() => openKbReview()}>
 						<InboxIcon />
 						{tx.openInbox}
 					</Button>

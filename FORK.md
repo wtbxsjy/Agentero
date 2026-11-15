@@ -133,8 +133,8 @@ proposal JSON in `<kb>/proposals/pending/` (contract `schema/proposal.schema.jso
 - **Rust**: `crates/agentero-core/src/features/kb/` (config parsing, proposal IO, evidence
   resolution, the `kb_merge.R` runner with a fixed action set) and the `kb_*` commands in
   `src-tauri/src/features/kb/commands.rs`.
-- **Needs**: R with kb-template's packages, and a base whose `R/` has the proposal channel
-  (kb-template PR #2). Without `R/kb_merge.R` the inbox is read-only.
+- **Needs**: R with kb-template's packages, and either the kb-template folder setting (P4) or a
+  base whose `R/` has the proposal channel. Without either the inbox is read-only.
 - Tests: `test/kb-review.test.ts`, `cargo test -p agentero-core features::kb`.
 
 ## Domain profile and routing (P3)
@@ -164,6 +164,34 @@ reject reasons, routing and audit settings) and `domain/aliases.yaml`. The inbox
   the base path is translated (`C:\…` → `/mnt/c/…`, `\\wsl$\<distro>\…` → `/…`).
 - Front end: `src/features/kb/review/` (`domain-store.ts`, `audit-view.tsx`, `dedupe-view.tsx`); Rust:
   `kb_audit` / `kb_dedupe` commands. Without `R/kb_audit.R` the two views say so.
+
+## Q&A, compile plan and shared scripts (P4)
+
+kb-template P4 moves retrieval to Python only (`mcp/kbretrieve.py`, multi-hop along wikilinks)
+and stops copying scripts into every base. The desktop side:
+
+- **Q&A tab** in the KB rail (`src/features/kb/qa/qa-panel.tsx`): `POST /ask` on the kb-rag
+  HTTP service with the base's absolute root (works without a vector index), retrieval level
+  (keyword / hybrid / multi-hop) and hops. `[n]` markers in the answer and the citation list
+  open the wiki page; evidence chips use the inbox's evidence jump. The retrieval trace lists the
+  pages reached and how (seed, link, wikilink, backlink). kb-rag only accepts `/ask` from the
+  webview or loopback pages (it calls the model).
+- **Save as proposal**: the answer's `draft` goes to `kb_merge.R --submit` (`MergeRequest::submit`,
+  draft written to `<proposals>/.submit-<uuid>.json` and removed afterwards); the merger computes
+  id, hashes and risk, and P3 routing applies. The proposal records `prompt_hash` / `profile_hash`.
+- **Compile plan card** (inbox rail → "Compile…", `qa/compile-plan.tsx`): `kb_compile.R --dry-run
+  --json` lists the queue with rough token estimates and the per-run budget; ticked sources run
+  with `--ids` (`kb_compile` command, holds the base write lock).
+- **kb-template folder** setting (inbox settings): scripts run from `<kb-template>/R/` with
+  `KB_TEMPLATE` set; without it, from the base's `R/` (forwarders from `kb_init --scripts shared`,
+  or old full copies). `KbBase.sharedScripts` / `templateDir` report what the base has. Under a
+  WSL Rscript a Linux path is used as is, a Windows path is translated.
+- **Wiki writes by agents**: in auto permission mode, a tool call that may write (anything but
+  read / search / fetch / think) with a location inside a base's wiki directory is still sent to
+  the user (`kb_wiki_writes` in `src-tauri/src/features/agent/acp/interaction.rs`), and the prompt
+  shows a warning (`KbWikiWriteWarning`). Restricted mode still denies; ask mode still asks.
+- Tests: `test/kb-qa.test.ts`, `cargo test -p agentero-core features::kb`, `kb_wiki_tests` in
+  the agentero crate.
 
 ## Design constraints
 

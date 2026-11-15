@@ -1,6 +1,13 @@
 //! Run kb-template's R scripts inside a knowledge base: `R/kb_merge.R`
-//! (review / route), `R/kb_audit.R` (spot checks of auto-merges) and
-//! `R/kb_dedupe.R` (duplicate entities → `merge_entity` proposals).
+//! (review / route / submit), `R/kb_audit.R` (spot checks of auto-merges),
+//! `R/kb_dedupe.R` (duplicate entities → `merge_entity` proposals) and
+//! `R/kb_compile.R` (compile plan and runs of ticked sources).
+//!
+//! Where the script comes from: with the kb-template setting, the script is
+//! `<kb-template>/R/<script>` (bases no longer carry the code; kb-template P4),
+//! run with the base as working directory and `KB_TEMPLATE` set. Without it,
+//! the base's own `R/<script>` (a forwarder written by `kb_init --scripts
+//! shared`, or an older full copy).
 //!
 //! Only a fixed set of actions is exposed (no free-form argv), and every id is
 //! validated, so the front end cannot be used to run arbitrary R.
@@ -70,6 +77,22 @@ pub enum MergeRequest {
     Route { dry_run: bool },
     /// `--reasons --json`: rejection reason categories from the domain profile.
     Reasons,
+    /// `--submit FILE --json`: register a draft (a Q&A answer saved as a
+    /// proposal) as a pending proposal. `draft` is the JSON text; the merger
+    /// computes id, hashes and risk.
+    Submit { draft: String },
+}
+
+/// `R/kb_compile.R`: the plan card lists the queue, the reviewer ticks
+/// sources, and only those are compiled.
+#[derive(Debug, Clone, Deserialize, specta::Type)]
+#[serde(tag = "action", rename_all = "camelCase")]
+pub enum CompileRequest {
+    /// `--dry-run --json`: queue (value_gate keep, status raw/stale), budget,
+    /// rough token estimates, provider and model.
+    Plan,
+    /// `--ids A,B,C`: compile exactly these raw records into proposals.
+    Run { ids: Vec<String> },
 }
 
 /// Spot-check verdict for an auto-merged proposal.
@@ -230,6 +253,11 @@ impl MergeRequest {
                 a
             }
             Self::Reasons => vec!["--reasons".into(), "--json".into()],
+            // The draft goes through a file; run_merge fills in the path.
+            Self::Submit { draft } => {
+                check_draft(draft)?;
+                vec!["--submit".into(), String::new(), "--json".into()]
+            }
         };
         if matches!(
             self,
@@ -250,6 +278,52 @@ impl MergeRequest {
                 Duration::from_secs(120 + 10 * ids.len() as u64)
             }
             Self::Check | Self::Route { .. } => Duration::from_secs(900),
+            Self::Submit { .. } => Duration::from_secs(120),
+        }
+    }
+}
+
+const MAX_DRAFT: usize = 1024 * 1024;
+
+/// A submitted draft must be a JSON object proposing a whole page; the merger
+/// checks the rest (target under the wiki, schema).
+fn check_draft(draft: &str) -> Result<(), AppError> {
+    if draft.len() > MAX_DRAFT {
+        return Err(bad("draft too large"));
+    }
+    let v: serde_json::Value =
+        serde_json::from_str(draft).map_err(|e| bad(format!("draft is not JSON: {e}")))?;
+    let kind = v.get("kind").and_then(|k| k.as_str()).unwrap_or("new_page");
+    if !v.is_object() || !matches!(kind, "new_page" | "edit_page") {
+        return Err(bad("draft must be a new_page / edit_page object"));
+    }
+    Ok(())
+}
+
+impl CompileRequest {
+    fn args(&self) -> Result<Vec<String>, AppError> {
+        Ok(match self {
+            Self::Plan => vec!["--dry-run".into(), "--json".into()],
+            Self::Run { ids } => {
+                if ids.is_empty() || ids.len() > MAX_IDS {
+                    return Err(bad(format!("expected 1..={MAX_IDS} raw record ids")));
+                }
+                for id in ids {
+                    check_token("raw record id", id)?;
+                    if id.contains(',') {
+                        return Err(bad(format!("invalid raw record id: {id}")));
+                    }
+                }
+                vec!["--ids".into(), ids.join(",")]
+            }
+        })
+    }
+
+    fn timeout(&self) -> Duration {
+        match self {
+            Self::Plan => Duration::from_secs(120),
+            // A compile run calls the model once or more per source.
+            Self::Run { ids } => Duration::from_secs(600 + 900 * ids.len() as u64),
         }
     }
 }
@@ -437,23 +511,74 @@ pub fn wsl_path(win: &str) -> Result<(String, Option<String>), AppError> {
 /// Program, argv and extra environment for one script run.
 pub type ScriptCommand = (PathBuf, Vec<String>, Vec<(String, String)>);
 
+/// Where the script runs from.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ScriptSource {
+    /// The base's own `R/<script>` (forwarder or full copy), relative to the base.
+    Base,
+    /// `<kb-template>/R/<script>`. A path starting with `/` under WSL is a
+    /// Linux path inside the distro and is used as is.
+    Template(String),
+}
+
+/// Pick the script: the kb-template setting wins when set (and must have the
+/// script), else the base's `R/`.
+pub fn resolve_script(
+    kb_dir: &Path,
+    spec: &RscriptSpec,
+    template: Option<&str>,
+    script: &str,
+) -> Result<ScriptSource, AppError> {
+    if let Some(t) = template.map(str::trim).filter(|t| !t.is_empty()) {
+        let linux_in_wsl = matches!(spec, RscriptSpec::Wsl { .. }) && t.starts_with('/');
+        if linux_in_wsl || Path::new(t).join("R").join(script).is_file() {
+            return Ok(ScriptSource::Template(t.to_string()));
+        }
+        return Err(AppError::domain(
+            "kb_template_missing",
+            format!(
+                "{t} has no R/{script}: point the kb-template setting at a kb-template checkout (git pull it for new scripts)"
+            ),
+        ));
+    }
+    if kb_dir.join("R").join(script).is_file() {
+        return Ok(ScriptSource::Base);
+    }
+    let code = if script == "kb_merge.R" {
+        "kb_merge_missing"
+    } else {
+        "kb_script_missing"
+    };
+    Err(AppError::domain(
+        code,
+        format!(
+            "{} has no R/{script}: set the kb-template folder in the review inbox settings",
+            kb_dir.display()
+        ),
+    ))
+}
+
 /// Program + argv for one script run. Separate from spawning so it is testable.
 pub fn build_command(
     spec: &RscriptSpec,
     kb_dir: &Path,
+    source: &ScriptSource,
     script: &str,
     args: &[String],
 ) -> Result<ScriptCommand, AppError> {
-    let rel = format!("R/{script}");
     match spec {
         RscriptSpec::Native(p) => {
-            let mut argv = vec![Path::new("R").join(script).to_string_lossy().into_owned()];
+            let mut envs = vec![("KB_HOME".into(), kb_dir.to_string_lossy().into_owned())];
+            let script_path = match source {
+                ScriptSource::Base => Path::new("R").join(script),
+                ScriptSource::Template(t) => {
+                    envs.push(("KB_TEMPLATE".into(), t.clone()));
+                    Path::new(t).join("R").join(script)
+                }
+            };
+            let mut argv = vec![script_path.to_string_lossy().into_owned()];
             argv.extend(args.iter().cloned());
-            Ok((
-                p.clone(),
-                argv,
-                vec![("KB_HOME".into(), kb_dir.to_string_lossy().into_owned())],
-            ))
+            Ok((p.clone(), argv, envs))
         }
         RscriptSpec::Wsl { distro, program } => {
             let (linux, unc_distro) = wsl_path(&kb_dir.to_string_lossy())?;
@@ -471,46 +596,53 @@ pub fn build_command(
                 format!("KB_HOME={linux}"),
                 "LANG=C.UTF-8".into(),
                 "LC_ALL=C.UTF-8".into(),
-                program.clone(),
-                rel,
             ]);
+            let script_path = match source {
+                ScriptSource::Base => format!("R/{script}"),
+                ScriptSource::Template(t) => {
+                    let tl = if t.starts_with('/') {
+                        t.trim_end_matches('/').to_string()
+                    } else {
+                        wsl_path(t)?.0
+                    };
+                    argv.push(format!("KB_TEMPLATE={tl}"));
+                    format!("{tl}/R/{script}")
+                }
+            };
+            argv.push(program.clone());
+            argv.push(script_path);
             argv.extend(args.iter().cloned());
             Ok((PathBuf::from("wsl.exe"), argv, Vec::new()))
         }
     }
 }
 
+/// How to start the scripts: the Rscript setting and the kb-template folder
+/// setting (both per machine, from the review inbox settings).
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Runner<'a> {
+    pub rscript: Option<&'a str>,
+    pub template: Option<&'a str>,
+}
+
 /// Run one kb-template script with the base as working directory.
 async fn run_script(
     kb_dir: &Path,
-    rscript: Option<&str>,
+    runner: Runner<'_>,
     script: &str,
     args: Vec<String>,
     timeout: Duration,
 ) -> Result<MergeOutput, AppError> {
     read_config(kb_dir)?;
-    if !kb_dir.join("R").join(script).is_file() {
-        let code = if script == "kb_merge.R" {
-            "kb_merge_missing"
-        } else {
-            "kb_script_missing"
-        };
-        return Err(AppError::domain(
-            code,
-            format!(
-                "{} has no R/{script}: copy R/ from a kb-template checkout that has it",
-                kb_dir.display()
-            ),
-        ));
-    }
-    let spec = parse_rscript(rscript);
+    let spec = parse_rscript(runner.rscript);
     if matches!(spec, RscriptSpec::Wsl { .. }) && !cfg!(windows) {
         return Err(AppError::domain(
             "kb_wsl_unavailable",
             "the Rscript setting asks for WSL, which only exists on Windows",
         ));
     }
-    let (program, argv, envs) = build_command(&spec, kb_dir, script, &args)?;
+    let source = resolve_script(kb_dir, &spec, runner.template, script)?;
+    let (program, argv, envs) = build_command(&spec, kb_dir, &source, script, &args)?;
     let mut cmd = tokio::process::Command::new(&program);
     // No --vanilla: users commonly point R_LIBS_USER at their package
     // library from ~/.Renviron, and kb_use_lib() reads KB_RLIB from there too.
@@ -567,7 +699,7 @@ async fn run_script(
 /// Run one merger action (`R/kb_merge.R`).
 pub async fn run_merge(
     kb_dir: &Path,
-    rscript: Option<&str>,
+    runner: Runner<'_>,
     by: Option<&str>,
     request: &MergeRequest,
 ) -> Result<MergeOutput, AppError> {
@@ -576,19 +708,41 @@ pub async fn run_merge(
         MergeRequest::Route { dry_run } => !dry_run,
         _ => true,
     };
-    let args = request.args(by)?;
-    serialized(
+    let mut args = request.args(by)?;
+    let mut draft_file = None;
+    if let MergeRequest::Submit { draft } = request {
+        // Inside the base (so a WSL Rscript sees it too), next to pending/,
+        // named so the merger's p-*.json listing never picks it up.
+        let (_, paths) = read_config(kb_dir)?;
+        let rel = format!(
+            "{}/.submit-{}.json",
+            paths.proposals.trim_end_matches('/'),
+            uuid::Uuid::new_v4().simple()
+        );
+        let abs = kb_dir.join(&rel);
+        if let Some(parent) = abs.parent() {
+            std::fs::create_dir_all(parent).map_err(AppError::from)?;
+        }
+        std::fs::write(&abs, draft).map_err(AppError::from)?;
+        args[1] = rel;
+        draft_file = Some(abs);
+    }
+    let out = serialized(
         kb_dir,
         writes,
-        run_script(kb_dir, rscript, "kb_merge.R", args, request.timeout()),
+        run_script(kb_dir, runner, "kb_merge.R", args, request.timeout()),
     )
-    .await
+    .await;
+    if let Some(f) = draft_file {
+        let _ = std::fs::remove_file(f);
+    }
+    out
 }
 
 /// Run one spot-check action (`R/kb_audit.R`).
 pub async fn run_audit(
     kb_dir: &Path,
-    rscript: Option<&str>,
+    runner: Runner<'_>,
     by: Option<&str>,
     request: &AuditRequest,
 ) -> Result<MergeOutput, AppError> {
@@ -601,7 +755,7 @@ pub async fn run_audit(
     serialized(
         kb_dir,
         writes,
-        run_script(kb_dir, rscript, "kb_audit.R", args, timeout),
+        run_script(kb_dir, runner, "kb_audit.R", args, timeout),
     )
     .await
 }
@@ -609,7 +763,7 @@ pub async fn run_audit(
 /// Run one dedupe action (`R/kb_dedupe.R`).
 pub async fn run_dedupe(
     kb_dir: &Path,
-    rscript: Option<&str>,
+    runner: Runner<'_>,
     request: &DedupeRequest,
 ) -> Result<MergeOutput, AppError> {
     let writes = matches!(request, DedupeRequest::Merge { .. });
@@ -619,11 +773,28 @@ pub async fn run_dedupe(
         writes,
         run_script(
             kb_dir,
-            rscript,
+            runner,
             "kb_dedupe.R",
             args,
             Duration::from_secs(300),
         ),
+    )
+    .await
+}
+
+/// Compile plan or a compile run of ticked sources (`R/kb_compile.R`).
+/// A run writes proposals (and raw status), so it takes the base's write lock.
+pub async fn run_compile(
+    kb_dir: &Path,
+    runner: Runner<'_>,
+    request: &CompileRequest,
+) -> Result<MergeOutput, AppError> {
+    let writes = matches!(request, CompileRequest::Run { .. });
+    let args = request.args()?;
+    serialized(
+        kb_dir,
+        writes,
+        run_script(kb_dir, runner, "kb_compile.R", args, request.timeout()),
     )
     .await
 }
@@ -861,6 +1032,7 @@ mod tests {
         let (prog, argv, envs) = build_command(
             &spec,
             Path::new("\\\\wsl$\\Ubuntu\\home\\wt\\kb"),
+            &ScriptSource::Base,
             "kb_merge.R",
             &["--list".into(), "--json".into()],
         )
@@ -888,6 +1060,7 @@ mod tests {
         let (prog, argv, envs) = build_command(
             &RscriptSpec::Native("Rscript".into()),
             Path::new("/kb"),
+            &ScriptSource::Base,
             "kb_audit.R",
             &["--report".into()],
         )
@@ -896,5 +1069,136 @@ mod tests {
         assert_eq!(argv[1], "--report");
         assert!(argv[0].ends_with("kb_audit.R"));
         assert_eq!(envs, vec![("KB_HOME".to_string(), "/kb".to_string())]);
+    }
+
+    #[test]
+    fn template_scripts_run_with_kb_template_set() {
+        let (_, argv, envs) = build_command(
+            &RscriptSpec::Native("Rscript".into()),
+            Path::new("/kb"),
+            &ScriptSource::Template("/src/kb-template".into()),
+            "kb_merge.R",
+            &["--list".into()],
+        )
+        .unwrap();
+        assert_eq!(
+            PathBuf::from(&argv[0]),
+            Path::new("/src/kb-template").join("R").join("kb_merge.R")
+        );
+        assert!(envs.contains(&("KB_TEMPLATE".to_string(), "/src/kb-template".to_string())));
+        let wsl = RscriptSpec::Wsl {
+            distro: Some("Ubuntu".into()),
+            program: "Rscript".into(),
+        };
+        let (_, argv, _) = build_command(
+            &wsl,
+            Path::new("C:\\kb\\amp"),
+            &ScriptSource::Template("C:\\src\\kb-template".into()),
+            "kb_compile.R",
+            &["--dry-run".into()],
+        )
+        .unwrap();
+        let tail: Vec<&str> = argv.iter().map(String::as_str).skip(9).collect();
+        assert_eq!(
+            tail,
+            vec![
+                "KB_TEMPLATE=/mnt/c/src/kb-template",
+                "Rscript",
+                "/mnt/c/src/kb-template/R/kb_compile.R",
+                "--dry-run"
+            ]
+        );
+        let (_, argv, _) = build_command(
+            &wsl,
+            Path::new("C:\\kb"),
+            &ScriptSource::Template("/home/wt/kb-template/".into()),
+            "kb_merge.R",
+            &[],
+        )
+        .unwrap();
+        assert_eq!(argv.last().unwrap(), "/home/wt/kb-template/R/kb_merge.R");
+    }
+
+    #[test]
+    fn resolves_script_from_template_or_base() {
+        let kb = tempfile::tempdir().unwrap();
+        let tpl = tempfile::tempdir().unwrap();
+        let native = RscriptSpec::Native("Rscript".into());
+        let code = |r: Result<ScriptSource, AppError>| match r {
+            Err(AppError::Domain { code, .. }) => code,
+            other => panic!("expected a domain error, got {other:?}"),
+        };
+        assert_eq!(
+            code(resolve_script(kb.path(), &native, None, "kb_merge.R")),
+            "kb_merge_missing"
+        );
+        assert_eq!(
+            code(resolve_script(kb.path(), &native, None, "kb_compile.R")),
+            "kb_script_missing"
+        );
+        let t = tpl.path().to_string_lossy().into_owned();
+        assert_eq!(
+            code(resolve_script(kb.path(), &native, Some(&t), "kb_merge.R")),
+            "kb_template_missing"
+        );
+        std::fs::create_dir_all(tpl.path().join("R")).unwrap();
+        std::fs::write(tpl.path().join("R/kb_merge.R"), "").unwrap();
+        assert_eq!(
+            resolve_script(kb.path(), &native, Some(&t), "kb_merge.R").unwrap(),
+            ScriptSource::Template(t.clone())
+        );
+        std::fs::create_dir_all(kb.path().join("R")).unwrap();
+        std::fs::write(kb.path().join("R/kb_audit.R"), "").unwrap();
+        assert_eq!(
+            resolve_script(kb.path(), &native, Some("  "), "kb_audit.R").unwrap(),
+            ScriptSource::Base
+        );
+        // A Linux path inside WSL cannot be checked from Windows: trusted.
+        let wsl = RscriptSpec::Wsl {
+            distro: None,
+            program: "Rscript".into(),
+        };
+        assert_eq!(
+            resolve_script(kb.path(), &wsl, Some("/opt/kb-template"), "kb_merge.R").unwrap(),
+            ScriptSource::Template("/opt/kb-template".into())
+        );
+    }
+
+    #[test]
+    fn compile_and_submit_args() {
+        assert_eq!(
+            CompileRequest::Plan.args().unwrap(),
+            vec!["--dry-run", "--json"]
+        );
+        assert_eq!(
+            CompileRequest::Run {
+                ids: vec!["smith-2020".into(), "lee-2019".into()]
+            }
+            .args()
+            .unwrap(),
+            vec!["--ids", "smith-2020,lee-2019"]
+        );
+        assert!(CompileRequest::Run { ids: vec![] }.args().is_err());
+        assert!(CompileRequest::Run {
+            ids: vec!["--all".into()]
+        }
+        .args()
+        .is_err());
+        assert!(CompileRequest::Run {
+            ids: vec!["a,b".into()]
+        }
+        .args()
+        .is_err());
+        let ok = MergeRequest::Submit {
+            draft: r#"{"kind":"new_page","target":"wiki/queries/q.md"}"#.into(),
+        };
+        assert_eq!(ok.args(Some("wt")).unwrap(), vec!["--submit", "", "--json"]);
+        for bad_draft in ["not json", "[1]", r#"{"kind":"delete_page"}"#] {
+            assert!(MergeRequest::Submit {
+                draft: bad_draft.into()
+            }
+            .args(None)
+            .is_err());
+        }
     }
 }

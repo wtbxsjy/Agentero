@@ -13,3 +13,4 @@ export {
 	sourceKindOfVaultPath,
 	toVaultRel,
 } from "./sources";
+export { KbWikiWriteWarning } from "./wiki-write-warning";

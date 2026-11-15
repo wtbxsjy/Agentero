@@ -28,8 +28,9 @@ mod merge;
 #[cfg(not(any(target_os = "ios", target_os = "android")))]
 pub use locate::{locate_evidence_in_pdf, PdfEvidenceHit};
 pub use merge::{
-    build_command, parse_rscript, run_audit, run_dedupe, run_merge, wsl_path, AuditRequest,
-    AuditVerdict, DedupeRequest, MergeOutput, MergeRequest, RscriptSpec,
+    build_command, parse_rscript, resolve_script, run_audit, run_compile, run_dedupe, run_merge,
+    wsl_path, AuditRequest, AuditVerdict, CompileRequest, DedupeRequest, MergeOutput, MergeRequest,
+    RscriptSpec, Runner, ScriptSource,
 };
 
 use crate::error::AppError;
@@ -74,6 +75,11 @@ pub struct KbBase {
     /// `R/kb_audit.R` and `R/kb_dedupe.R` exist (domain profile, routing and
     /// spot checks from kb-template P3).
     pub has_domain: bool,
+    /// `R/` holds kb-template forwarders (`kb_init --scripts shared`): the code
+    /// lives in the kb-template checkout named by `template_dir`.
+    pub shared_scripts: bool,
+    /// Top-level `template_dir:` of the config (where kb_init found kb-template).
+    pub template_dir: Option<String>,
     pub pending: u32,
 }
 
@@ -173,6 +179,62 @@ pub fn parse_config(text: &str) -> (Option<String>, KbPaths) {
     (name, paths)
 }
 
+/// Top-level `template_dir:` (written by `kb_init --scripts shared`).
+pub fn parse_template_dir(text: &str) -> Option<String> {
+    text.lines()
+        .map(|l| l.trim_end_matches('\r'))
+        .find_map(|l| l.strip_prefix("template_dir:"))
+        .map(yaml_scalar)
+        .filter(|v| !v.is_empty() && v != "~" && v != "null")
+}
+
+/// Marker line of a forwarder script written by kb_init (kb-template `kb_forwarder_text`).
+const FORWARDER_MARK: &str = "## kb-template forwarder";
+
+fn is_forwarder(script: &Path) -> bool {
+    use std::io::Read;
+    let mut head = [0u8; 512];
+    let n = std::fs::File::open(script)
+        .and_then(|mut f| f.read(&mut head))
+        .unwrap_or(0);
+    String::from_utf8_lossy(&head[..n]).contains(FORWARDER_MARK)
+}
+
+/// Lexically normalise `.` / `..` (the target of a write may not exist yet).
+fn lexical(p: &Path) -> PathBuf {
+    let mut out = PathBuf::new();
+    for c in p.components() {
+        match c {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                out.pop();
+            }
+            other => out.push(other),
+        }
+    }
+    out
+}
+
+/// When `path` lies inside the `wiki/` directory of a knowledge base (the
+/// nearest ancestor holding `kb.config.yaml`), that base's root. Used to ask
+/// before an agent writes wiki pages directly instead of proposing.
+pub fn kb_wiki_target(path: &Path) -> Option<PathBuf> {
+    if !path.is_absolute() {
+        return None;
+    }
+    let path = lexical(path);
+    let mut dir = path.parent();
+    while let Some(d) = dir {
+        if d.join(CONFIG_FILE).is_file() {
+            let (_, paths) = read_config(d).ok()?;
+            let wiki = d.join(safe_rel(&paths.wiki).ok()?);
+            return path.starts_with(lexical(&wiki)).then(|| d.to_path_buf());
+        }
+        dir = d.parent();
+    }
+    None
+}
+
 pub fn read_config(kb_dir: &Path) -> Result<(Option<String>, KbPaths), AppError> {
     let cfg = kb_dir.join(CONFIG_FILE);
     let text = std::fs::read_to_string(&cfg).map_err(|e| {
@@ -251,6 +313,9 @@ fn count_pending(dir: &Path) -> u32 {
 
 fn describe_base(dir: &Path) -> Option<KbBase> {
     let (name, paths) = read_config(dir).ok()?;
+    let template_dir = std::fs::read_to_string(dir.join(CONFIG_FILE))
+        .ok()
+        .and_then(|t| parse_template_dir(&t));
     let pending = proposals_dir(dir, &paths, ProposalState::Pending)
         .map(|d| count_pending(&d))
         .unwrap_or(0);
@@ -265,6 +330,8 @@ fn describe_base(dir: &Path) -> Option<KbBase> {
         has_merge: dir.join("R").join("kb_merge.R").is_file(),
         has_domain: dir.join("R").join("kb_audit.R").is_file()
             && dir.join("R").join("kb_dedupe.R").is_file(),
+        shared_scripts: is_forwarder(&dir.join("R").join("kb_merge.R")),
+        template_dir,
         wiki_dir: paths.wiki,
         raw_dir: paths.raw,
         proposals_dir: paths.proposals,

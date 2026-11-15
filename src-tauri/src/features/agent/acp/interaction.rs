@@ -11,7 +11,7 @@ use agent_client_protocol::schema::v1::{
     CreateElicitationRequest, CreateElicitationResponse, ElicitationAcceptAction,
     ElicitationAction, ElicitationContentValue, ElicitationMode, ElicitationPropertySchema,
     ElicitationScope, MultiSelectItems, PermissionOptionKind, RequestPermissionOutcome,
-    RequestPermissionRequest, RequestPermissionResponse, SelectedPermissionOutcome,
+    RequestPermissionRequest, RequestPermissionResponse, SelectedPermissionOutcome, ToolKind,
 };
 use std::collections::{BTreeMap, HashSet};
 
@@ -125,6 +125,31 @@ pub(crate) struct PermissionRequestEvent {
     /// Remote host when this request came from a delegated run.
     #[serde(default)]
     pub(crate) host: Option<String>,
+    /// Paths of this call inside a knowledge base's `wiki/`: wiki pages should
+    /// change through proposals (review inbox), so the prompt warns.
+    #[serde(default)]
+    pub(crate) kb_wiki_paths: Vec<String>,
+}
+
+/// Locations of a tool call that may write (anything but read / search /
+/// fetch / think) and lie inside a knowledge base's `wiki/`. Auto mode still
+/// asks for these: kb-template's rule is that only the merger writes the wiki.
+pub(crate) fn kb_wiki_writes(request: &RequestPermissionRequest) -> Vec<String> {
+    let fields = &request.tool_call.fields;
+    if matches!(
+        fields.kind,
+        Some(ToolKind::Read | ToolKind::Search | ToolKind::Fetch | ToolKind::Think)
+    ) {
+        return Vec::new();
+    }
+    fields
+        .locations
+        .as_deref()
+        .unwrap_or_default()
+        .iter()
+        .filter(|l| agentero_core::features::kb::kb_wiki_target(&l.path).is_some())
+        .map(|l| l.path.to_string_lossy().to_string())
+        .collect()
 }
 
 #[derive(specta::Type, Clone, serde::Serialize)]
@@ -555,6 +580,7 @@ pub(crate) async fn await_user_permission(
             paths,
             options,
             host: host.map(str::to_string).filter(|host| !host.is_empty()),
+            kb_wiki_paths: kb_wiki_writes(request),
         },
     );
 
@@ -575,4 +601,29 @@ pub(crate) async fn await_user_permission(
         _ => RequestPermissionOutcome::Cancelled,
     };
     RequestPermissionResponse::new(outcome)
+}
+
+#[cfg(test)]
+mod kb_wiki_tests {
+    use super::*;
+
+    fn request(kind: &str, path: &std::path::Path) -> RequestPermissionRequest {
+        serde_json::from_value(serde_json::json!({
+            "sessionId": "s",
+            "toolCall": {"toolCallId": "t", "kind": kind, "locations": [{"path": path}]},
+            "options": []
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn wiki_writes_are_flagged() {
+        let d = tempfile::tempdir().unwrap();
+        std::fs::write(d.path().join("kb.config.yaml"), "paths:\n  wiki: wiki\n").unwrap();
+        let page = d.path().join("wiki/concepts/a.md");
+        assert_eq!(kb_wiki_writes(&request("edit", &page)).len(), 1);
+        assert_eq!(kb_wiki_writes(&request("execute", &page)).len(), 1);
+        assert!(kb_wiki_writes(&request("read", &page)).is_empty());
+        assert!(kb_wiki_writes(&request("edit", &d.path().join("raw/a.md"))).is_empty());
+    }
 }
