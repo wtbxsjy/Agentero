@@ -21,7 +21,6 @@
 | 配置 OpenAI 兼容翻译 | [配置 OpenAI 兼容翻译](translate-openai-compatible.md) |
 | 把 Vault 接到 ChatGPT / Codex MCP | [用 MCP 连接外部 Agent](mcp.md) |
 | 用浏览器 Zotero Connector 保存 | [使用 Zotero Connector](zotero.md) |
-| 安装插件、配置权限与扩展阅读操作 | [使用本地插件](plugins.md) |
 
 ## 三个概念
 

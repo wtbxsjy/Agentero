@@ -12,8 +12,7 @@
 		"keyboard": "快捷键",
 		"about": "关于",
 		"quickSetup": "快速配置向导",
-		"featureTour": "功能导引",
-		"plugins": "插件"
+		"featureTour": "功能导引"
 	},
 	"general": {
 		"title": "通用",
@@ -926,22 +925,5 @@
 			"invalid": "请先写一段描述",
 			"failed": "发送失败，请重试"
 		}
-	},
-	"plugins": {
-		"install": "从文件夹安装…",
-		"localOnly": "打开本地 Vault 后可管理插件。",
-		"empty": "尚未安装插件。",
-		"failed": "插件操作失败",
-		"configure": "配置 {{name}}",
-		"remove": "卸载 {{name}}",
-		"enable": "启用 {{name}}",
-		"saveEnable": "保存并启用",
-		"permissions": {
-			"vault:read": "读取 Vault 文件与论文",
-			"catalog:write": "修改论文标签和已读状态",
-			"vault:notes:write": "写入论文笔记",
-			"vault:write": "写入 Vault 文本及移动论文"
-		},
-		"cancel": "取消"
 	}
 }

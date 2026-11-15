@@ -7,7 +7,6 @@ import {
 	Languages,
 	LayoutTemplate,
 	Paintbrush,
-	Puzzle,
 	SlidersHorizontal,
 	Stethoscope,
 	UserRound,
@@ -37,7 +36,6 @@ import {
 	broadcastOnboardingRequest,
 	broadcastTourRequest,
 } from "@/lib/onboarding/api";
-import { pluginsSurfaceEnabled } from "@/lib/plugins/visibility";
 import type { AppSettings } from "@/lib/settings";
 import { closeSettingsWindow } from "@/lib/shell/settings-window";
 
@@ -48,7 +46,6 @@ import { closeSettingsWindow } from "@/lib/shell/settings-window";
 // pay for a chunk — a lazy default pane would just move the stall after render.
 const PANE_LOADERS = {
 	account: () => import("@/components/settings/panes/account-pane"),
-	plugins: () => import("@/components/settings/panes/plugins-pane"),
 	general: () => import("@/components/settings/panes/general-pane"),
 	appearance: () => import("@/components/settings/panes/appearance-pane"),
 	agent: () => import("@/components/settings/panes/agent-pane"),
@@ -65,7 +62,6 @@ const PANE_LOADERS = {
  * cached, so the matching `lazy()` below resolves without a second request.
  */
 function sectionVisible(id: SettingsSection): boolean {
-	if (!pluginsSurfaceEnabled && id === "plugins") return false;
 	if (!accountSurfaceEnabled && id === "account") return false;
 	return true;
 }
@@ -81,9 +77,6 @@ export function preloadSettingsPane(section: string): Promise<unknown> {
 
 // memo(): visited panes stay mounted across section switches; without this
 // every switch re-rendered ALL mounted panes (agent pane is ~1.5k lines).
-const PluginsPane = memo(
-	lazy(() => PANE_LOADERS.plugins().then((m) => ({ default: m.PluginsPane }))),
-);
 const AccountPane = memo(
 	lazy(() => PANE_LOADERS.account().then((m) => ({ default: m.AccountPane }))),
 );
@@ -136,7 +129,6 @@ const NAV: {
 	{ id: "agent", icon: Bot, dividerBefore: true },
 	{ id: "translate", icon: Languages },
 	{ id: "layout", icon: LayoutTemplate },
-	{ id: "plugins", icon: Puzzle },
 	{ id: "experimental", icon: FlaskConical },
 	{ id: "doctor", icon: Stethoscope, dividerBefore: true },
 	{ id: "keyboard", icon: Keyboard },
@@ -546,17 +538,6 @@ export function SettingsContent({
 									shortcutOverrides={settings.shortcutOverrides}
 									patch={patch}
 								/>
-							</Suspense>
-						</div>
-					)}
-					{pluginsSurfaceEnabled && visitedSections.includes("plugins") && (
-						<div
-							data-settings-pane
-							data-active={activeSection === "plugins" ? "true" : "false"}
-							hidden={activeSection !== "plugins"}
-						>
-							<Suspense fallback={<PaneFallback />}>
-								<PluginsPane vaultPath={vaultPath} />
 							</Suspense>
 						</div>
 					)}

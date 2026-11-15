@@ -246,14 +246,6 @@ pub struct McpStatusEvent(pub crate::integration::mcp::McpStatus);
 #[tauri_specta(event_name = "mcp:tunnel-status")]
 pub struct McpTunnelStatusEvent(pub crate::integration::mcp::tunnel::McpTunnelStatus);
 
-#[derive(specta::Type, tauri_specta::Event)]
-#[tauri_specta(event_name = "plugins:changed")]
-pub struct PluginsChangedEvent(pub ());
-
-#[derive(specta::Type, tauri_specta::Event)]
-#[tauri_specta(event_name = "plugins:data-changed")]
-pub struct PluginsDataChangedEvent(pub String);
-
 /// Owned mirror of the private core `PaperEventPayload` envelope
 /// (`paper:imported` / `paper:assets-ready`).
 #[derive(serde::Serialize, specta::Type)]
@@ -425,8 +417,6 @@ fn registered_event_names() -> BTreeSet<String> {
         ConnectorErrorEvent::NAME,
         McpStatusEvent::NAME,
         McpTunnelStatusEvent::NAME,
-        PluginsChangedEvent::NAME,
-        PluginsDataChangedEvent::NAME,
         PaperImportedEvent::NAME,
         PaperAssetsReadyEvent::NAME,
         PaperRenamedEventPayload::NAME,

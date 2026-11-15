@@ -79,6 +79,10 @@ Deleted in step 2:
   button, the startup update toast and the post-update CLI resync, plus the release workflow's
   signing check, updater JSON upload and `rewrite-updater-json` job. New versions come from a
   rebuild.
+- **Plugin host** (hidden upstream by `pluginsSurfaceEnabled`): the `agentero-plugin-host` crate
+  and its QuickJS worker sidecar (`externalBin`, `plugin-worker:stage` scripts, CI staging),
+  `integration/plugins` with the `plugin_*` commands and `plugins:*` events, `src/lib/plugins/`,
+  Settings → Plugins and the dev-plugin palette commands. Extensions go through skills + MCP.
 
 Already hidden upstream: plugins (`src/lib/plugins/visibility.ts`) and account / cloud writing
 (`src/features/account/visibility.ts`).

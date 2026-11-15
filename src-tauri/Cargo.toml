@@ -43,7 +43,6 @@ desktop = [
   "dep:rmcp",
   "dep:agentero-mcp",
   "dep:schemars",
-  "dep:agentero-plugin-host",
 ]
 
 [build-dependencies]
@@ -123,7 +122,6 @@ fontdb = "0.23"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-better-auth = { version = "=0.1.2", optional = true }
-agentero-plugin-host = { path = "../crates/agentero-plugin-host", optional = true }
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"], optional = true }
 tauri-plugin-window-state = { version = "2", optional = true }
 # Blocking client: telemetry flush happens in the synchronous RunEvent::Exit callback.

@@ -12,8 +12,7 @@
 		"keyboard": "Keyboard",
 		"about": "About",
 		"quickSetup": "Quick setup wizard",
-		"featureTour": "Feature tour",
-		"plugins": "Plugins"
+		"featureTour": "Feature tour"
 	},
 	"general": {
 		"title": "General",
@@ -926,22 +925,5 @@
 			"invalid": "Write a short description first",
 			"failed": "Couldn't send feedback. Try again"
 		}
-	},
-	"plugins": {
-		"install": "Install from folder…",
-		"localOnly": "Open a local Vault to manage plugins.",
-		"empty": "No plugins installed.",
-		"failed": "Plugin operation failed",
-		"configure": "Configure {{name}}",
-		"remove": "Uninstall {{name}}",
-		"enable": "Enable {{name}}",
-		"saveEnable": "Save and enable",
-		"permissions": {
-			"vault:read": "Read Vault files and papers",
-			"catalog:write": "Change paper tags and read status",
-			"vault:notes:write": "Write paper notes",
-			"vault:write": "Write Vault text and move papers"
-		},
-		"cancel": "Cancel"
 	}
 }

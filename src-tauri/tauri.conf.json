@@ -4,9 +4,9 @@
   "version": "0.15.5",
   "identifier": "com.wtbxsjy.agentero.kb",
   "build": {
-    "beforeDevCommand": "pnpm pdfium:stage && pnpm adapters:stage && pnpm plugin-worker:stage && pnpm dev",
+    "beforeDevCommand": "pnpm pdfium:stage && pnpm adapters:stage && pnpm dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm pdfium:stage && pnpm adapters:stage && pnpm plugin-worker:stage:release && pnpm build",
+    "beforeBuildCommand": "pnpm pdfium:stage && pnpm adapters:stage && pnpm build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -51,7 +51,6 @@
     "createUpdaterArtifacts": false,
     "targets": "all",
     "category": "Productivity",
-    "externalBin": ["binaries/agentero-plugin-host"],
     "resources": [
       "pdfium/*",
       "adapters/**/*"

@@ -35,7 +35,6 @@ nav:
       - 接入 GenericAgent ACP: usage/genericagent-acp.md
       - 用 MCP 连接外部 Agent: usage/mcp.md
       - 使用 Zotero Connector: usage/zotero.md
-      - 使用本地插件: usage/plugins.md
 
   - 前端:
       - 概览: frontend/index.md
