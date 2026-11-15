@@ -446,7 +446,11 @@ export type AuditRuleStats = {
 	wrong: number;
 	errorRate: number | null;
 	upper95: number | null;
+	/** Auto-merges not spot-checked yet. */
+	unaudited: number;
 	disabled: boolean;
+	/** Too many unaudited auto-merges (`audit.max_unaudited`): routing holds off. */
+	paused: boolean;
 };
 
 export type AuditStats = {
@@ -457,7 +461,9 @@ export type AuditStats = {
 	wrong: number;
 	errorRate: number | null;
 	queued: number;
+	maxUnaudited: number;
 	disabled: string[];
+	paused: string[];
 };
 
 function num(v: unknown): number | null {
@@ -480,7 +486,9 @@ export function parseAuditStats(stdout: string): AuditStats | null {
 			wrong: num(x.wrong) ?? 0,
 			errorRate: num(x.error_rate),
 			upper95: num(x.upper95),
+			unaudited: num(x.unaudited) ?? 0,
 			disabled: x.disabled === true,
+			paused: x.paused === true,
 		});
 	}
 	return {
@@ -491,7 +499,9 @@ export function parseAuditStats(stdout: string): AuditStats | null {
 		wrong: num(o.wrong) ?? 0,
 		errorRate: num(o.error_rate),
 		queued: num(o.queued) ?? 0,
+		maxUnaudited: num(o.max_unaudited) ?? 0,
 		disabled: strList(o.disabled),
+		paused: strList(o.paused),
 	};
 }
 

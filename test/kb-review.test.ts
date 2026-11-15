@@ -330,11 +330,18 @@ describe("domain profile outputs", () => {
 		const st = parseAuditStats(`{
   "rules": [
     {"rule": "alias", "auto_merged": 0, "audited": 0, "wrong": 0, "error_rate": null, "upper95": null, "disabled": false},
-    {"rule": "link", "auto_merged": 30, "audited": 21, "wrong": 3, "error_rate": 0.1429, "upper95": 0.3, "disabled": true}
+    {"rule": "link", "auto_merged": 30, "audited": 21, "wrong": 3, "error_rate": 0.1429, "upper95": 0.3,
+     "unaudited": 9, "disabled": true, "paused": false},
+    {"rule": "format", "auto_merged": 60, "audited": 0, "wrong": 0, "error_rate": null, "upper95": null,
+     "unaudited": 60, "disabled": false, "paused": true}
   ],
-  "target": 0.05, "min_audited": 20, "audited": 21, "wrong": 3,
-  "error_rate": 0.1429, "upper95": 0.3, "queued": 4, "disabled": ["link"]
+  "target": 0.05, "min_audited": 20, "audited": 21, "wrong": 3, "max_unaudited": 50,
+  "error_rate": 0.1429, "upper95": 0.3, "queued": 4, "disabled": ["link"], "paused": ["format"]
 }`);
+		expect(st?.rules[2]).toMatchObject({ unaudited: 60, paused: true });
+		expect(st?.rules[0].unaudited).toBe(0);
+		expect(st?.paused).toEqual(["format"]);
+		expect(st?.maxUnaudited).toBe(50);
 		expect(st?.rules[0].errorRate).toBeNull();
 		expect(st?.rules[1]).toMatchObject({ autoMerged: 30, disabled: true });
 		expect(st?.disabled).toEqual(["link"]);

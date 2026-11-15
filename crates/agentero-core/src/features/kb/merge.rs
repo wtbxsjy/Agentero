@@ -13,8 +13,37 @@
 use super::{check_id, read_config};
 use crate::error::AppError;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, LazyLock, Mutex};
 use std::time::Duration;
+
+/// One async lock per base: writes from this app (accept, route, audit marks,
+/// merge proposals) run one at a time, so two clicks never race on git.
+/// kb-template's own `proposals/.lock` covers other processes (a compile
+/// that routes afterwards, the CLI).
+static BASE_LOCKS: LazyLock<Mutex<HashMap<PathBuf, Arc<tokio::sync::Mutex<()>>>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+fn base_lock(kb_dir: &Path) -> Arc<tokio::sync::Mutex<()>> {
+    let key = std::fs::canonicalize(kb_dir).unwrap_or_else(|_| kb_dir.to_path_buf());
+    let mut map = BASE_LOCKS.lock().unwrap_or_else(|e| e.into_inner());
+    map.entry(key).or_default().clone()
+}
+
+/// Run `fut` holding the base's write lock when `writes` is set.
+async fn serialized<T>(
+    kb_dir: &Path,
+    writes: bool,
+    fut: impl std::future::Future<Output = T>,
+) -> T {
+    if !writes {
+        return fut.await;
+    }
+    let lock = base_lock(kb_dir);
+    let _guard = lock.lock().await;
+    fut.await
+}
 
 #[derive(Debug, Clone, Deserialize, specta::Type)]
 #[serde(tag = "action", rename_all = "camelCase")]
@@ -542,12 +571,16 @@ pub async fn run_merge(
     by: Option<&str>,
     request: &MergeRequest,
 ) -> Result<MergeOutput, AppError> {
-    run_script(
+    let writes = match request {
+        MergeRequest::List | MergeRequest::Show { .. } | MergeRequest::Reasons => false,
+        MergeRequest::Route { dry_run } => !dry_run,
+        _ => true,
+    };
+    let args = request.args(by)?;
+    serialized(
         kb_dir,
-        rscript,
-        "kb_merge.R",
-        request.args(by)?,
-        request.timeout(),
+        writes,
+        run_script(kb_dir, rscript, "kb_merge.R", args, request.timeout()),
     )
     .await
 }
@@ -563,7 +596,14 @@ pub async fn run_audit(
         AuditRequest::Mark { revert: true, .. } => Duration::from_secs(300),
         _ => Duration::from_secs(180),
     };
-    run_script(kb_dir, rscript, "kb_audit.R", request.args(by)?, timeout).await
+    let writes = matches!(request, AuditRequest::Sample | AuditRequest::Mark { .. });
+    let args = request.args(by)?;
+    serialized(
+        kb_dir,
+        writes,
+        run_script(kb_dir, rscript, "kb_audit.R", args, timeout),
+    )
+    .await
 }
 
 /// Run one dedupe action (`R/kb_dedupe.R`).
@@ -572,12 +612,18 @@ pub async fn run_dedupe(
     rscript: Option<&str>,
     request: &DedupeRequest,
 ) -> Result<MergeOutput, AppError> {
-    run_script(
+    let writes = matches!(request, DedupeRequest::Merge { .. });
+    let args = request.args()?;
+    serialized(
         kb_dir,
-        rscript,
-        "kb_dedupe.R",
-        request.args()?,
-        Duration::from_secs(300),
+        writes,
+        run_script(
+            kb_dir,
+            rscript,
+            "kb_dedupe.R",
+            args,
+            Duration::from_secs(300),
+        ),
     )
     .await
 }
@@ -587,6 +633,34 @@ mod tests {
     use super::*;
 
     const ID: &str = "p-20261115-021000-abc123";
+
+    #[tokio::test]
+    async fn writes_to_one_base_run_one_at_a_time() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let dir = tempfile::tempdir().unwrap();
+        let other = tempfile::tempdir().unwrap();
+        assert!(Arc::ptr_eq(&base_lock(dir.path()), &base_lock(dir.path())));
+        assert!(!Arc::ptr_eq(
+            &base_lock(dir.path()),
+            &base_lock(other.path())
+        ));
+        let live = Arc::new(AtomicUsize::new(0));
+        let peak = Arc::new(AtomicUsize::new(0));
+        let job = |writes: bool| {
+            let (live, peak) = (live.clone(), peak.clone());
+            serialized(dir.path(), writes, async move {
+                let n = live.fetch_add(1, Ordering::SeqCst) + 1;
+                peak.fetch_max(n, Ordering::SeqCst);
+                tokio::time::sleep(Duration::from_millis(20)).await;
+                live.fetch_sub(1, Ordering::SeqCst);
+            })
+        };
+        tokio::join!(job(true), job(true), job(true));
+        assert_eq!(peak.load(Ordering::SeqCst), 1);
+        peak.store(0, Ordering::SeqCst);
+        tokio::join!(job(false), job(false));
+        assert_eq!(peak.load(Ordering::SeqCst), 2);
+    }
 
     #[test]
     fn builds_reject_args_with_reason_and_decider() {

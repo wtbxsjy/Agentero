@@ -149,10 +149,15 @@ reject reasons, routing and audit settings) and `domain/aliases.yaml`. The inbox
   1–9 pick one) and sends `--reason-code` / `--duplicate-of`; `kb_feedback.R` turns them into
   compile-prompt notes and alias suggestions.
 - **merge_entity**: the detail shows the pages folded in and the aliases registered; accepting
-  rewrites links in one commit (kb_merge.R).
+  turns the folded pages into redirect stubs (`redirect_to`) in one commit, without rewriting
+  links elsewhere (kb_merge.R).
+- **Concurrency**: write runs (accept, reject, route, audit marks, merge proposals) are
+  serialized per base in Rust; kb-template's `proposals/.lock` covers other processes, and a
+  busy merger surfaces as its "合并器忙" error.
 - **Spot checks** view (`kb_audit.R`): sample auto-merges per rule, read the merge commit, mark
   it ok or wrong (optionally reverting it back into the inbox), per-rule error rate with a
-  Wilson upper bound against the 5% target; rules over target are disabled automatically.
+  Wilson upper bound against the 5% target; rules over target are disabled automatically, and
+  a rule with too many unaudited auto-merges (`audit.max_unaudited`) is paused until checked.
 - **Duplicates** view (`kb_dedupe.R`): scan candidates, or name two pages, and write a
   `merge_entity` proposal into the inbox.
 - **WSL**: the Rscript setting accepts `wsl`, `wsl:<distro>` or `wsl:<distro>:<Rscript path>`;

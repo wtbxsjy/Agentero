@@ -38,6 +38,7 @@ function StatsTable({ stats }: { stats: AuditStats }) {
 						<th className="text-right font-normal">{tx.auditWrong}</th>
 						<th className="text-right font-normal">{tx.auditRate}</th>
 						<th className="text-right font-normal">{tx.auditUpper}</th>
+						<th className="text-right font-normal">{tx.auditUnaudited}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -57,16 +58,32 @@ function StatsTable({ stats }: { stats: AuditStats }) {
 										{tx.auditDisabled}
 									</Chip>
 								)}
+								{r.paused && !r.disabled && (
+									<Chip className="ml-1 border-amber-500/40 text-amber-700 dark:text-amber-300">
+										{tx.auditPaused}
+									</Chip>
+								)}
 							</td>
 							<td className="text-right">{r.autoMerged}</td>
 							<td className="text-right">{r.audited}</td>
 							<td className="text-right">{r.wrong}</td>
 							<td className="text-right">{pct(r.errorRate)}</td>
 							<td className="text-right">{pct(r.upper95)}</td>
+							<td className="text-right">{r.unaudited}</td>
 						</tr>
 					))}
 				</tbody>
 			</table>
+			{stats.paused.length > 0 && (
+				<div className="rounded bg-amber-500/10 px-2 py-1 text-xs">
+					{tx.auditPausedHint(
+						stats.paused.map((r) => tx.routeRule[r] ?? r).join(", "),
+						stats.rules
+							.filter((r) => r.paused)
+							.reduce((n, r) => n + r.unaudited, 0),
+					)}
+				</div>
+			)}
 		</div>
 	);
 }

@@ -123,7 +123,7 @@ const en = {
 		`Auto-merged ${auto} · ${inbox} left for review`,
 	noDomain:
 		"This base has no R/kb_audit.R / kb_dedupe.R. Copy R/ from a kb-template checkout with the domain profile (P3).",
-	mergeFrom: "Folds in and deletes",
+	mergeFrom: "Folds in (left as redirects)",
 	mergeAliases: "Registers aliases",
 	mergeBasis: "Basis",
 	mergeBasisLabel: {
@@ -133,7 +133,7 @@ const en = {
 		manual: "manual",
 	} as Record<string, string>,
 	mergeNote:
-		"Accepting deletes the folded pages, rewrites every link and [[wikilink]] to them, and adds their ids and titles to domain/aliases.yaml, in one commit.",
+		"Accepting turns the folded pages into redirect stubs (redirect_to) and adds their ids and titles to domain/aliases.yaml, in one commit. Links to them are left as they are and resolve through the redirect.",
 	auditTitle: "Spot checks of auto-merges",
 	auditSample: "Sample",
 	auditSampleHint:
@@ -147,7 +147,11 @@ const en = {
 	auditWrong: "Wrong",
 	auditRate: "Error rate",
 	auditUpper: "95% upper",
-	auditDisabled: "paused",
+	auditDisabled: "off",
+	auditUnaudited: "Unaudited",
+	auditPaused: "paused",
+	auditPausedHint: (rules: string, n: number) =>
+		`Auto-merge paused for ${rules}: ${n} auto-merges are waiting for a spot check. Sample and check some to resume.`,
 	auditOk: "Correct",
 	auditWrongBtn: "Wrong",
 	auditRevert: "Revert the merge and send it back to the inbox",
@@ -316,7 +320,7 @@ const zh: typeof en = {
 	resultRouted: (auto, inbox) => `自动合并 ${auto} 条 · ${inbox} 条留待人审`,
 	noDomain:
 		"这个库里没有 R/kb_audit.R / kb_dedupe.R。请从带领域 profile（P3）的 kb-template 复制 R/ 目录。",
-	mergeFrom: "并入并删除",
+	mergeFrom: "并入（改为重定向页）",
 	mergeAliases: "登记别名",
 	mergeBasis: "依据",
 	mergeBasisLabel: {
@@ -326,7 +330,7 @@ const zh: typeof en = {
 		manual: "人工指定",
 	},
 	mergeNote:
-		"接受后会删除被并入页，把指向它们的链接和 [[wikilink]] 全部改指保留页，并把它们的 id 与标题登记进 domain/aliases.yaml，一次提交。",
+		"接受后被并入页改成重定向页（redirect_to），它们的 id 与标题登记进 domain/aliases.yaml，一次提交。指向它们的链接不改写，经重定向解析到保留页。",
 	auditTitle: "自动合并抽检",
 	auditSample: "抽样",
 	auditSampleHint:
@@ -339,7 +343,11 @@ const zh: typeof en = {
 	auditWrong: "判错",
 	auditRate: "错误率",
 	auditUpper: "95% 上界",
-	auditDisabled: "已暂停",
+	auditDisabled: "已停用",
+	auditUnaudited: "未抽检",
+	auditPaused: "已暂停",
+	auditPausedHint: (rules, n) =>
+		`${rules} 的自动合并已暂停：有 ${n} 条自动合并还没抽检。抽样并判过一些后恢复。`,
 	auditOk: "判对",
 	auditWrongBtn: "判错",
 	auditRevert: "回滚这次合并，提案回到收件箱",
