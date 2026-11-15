@@ -3,6 +3,7 @@ import {
 	InboxIcon,
 	KeyboardIcon,
 	RefreshCwIcon,
+	RouteIcon,
 	SettingsIcon,
 	ShieldAlertIcon,
 	XIcon,
@@ -27,6 +28,8 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/core/utils";
 import { openPath } from "@/lib/workspace/actions";
+import { AuditView } from "./audit-view";
+import { DedupeView } from "./dedupe-view";
 import { clearEvidenceCache, openEvidence } from "./evidence";
 import { reviewText } from "./i18n";
 import type { Level, ProposalKind } from "./model";
@@ -43,14 +46,18 @@ import {
 	filterProposals,
 	focus,
 	loadBases,
+	loadReasons,
 	reject,
 	reload,
 	reviewStore,
+	routeNow,
+	routeOf,
 	saveEdit,
 	selectBase,
 	setChecked,
 	setFilter,
 	setGrouping,
+	setView,
 	toggleChecked,
 } from "./store";
 
@@ -75,17 +82,23 @@ function DecisionBanner({ log }: { log: DecisionLog }) {
 	const rejected = count((s) => s === "rejected");
 	const stale = count((s) => s === "stale");
 	const failed = count(
-		(s) => !["accepted", "edited", "rejected", "stale"].includes(s),
+		(s) => !["accepted", "edited", "rejected", "stale", "inbox"].includes(s),
 	);
+	const inbox = count((s) => s === "inbox");
 	const parts =
 		log.action === "check"
 			? [tx.resultChecked(stale)]
-			: [
-					ok ? tx.resultAccepted(ok) : null,
-					rejected ? tx.resultRejected(rejected) : null,
-					stale ? tx.resultStale(stale) : null,
-					failed ? tx.resultFailed(failed) : null,
-				].filter(Boolean);
+			: log.action === "route"
+				? [
+						tx.resultRouted(log.results.length - inbox, inbox),
+						stale ? tx.resultStale(stale) : null,
+					].filter(Boolean)
+				: [
+						ok ? tx.resultAccepted(ok) : null,
+						rejected ? tx.resultRejected(rejected) : null,
+						stale ? tx.resultStale(stale) : null,
+						failed ? tx.resultFailed(failed) : null,
+					].filter(Boolean);
 	const problems = log.results.filter((r) => r.msg);
 	return (
 		<div
@@ -222,9 +235,23 @@ export function KbReviewView({
 		return () => window.removeEventListener("focus", onFocus);
 	}, [active]);
 
+	// Rejection categories come from the base's domain profile.
+	useEffect(() => {
+		if (s.baseDir) void loadReasons();
+	}, [s.baseDir]);
+
 	const visible = useMemo(
-		() => orderedForKeys(filterProposals(s.proposals, s.filter), s.grouping),
-		[s.proposals, s.filter, s.grouping],
+		() =>
+			orderedForKeys(
+				filterProposals(s.proposals, s.filter, s.routes),
+				s.grouping,
+			),
+		[s.proposals, s.filter, s.routes, s.grouping],
+	);
+	const autoCount = useMemo(
+		() =>
+			s.proposals.filter((p) => routeOf(p, s.routes)?.mode === "auto").length,
+		[s.proposals, s.routes],
 	);
 	const focused =
 		visible.find((p) => p.id === s.focusedId) ?? visible[0] ?? null;
@@ -257,7 +284,7 @@ export function KbReviewView({
 
 	// Keyboard: j/k move, x select, a accept, e edit, r reject, 1–9 evidence.
 	useEffect(() => {
-		if (!active) return;
+		if (!active || s.view !== "inbox") return;
 		const onKey = (e: KeyboardEvent) => {
 			if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
 			if (isTypingTarget(e.target) || rejecting) return;
@@ -298,7 +325,7 @@ export function KbReviewView({
 			} else if (key === "r") {
 				if (canDecide && targets().length) setRejecting(targets());
 			} else if (key === "e") {
-				if (focused && focused.kind !== "merge_entity") setEditing(true);
+				if (focused) setEditing(true);
 			} else if (key === "o") {
 				if (focused && base) openPath(joinBase(base.dir, focused.target));
 			} else if (/^[1-9]$/.test(key)) {
@@ -319,6 +346,7 @@ export function KbReviewView({
 		targets,
 		base,
 		vaultPath,
+		s.view,
 	]);
 
 	if (!vaultPath) return <Empty text={tx.noVault} />;
@@ -361,8 +389,34 @@ export function KbReviewView({
 					{visible.length}/{s.proposals.length}
 				</span>
 				{(s.loading || s.freshLoading) && <Spinner className="size-3.5" />}
+				<div className="flex rounded-md border p-0.5">
+					{(["inbox", "audit", "dedupe"] as const).map((v) => (
+						<button
+							key={v}
+							type="button"
+							onClick={() => setView(v)}
+							className={cn(
+								"h-5 rounded px-1.5 text-xs",
+								s.view === v
+									? "bg-muted text-foreground"
+									: "text-muted-foreground",
+							)}
+						>
+							{v === "inbox"
+								? tx.viewInbox
+								: v === "audit"
+									? tx.viewAudit
+									: tx.viewDedupe}
+						</button>
+					))}
+				</div>
 				<div className="ml-auto flex items-center gap-1">
-					<div className="flex rounded-md border p-0.5">
+					<div
+						className={cn(
+							"flex rounded-md border p-0.5",
+							s.view !== "inbox" && "hidden",
+						)}
+					>
 						{(["batches", "flat"] as const).map((g) => (
 							<button
 								key={g}
@@ -379,9 +433,27 @@ export function KbReviewView({
 							</button>
 						))}
 					</div>
+					{s.view === "inbox" && base?.hasDomain && (
+						<Button
+							size="sm"
+							variant="ghost"
+							disabled={!canDecide || s.routing || !autoCount}
+							title={`${tx.routeHint}\n${tx.routeAutoCount(autoCount)}`}
+							onClick={() => void routeNow()}
+						>
+							{s.routing ? <Spinner /> : <RouteIcon />}
+							{tx.routeNow}
+							{autoCount > 0 && (
+								<span className="tabular-nums text-muted-foreground">
+									{autoCount}
+								</span>
+							)}
+						</Button>
+					)}
 					<Button
 						size="sm"
 						variant="ghost"
+						className={cn(s.view !== "inbox" && "hidden")}
 						disabled={!canDecide || !s.proposals.length}
 						title={tx.checkStaleHint}
 						onClick={() => void checkStale()}
@@ -422,169 +494,198 @@ export function KbReviewView({
 			)}
 			{s.lastDecision && <DecisionBanner log={s.lastDecision} />}
 
-			<div className="flex min-h-0 flex-1">
-				{/* list */}
-				<div className="flex w-[22rem] min-w-[16rem] shrink-0 flex-col border-r">
-					<div className="flex flex-col gap-1.5 border-b p-2">
-						<Input
-							value={s.filter.text}
-							onChange={(e) => setFilter({ text: e.target.value })}
-							placeholder={tx.searchPlaceholder}
-							className="h-7 text-xs"
-						/>
-						<div className="flex flex-wrap items-center gap-1">
-							{(["all", "high", "medium", "low"] as const).map((r) => (
-								<button
-									key={r}
-									type="button"
-									onClick={() => setFilter({ risk: r as Level | "all" })}
-									className={cn(
-										"h-5 rounded-full border px-1.5 text-[11px]",
-										r !== "all" && RISK_STYLE[r],
-										s.filter.risk === r
-											? "bg-muted"
-											: "opacity-70 hover:opacity-100",
-									)}
-								>
-									{r === "all" ? tx.filterAll : tx.risk[r]}
-								</button>
-							))}
-							<Select
-								value={s.filter.kind}
-								onValueChange={(v) =>
-									v && setFilter({ kind: v as ProposalKind | "all" })
-								}
-							>
-								<SelectTrigger
-									size="sm"
-									className="ml-auto h-5 w-24 text-[11px]"
-								>
-									<SelectValue>
-										{s.filter.kind === "all"
-											? tx.filterAll
-											: tx.kind[s.filter.kind]}
-									</SelectValue>
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">{tx.filterAll}</SelectItem>
-									{(Object.keys(tx.kind) as ProposalKind[]).map((k) => (
-										<SelectItem key={k} value={k}>
-											{tx.kind[k]}
-										</SelectItem>
+			{s.view === "audit" && base ? (
+				<AuditView base={base} />
+			) : s.view === "dedupe" && base ? (
+				<DedupeView base={base} />
+			) : (
+				<div className="flex min-h-0 flex-1">
+					{/* list */}
+					<div className="flex w-[22rem] min-w-[16rem] shrink-0 flex-col border-r">
+						<div className="flex flex-col gap-1.5 border-b p-2">
+							<Input
+								value={s.filter.text}
+								onChange={(e) => setFilter({ text: e.target.value })}
+								placeholder={tx.searchPlaceholder}
+								className="h-7 text-xs"
+							/>
+							<div className="flex flex-wrap items-center gap-1">
+								{(["all", "high", "medium", "low"] as const).map((r) => (
+									<button
+										key={r}
+										type="button"
+										onClick={() => setFilter({ risk: r as Level | "all" })}
+										className={cn(
+											"h-5 rounded-full border px-1.5 text-[11px]",
+											r !== "all" && RISK_STYLE[r],
+											s.filter.risk === r
+												? "bg-muted"
+												: "opacity-70 hover:opacity-100",
+										)}
+									>
+										{r === "all" ? tx.filterAll : tx.risk[r]}
+									</button>
+								))}
+								{autoCount > 0 &&
+									(["auto", "inbox"] as const).map((r) => (
+										<button
+											key={r}
+											type="button"
+											onClick={() =>
+												setFilter({ route: s.filter.route === r ? "all" : r })
+											}
+											className={cn(
+												"h-5 rounded-full border px-1.5 text-[11px]",
+												r === "auto" &&
+													"border-sky-500/40 text-sky-700 dark:text-sky-300",
+												s.filter.route === r
+													? "bg-muted"
+													: "opacity-70 hover:opacity-100",
+											)}
+										>
+											{tx.filterRoute[r]}
+										</button>
 									))}
-								</SelectContent>
-							</Select>
-							{tools.length > 1 && (
 								<Select
-									value={s.filter.tool}
-									onValueChange={(v) => v && setFilter({ tool: v })}
+									value={s.filter.kind}
+									onValueChange={(v) =>
+										v && setFilter({ kind: v as ProposalKind | "all" })
+									}
 								>
-									<SelectTrigger size="sm" className="h-5 w-24 text-[11px]">
+									<SelectTrigger
+										size="sm"
+										className="ml-auto h-5 w-24 text-[11px]"
+									>
 										<SelectValue>
-											{s.filter.tool === "all" ? tx.filterAll : s.filter.tool}
+											{s.filter.kind === "all"
+												? tx.filterAll
+												: tx.kind[s.filter.kind]}
 										</SelectValue>
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="all">{tx.filterAll}</SelectItem>
-										{tools.map((t) => (
-											<SelectItem key={t} value={t}>
-												{t}
+										{(Object.keys(tx.kind) as ProposalKind[]).map((k) => (
+											<SelectItem key={k} value={k}>
+												{tx.kind[k]}
 											</SelectItem>
 										))}
 									</SelectContent>
 								</Select>
+								{tools.length > 1 && (
+									<Select
+										value={s.filter.tool}
+										onValueChange={(v) => v && setFilter({ tool: v })}
+									>
+										<SelectTrigger size="sm" className="h-5 w-24 text-[11px]">
+											<SelectValue>
+												{s.filter.tool === "all" ? tx.filterAll : s.filter.tool}
+											</SelectValue>
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="all">{tx.filterAll}</SelectItem>
+											{tools.map((t) => (
+												<SelectItem key={t} value={t}>
+													{t}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								)}
+							</div>
+						</div>
+						{checkedVisible.length > 0 && (
+							<div className="flex items-center gap-1 border-b bg-muted/40 px-2 py-1 text-xs">
+								<span className="mr-auto">
+									{tx.selected(checkedVisible.length)}
+								</span>
+								<Button
+									size="xs"
+									disabled={!canDecide}
+									onClick={() => void accept(checkedVisible.map((p) => p.id))}
+								>
+									<CheckIcon />
+									{tx.acceptN(checkedVisible.length)}
+								</Button>
+								<Button
+									size="xs"
+									variant="destructive"
+									disabled={!canDecide}
+									onClick={() => setRejecting(checkedVisible.map((p) => p.id))}
+								>
+									<XIcon />
+									{tx.rejectN(checkedVisible.length)}
+								</Button>
+								<Button size="xs" variant="ghost" onClick={clearChecked}>
+									{tx.selectNone}
+								</Button>
+							</div>
+						)}
+						<div className="min-h-0 flex-1 overflow-y-auto">
+							{visible.length ? (
+								<ProposalList
+									proposals={visible}
+									grouping={s.grouping}
+									focusedId={focused?.id ?? null}
+									checked={s.checked}
+									fresh={s.fresh}
+									routes={s.routes}
+									busy={s.busy}
+									canDecide={canDecide}
+									onFocus={focus}
+									onToggle={toggleChecked}
+									onToggleMany={(ids, on) => setChecked(ids, on)}
+									onAcceptMany={(ids) => void accept(ids)}
+								/>
+							) : (
+								<div className="p-4 text-sm text-muted-foreground">
+									{s.loading ? (
+										<Spinner />
+									) : s.proposals.length ? (
+										tx.emptyFiltered
+									) : (
+										tx.empty
+									)}
+								</div>
 							)}
 						</div>
 					</div>
-					{checkedVisible.length > 0 && (
-						<div className="flex items-center gap-1 border-b bg-muted/40 px-2 py-1 text-xs">
-							<span className="mr-auto">
-								{tx.selected(checkedVisible.length)}
-							</span>
-							<Button
-								size="xs"
-								disabled={!canDecide}
-								onClick={() => void accept(checkedVisible.map((p) => p.id))}
-							>
-								<CheckIcon />
-								{tx.acceptN(checkedVisible.length)}
-							</Button>
-							<Button
-								size="xs"
-								variant="destructive"
-								disabled={!canDecide}
-								onClick={() => setRejecting(checkedVisible.map((p) => p.id))}
-							>
-								<XIcon />
-								{tx.rejectN(checkedVisible.length)}
-							</Button>
-							<Button size="xs" variant="ghost" onClick={clearChecked}>
-								{tx.selectNone}
-							</Button>
-						</div>
-					)}
-					<div className="min-h-0 flex-1 overflow-y-auto">
-						{visible.length ? (
-							<ProposalList
-								proposals={visible}
-								grouping={s.grouping}
-								focusedId={focused?.id ?? null}
-								checked={s.checked}
-								fresh={s.fresh}
-								busy={s.busy}
-								canDecide={canDecide}
-								onFocus={focus}
-								onToggle={toggleChecked}
-								onToggleMany={(ids, on) => setChecked(ids, on)}
-								onAcceptMany={(ids) => void accept(ids)}
+
+					{/* detail */}
+					<div className="flex min-w-0 flex-1 flex-col">
+						{focused && base ? (
+							<ProposalDetail
+								key={focused.id}
+								proposal={focused}
+								base={base}
+								vaultPath={vaultPath}
+								revision={s.revision}
+								fresh={s.fresh.get(focused.id)}
+								route={routeOf(focused, s.routes)}
+								busy={s.busy.has(focused.id)}
+								editing={editing}
+								onEditingChange={setEditing}
+								onAccept={() => void accept([focused.id])}
+								onReject={() => setRejecting([focused.id])}
+								onSaveEdit={(patch, andAccept) =>
+									saveEdit(focused, patch, andAccept)
+								}
 							/>
 						) : (
-							<div className="p-4 text-sm text-muted-foreground">
-								{s.loading ? (
-									<Spinner />
-								) : s.proposals.length ? (
-									tx.emptyFiltered
-								) : (
-									tx.empty
-								)}
-							</div>
+							<Empty text={s.proposals.length ? tx.emptyFiltered : tx.empty} />
 						)}
 					</div>
 				</div>
-
-				{/* detail */}
-				<div className="flex min-w-0 flex-1 flex-col">
-					{focused && base ? (
-						<ProposalDetail
-							key={focused.id}
-							proposal={focused}
-							base={base}
-							vaultPath={vaultPath}
-							revision={s.revision}
-							fresh={s.fresh.get(focused.id)}
-							busy={s.busy.has(focused.id)}
-							editing={editing}
-							onEditingChange={setEditing}
-							onAccept={() => void accept([focused.id])}
-							onReject={() => setRejecting([focused.id])}
-							onSaveEdit={(patch, andAccept) =>
-								saveEdit(focused, patch, andAccept)
-							}
-						/>
-					) : (
-						<Empty text={s.proposals.length ? tx.emptyFiltered : tx.empty} />
-					)}
-				</div>
-			</div>
+			)}
 
 			<RejectDialog
 				open={!!rejecting}
 				count={rejecting?.length ?? 0}
+				reasons={s.reasons?.dir === s.baseDir ? s.reasons.list : null}
 				onCancel={() => setRejecting(null)}
-				onConfirm={(reason) => {
+				onConfirm={(input) => {
 					const ids = rejecting ?? [];
 					setRejecting(null);
-					void reject(ids, reason);
+					void reject(ids, input);
 				}}
 			/>
 		</div>

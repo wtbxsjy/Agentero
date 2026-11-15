@@ -210,6 +210,8 @@ pub(crate) fn export_typescript_bindings() {
             crate::features::kb::commands::kb_write_proposal,
             crate::features::kb::commands::kb_read_file,
             crate::features::kb::commands::kb_merge,
+            crate::features::kb::commands::kb_audit,
+            crate::features::kb::commands::kb_dedupe,
             crate::features::kb::commands::kb_resolve_evidence,
         ])
         // Desktop event surface (see `app::events_contract`): emit sites keep

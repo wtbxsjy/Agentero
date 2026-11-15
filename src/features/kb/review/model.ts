@@ -32,6 +32,21 @@ export type ProposalPatch = {
 	set?: Record<string, unknown>;
 };
 
+/** Risk routing result (`route` in the proposal, or the `--list --json` preview). */
+export type RouteInfo = {
+	mode: "auto" | "inbox";
+	/** Auto-merge rule: link / format / alias. */
+	rule: string | null;
+	why: string | null;
+};
+
+/** `merge_entity`: pages folded into the target. */
+export type MergeInfo = {
+	from: { path: string; id: string; title: string | null }[];
+	aliases: string[];
+	basis: string | null;
+};
+
 export type Proposal = {
 	id: string;
 	kind: ProposalKind;
@@ -51,6 +66,10 @@ export type Proposal = {
 	decidedAt: string | null;
 	decidedBy: string | null;
 	reason: string | null;
+	reasonCode: string | null;
+	duplicateOf: string | null;
+	route: RouteInfo | null;
+	merge: MergeInfo | null;
 	/** Absolute JSON path. */
 	path: string;
 	/** Parsed JSON object, key order preserved (used for edits). */
@@ -109,6 +128,28 @@ function asRecord(v: unknown): Record<string, unknown> | undefined {
 		: undefined;
 }
 
+export function parseRoute(v: unknown): RouteInfo | null {
+	const o = asRecord(v);
+	if (!o) return null;
+	const mode = o.mode === "auto" || o.mode === "inbox" ? o.mode : null;
+	if (!mode) return null;
+	return { mode, rule: str(o.rule), why: str(o.why) };
+}
+
+function parseMerge(v: unknown): MergeInfo | null {
+	const o = asRecord(v);
+	if (!o) return null;
+	const list = Array.isArray(o.from) ? o.from : o.from ? [o.from] : [];
+	const from: MergeInfo["from"] = [];
+	for (const f of list) {
+		const r = asRecord(f);
+		const path = r && str(r.path);
+		const id = r && str(r.id);
+		if (r && path && id) from.push({ path, id, title: str(r.title) });
+	}
+	return { from, aliases: strList(o.aliases), basis: str(o.basis) };
+}
+
 /** Parse one proposal file. Throws with a readable message on a bad shape. */
 export function parseProposal(text: string, path: string): Proposal {
 	const raw = JSON.parse(text) as unknown;
@@ -145,6 +186,10 @@ export function parseProposal(text: string, path: string): Proposal {
 		decidedAt: str(o.decided_at),
 		decidedBy: str(o.decided_by),
 		reason: str(o.reason),
+		reasonCode: str(o.reason_code),
+		duplicateOf: str(o.duplicate_of),
+		route: parseRoute(o.route),
+		merge: parseMerge(o.merge),
 		path,
 		raw: o,
 	};
@@ -266,22 +311,225 @@ export function summarizeBatch(
 	return { byKind, byRisk, sources: sources.size, stale };
 }
 
+/** The JSON value an R script printed, ignoring log lines around it. */
+export function extractJson(stdout: string): unknown {
+	const starts = [stdout.indexOf("["), stdout.indexOf("{")].filter(
+		(i) => i >= 0,
+	);
+	if (!starts.length) return null;
+	const start = Math.min(...starts);
+	const close = stdout[start] === "[" ? "]" : "}";
+	const end = stdout.lastIndexOf(close);
+	if (end < start) return null;
+	try {
+		return JSON.parse(stdout.slice(start, end + 1)) as unknown;
+	} catch {
+		return null;
+	}
+}
+
+function jsonRows(stdout: string): Record<string, unknown>[] {
+	const v = extractJson(stdout);
+	const list = Array.isArray(v) ? v : v && typeof v === "object" ? [v] : [];
+	return list.map(asRecord).filter((r): r is Record<string, unknown> => !!r);
+}
+
 /** `--list --json` output → id → fresh. Tolerates log lines around the JSON. */
 export function parseFreshList(stdout: string): Map<string, boolean> {
 	const out = new Map<string, boolean>();
-	const start = stdout.indexOf("[");
-	const end = stdout.lastIndexOf("]");
-	if (start < 0 || end < start) return out;
-	try {
-		const rows = JSON.parse(stdout.slice(start, end + 1)) as unknown;
-		if (!Array.isArray(rows)) return out;
-		for (const r of rows) {
-			const o = asRecord(r);
-			const id = o && str(o.id);
-			if (id && typeof o.fresh === "boolean") out.set(id, o.fresh);
-		}
-	} catch {
-		// R printed something unexpected: freshness stays unknown.
+	for (const o of jsonRows(stdout)) {
+		const id = str(o.id);
+		if (id && typeof o.fresh === "boolean") out.set(id, o.fresh);
+	}
+	return out;
+}
+
+/** `--list --json` output → id → route preview (what `--route` would do). */
+export function parseRoutePreview(stdout: string): Map<string, RouteInfo> {
+	const out = new Map<string, RouteInfo>();
+	for (const o of jsonRows(stdout)) {
+		const id = str(o.id);
+		const r = parseRoute(o.route);
+		if (id && r) out.set(id, r);
+	}
+	return out;
+}
+
+/** `--route --json` output: one row per routed proposal. */
+export type RouteResult = RouteInfo & {
+	id: string;
+	kind: string | null;
+	target: string | null;
+	/** Merge outcome for auto rows: accepted / edited / stale / error. */
+	result: string | null;
+	commit: string | null;
+};
+
+export function parseRouteRun(stdout: string): RouteResult[] {
+	const out: RouteResult[] = [];
+	for (const o of jsonRows(stdout)) {
+		const id = str(o.id);
+		const r = parseRoute(o);
+		if (!id || !r) continue;
+		out.push({
+			...r,
+			id,
+			kind: str(o.kind),
+			target: str(o.target),
+			result: str(o.result),
+			commit: str(o.commit),
+		});
+	}
+	return out;
+}
+
+/** A rejection reason category from the domain profile (`--reasons --json`). */
+export type RejectReason = {
+	code: string;
+	label: string;
+	labelEn: string;
+	/** Where this kind of rejection feeds back: prompt / aliases / scope / profile. */
+	feeds: string;
+};
+
+export function parseReasons(stdout: string): RejectReason[] {
+	const out: RejectReason[] = [];
+	for (const o of jsonRows(stdout)) {
+		const code = str(o.code);
+		if (!code) continue;
+		const label = str(o.label) ?? code;
+		out.push({
+			code,
+			label,
+			labelEn: str(o.label_en) ?? label,
+			feeds: str(o.feeds) ?? "prompt",
+		});
+	}
+	return out;
+}
+
+/** One queued spot check (`kb_audit.R --list --json`). */
+export type AuditItem = {
+	id: string;
+	kind: string | null;
+	target: string | null;
+	rule: string | null;
+	why: string | null;
+	decidedAt: string | null;
+	rationale: string | null;
+	commit: string | null;
+};
+
+export function parseAuditList(stdout: string): AuditItem[] {
+	const out: AuditItem[] = [];
+	for (const o of jsonRows(stdout)) {
+		const id = str(o.id);
+		if (!id) continue;
+		out.push({
+			id,
+			kind: str(o.kind),
+			target: str(o.target),
+			rule: str(o.rule),
+			why: str(o.why),
+			decidedAt: str(o.decided_at),
+			rationale: str(o.rationale),
+			commit: str(o.commit),
+		});
+	}
+	return out;
+}
+
+export type AuditRuleStats = {
+	rule: string;
+	autoMerged: number;
+	audited: number;
+	wrong: number;
+	errorRate: number | null;
+	upper95: number | null;
+	/** Auto-merges not spot-checked yet. */
+	unaudited: number;
+	disabled: boolean;
+	/** Too many unaudited auto-merges (`audit.max_unaudited`): routing holds off. */
+	paused: boolean;
+};
+
+export type AuditStats = {
+	rules: AuditRuleStats[];
+	target: number;
+	minAudited: number;
+	audited: number;
+	wrong: number;
+	errorRate: number | null;
+	queued: number;
+	maxUnaudited: number;
+	disabled: string[];
+	paused: string[];
+};
+
+function num(v: unknown): number | null {
+	return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+export function parseAuditStats(stdout: string): AuditStats | null {
+	const o = asRecord(extractJson(stdout));
+	if (!o) return null;
+	const rulesRaw = Array.isArray(o.rules) ? o.rules : [];
+	const rules: AuditRuleStats[] = [];
+	for (const r of rulesRaw) {
+		const x = asRecord(r);
+		const rule = x && str(x.rule);
+		if (!x || !rule) continue;
+		rules.push({
+			rule,
+			autoMerged: num(x.auto_merged) ?? 0,
+			audited: num(x.audited) ?? 0,
+			wrong: num(x.wrong) ?? 0,
+			errorRate: num(x.error_rate),
+			upper95: num(x.upper95),
+			unaudited: num(x.unaudited) ?? 0,
+			disabled: x.disabled === true,
+			paused: x.paused === true,
+		});
+	}
+	return {
+		rules,
+		target: num(o.target) ?? 0.05,
+		minAudited: num(o.min_audited) ?? 20,
+		audited: num(o.audited) ?? 0,
+		wrong: num(o.wrong) ?? 0,
+		errorRate: num(o.error_rate),
+		queued: num(o.queued) ?? 0,
+		maxUnaudited: num(o.max_unaudited) ?? 0,
+		disabled: strList(o.disabled),
+		paused: strList(o.paused),
+	};
+}
+
+/** A candidate duplicate pair (`kb_dedupe.R --scan --json`). */
+export type DedupeCandidate = {
+	from: string;
+	into: string;
+	basis: string;
+	fromTitle: string;
+	intoTitle: string;
+	/** A merge proposal for `from` is already pending. */
+	pending: boolean;
+};
+
+export function parseDedupe(stdout: string): DedupeCandidate[] {
+	const out: DedupeCandidate[] = [];
+	for (const o of jsonRows(stdout)) {
+		const from = str(o.from);
+		const into = str(o.into);
+		if (!from || !into) continue;
+		out.push({
+			from,
+			into,
+			basis: str(o.basis) ?? "?",
+			fromTitle: str(o.from_title) ?? from,
+			intoTitle: str(o.into_title) ?? into,
+			pending: o.pending === true,
+		});
 	}
 	return out;
 }

@@ -25,12 +25,19 @@ import {
 	parseFreshList,
 	parseMergeReport,
 	parseProposal,
+	parseReasons,
+	parseRoutePreview,
+	parseRouteRun,
+	type RejectReason,
+	type RouteInfo,
 	serializeEdited,
 } from "./model";
 import { reviewSettings, saveReviewSettings } from "./settings";
 
 export type ReviewFilter = {
 	risk: Level | "all";
+	/** Routing: would auto-merge / needs a human. */
+	route: "all" | "auto" | "inbox";
 	kind: ProposalKind | "all";
 	tool: string | "all";
 	text: string;
@@ -38,7 +45,7 @@ export type ReviewFilter = {
 
 export type DecisionLog = {
 	at: number;
-	action: "accept" | "reject" | "check";
+	action: "accept" | "reject" | "check" | "route";
 	results: {
 		id: string;
 		status: string;
@@ -68,10 +75,19 @@ export type ReviewState = {
 	lastDecision: DecisionLog | null;
 	/** Bumped after each reload so views drop cached target reads. */
 	revision: number;
+	/** id → route preview from `kb_merge.R --list --json` (what `--route` would do). */
+	routes: Map<string, RouteInfo>;
+	/** `kb_merge.R --route` in flight. */
+	routing: boolean;
+	/** Rejection reasons of the selected base (domain profile), null until loaded. */
+	reasons: { dir: string; list: RejectReason[] } | null;
+	/** Center view: proposal inbox, spot checks of auto-merges, duplicate entities. */
+	view: "inbox" | "audit" | "dedupe";
 };
 
 export const EMPTY_FILTER: ReviewFilter = {
 	risk: "all",
+	route: "all",
 	kind: "all",
 	tool: "all",
 	text: "",
@@ -94,6 +110,10 @@ export const reviewStore = createStore<ReviewState>(() => ({
 	busy: new Set(),
 	lastDecision: null,
 	revision: 0,
+	routes: new Map(),
+	routing: false,
+	reasons: null,
+	view: "inbox",
 }));
 
 const get = () => reviewStore.getState();
@@ -135,6 +155,8 @@ export async function selectBase(dir: string): Promise<void> {
 		proposals: [],
 		broken: [],
 		fresh: new Map(),
+		routes: new Map(),
+		reasons: null,
 		focusedId: null,
 		checked: new Set(),
 		filter: EMPTY_FILTER,
@@ -204,7 +226,7 @@ export async function refreshFreshness(
 ): Promise<void> {
 	const base = currentBase();
 	if (!base?.hasMerge || !get().proposals.length) {
-		set({ fresh: new Map(), freshLoading: false });
+		set({ fresh: new Map(), routes: new Map(), freshLoading: false });
 		return;
 	}
 	// Each run starts R (~1 s); skip when nothing changed in the last minute.
@@ -220,11 +242,44 @@ export async function refreshFreshness(
 		if (seq !== freshSeq) return;
 		freshKey = key;
 		freshAt = Date.now();
-		set({ fresh: parseFreshList(out.stdout), freshLoading: false });
+		set({
+			fresh: parseFreshList(out.stdout),
+			routes: parseRoutePreview(out.stdout),
+			freshLoading: false,
+		});
 	} catch {
 		// Freshness is advisory: without R the inbox still works read-only.
 		if (seq === freshSeq) set({ freshLoading: false });
 	}
+}
+
+/** Rejection reason categories for the selected base (once per base). */
+export async function loadReasons(): Promise<void> {
+	const base = currentBase();
+	if (!base?.hasMerge || get().reasons?.dir === base.dir) return;
+	if (!base.hasDomain) {
+		set({ reasons: { dir: base.dir, list: [] } });
+		return;
+	}
+	try {
+		const out = await runMerge(base.dir, { action: "reasons" });
+		set({ reasons: { dir: base.dir, list: parseReasons(out.stdout) } });
+	} catch {
+		// Older kb_merge.R or no R: the dialog falls back to built-in presets.
+		set({ reasons: { dir: base.dir, list: [] } });
+	}
+}
+
+export function setView(view: ReviewState["view"]): void {
+	set({ view });
+}
+
+/** Effective route of a proposal: the live preview, else what `--route` stored. */
+export function routeOf(
+	p: Proposal,
+	routes: ReadonlyMap<string, RouteInfo>,
+): RouteInfo | null {
+	return routes.get(p.id) ?? p.route;
 }
 
 export function focus(id: string | null): void {
@@ -263,11 +318,14 @@ export function setGrouping(grouping: ReviewState["grouping"]): void {
 export function filterProposals(
 	proposals: readonly Proposal[],
 	filter: ReviewFilter,
+	routes: ReadonlyMap<string, RouteInfo> = new Map(),
 ): Proposal[] {
 	const q = filter.text.trim().toLowerCase();
 	return proposals.filter(
 		(p) =>
 			(filter.risk === "all" || p.risk === filter.risk) &&
+			(filter.route === "all" ||
+				(routeOf(p, routes)?.mode ?? "inbox") === filter.route) &&
 			(filter.kind === "all" || p.kind === filter.kind) &&
 			(filter.tool === "all" || p.tool === filter.tool) &&
 			(!q ||
@@ -281,7 +339,7 @@ export function filterProposals(
 /** Next focus after `ids` leave the list: the item after the last one. */
 function nextFocus(ids: readonly string[]): string | null {
 	const s = get();
-	const visible = filterProposals(s.proposals, s.filter);
+	const visible = filterProposals(s.proposals, s.filter, s.routes);
 	const gone = new Set(ids);
 	const lastIdx = Math.max(
 		...ids.map((id) => visible.findIndex((p) => p.id === id)),
@@ -293,10 +351,16 @@ function nextFocus(ids: readonly string[]): string | null {
 	return after?.id ?? before?.id ?? null;
 }
 
+export type RejectInput = {
+	reason: string;
+	code: string | null;
+	duplicateOf: string | null;
+};
+
 async function decide(
 	action: "accept" | "reject",
 	ids: string[],
-	reason?: string,
+	why?: RejectInput,
 ): Promise<DecisionLog | null> {
 	const base = currentBase();
 	if (!base || !ids.length) return null;
@@ -313,7 +377,13 @@ async function decide(
 			base.dir,
 			action === "accept"
 				? { action: "accept", ids }
-				: { action: "reject", ids, reason: reason ?? "" },
+				: {
+						action: "reject",
+						ids,
+						reason: why?.reason ?? "",
+						reasonCode: why?.code ?? null,
+						duplicateOf: why?.duplicateOf ?? null,
+					},
 			{ allowFail: true },
 		);
 		const report = parseMergeReport(out.stdout);
@@ -354,9 +424,51 @@ export function accept(ids: string[]): Promise<DecisionLog | null> {
 
 export function reject(
 	ids: string[],
-	reason: string,
+	why: RejectInput | string,
 ): Promise<DecisionLog | null> {
-	return decide("reject", ids, reason);
+	return decide(
+		"reject",
+		ids,
+		typeof why === "string"
+			? { reason: why, code: null, duplicateOf: null }
+			: why,
+	);
+}
+
+/**
+ * `kb_merge.R --route`: auto-merge what the domain profile deems low risk
+ * (links only, format only, merges the alias table already knows), tag the
+ * rest with why it needs a human.
+ */
+export async function routeNow(): Promise<DecisionLog | null> {
+	const base = currentBase();
+	if (!base?.hasMerge || get().routing) return null;
+	set({ routing: true });
+	let log: DecisionLog;
+	try {
+		const out = await runMerge(base.dir, { action: "route", dryRun: false });
+		log = {
+			at: Date.now(),
+			action: "route",
+			results: parseRouteRun(out.stdout).map((r) => ({
+				id: r.id,
+				status: r.mode === "auto" ? (r.result ?? "?") : "inbox",
+				commit: r.commit,
+				msg:
+					r.mode === "auto" &&
+					r.result &&
+					r.result !== "accepted" &&
+					r.result !== "edited"
+						? r.why
+						: null,
+			})),
+		};
+	} catch (e) {
+		log = { at: Date.now(), action: "route", results: [], error: errorText(e) };
+	}
+	set({ routing: false, lastDecision: log });
+	await reload({ force: true });
+	return log;
 }
 
 /** Save a reviewer edit into the pending JSON; `andAccept` merges it right away. */

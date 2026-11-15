@@ -11,7 +11,9 @@
 //!   `patch_hash` depends on);
 //! - save a reviewer-edited proposal back into `pending/` (the merger then
 //!   records it as `edited` and marks the page `human_edited`);
-//! - run `kb_merge.R` for accept / reject / list / show;
+//! - run `kb_merge.R` for accept / reject / list / show / route, `kb_audit.R`
+//!   for spot checks of auto-merged proposals and `kb_dedupe.R` for
+//!   duplicate entities (`merge_entity` proposals);
 //! - resolve an evidence reference (`source` raw id + `¶N` locator) to the
 //!   paragraph text and, when the raw record points at a PDF, to a page rect.
 //!
@@ -25,7 +27,10 @@ mod merge;
 
 #[cfg(not(any(target_os = "ios", target_os = "android")))]
 pub use locate::{locate_evidence_in_pdf, PdfEvidenceHit};
-pub use merge::{run_merge, MergeOutput, MergeRequest};
+pub use merge::{
+    build_command, parse_rscript, run_audit, run_dedupe, run_merge, wsl_path, AuditRequest,
+    AuditVerdict, DedupeRequest, MergeOutput, MergeRequest, RscriptSpec,
+};
 
 use crate::error::AppError;
 use serde::Serialize;
@@ -66,6 +71,9 @@ pub struct KbBase {
     /// `R/kb_merge.R` exists in the base (bases created before the proposal
     /// channel need their `R/` refreshed from kb-template).
     pub has_merge: bool,
+    /// `R/kb_audit.R` and `R/kb_dedupe.R` exist (domain profile, routing and
+    /// spot checks from kb-template P3).
+    pub has_domain: bool,
     pub pending: u32,
 }
 
@@ -255,6 +263,8 @@ fn describe_base(dir: &Path) -> Option<KbBase> {
         dir: dir.to_string_lossy().into_owned(),
         name,
         has_merge: dir.join("R").join("kb_merge.R").is_file(),
+        has_domain: dir.join("R").join("kb_audit.R").is_file()
+            && dir.join("R").join("kb_dedupe.R").is_file(),
         wiki_dir: paths.wiki,
         raw_dir: paths.raw,
         proposals_dir: paths.proposals,

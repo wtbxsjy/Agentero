@@ -6,7 +6,8 @@
 use crate::core::blocking::run_blocking;
 use crate::core::error::{map_err, ApiResult, AppError};
 use agentero_core::features::kb::{
-    self, EvidenceTarget, KbBase, MergeOutput, MergeRequest, ProposalFile, ProposalState,
+    self, AuditRequest, DedupeRequest, EvidenceTarget, KbBase, MergeOutput, MergeRequest,
+    ProposalFile, ProposalState,
 };
 use std::path::PathBuf;
 
@@ -87,7 +88,7 @@ pub async fn kb_read_file(kb_dir: String, rel: String) -> ApiResult<Option<Strin
     run_blocking(move || wrap(base_dir(&kb_dir).and_then(|d| kb::read_base_file(&d, &rel)))).await
 }
 
-/// Run `R/kb_merge.R` (list / show / accept / reject / check) in the base.
+/// Run `R/kb_merge.R` (list / show / accept / reject / check / route / reasons) in the base.
 #[tauri::command]
 #[specta::specta]
 pub async fn kb_merge(
@@ -101,6 +102,37 @@ pub async fn kb_merge(
         Err(e) => return map_err(e),
     };
     wrap(kb::run_merge(&dir, rscript.as_deref(), by.as_deref(), &request).await)
+}
+
+/// Run `R/kb_audit.R` (spot-check queue, sample, verdicts, report) in the base.
+#[tauri::command]
+#[specta::specta]
+pub async fn kb_audit(
+    kb_dir: String,
+    rscript: Option<String>,
+    by: Option<String>,
+    request: AuditRequest,
+) -> ApiResult<MergeOutput> {
+    let dir = match base_dir(&kb_dir) {
+        Ok(d) => d,
+        Err(e) => return map_err(e),
+    };
+    wrap(kb::run_audit(&dir, rscript.as_deref(), by.as_deref(), &request).await)
+}
+
+/// Run `R/kb_dedupe.R` (duplicate scan, manual merge proposal) in the base.
+#[tauri::command]
+#[specta::specta]
+pub async fn kb_dedupe(
+    kb_dir: String,
+    rscript: Option<String>,
+    request: DedupeRequest,
+) -> ApiResult<MergeOutput> {
+    let dir = match base_dir(&kb_dir) {
+        Ok(d) => d,
+        Err(e) => return map_err(e),
+    };
+    wrap(kb::run_dedupe(&dir, rscript.as_deref(), &request).await)
 }
 
 /// Evidence entry → paragraph text, raw record, original PDF and the rect of

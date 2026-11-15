@@ -4,6 +4,8 @@
  */
 
 import type {
+	AuditRequest,
+	DedupeRequest,
 	EvidenceTarget,
 	KbBase,
 	MergeOutput,
@@ -14,7 +16,13 @@ import { commands } from "@/lib/core/bindings";
 import { callApi } from "@/lib/core/ipc";
 import { reviewSettings } from "./settings";
 
-export type { EvidenceTarget, KbBase, MergeOutput };
+export type {
+	AuditRequest,
+	DedupeRequest,
+	EvidenceTarget,
+	KbBase,
+	MergeOutput,
+};
 
 export function listBases(vaultPath: string): Promise<KbBase[]> {
 	return callApi(() => commands.kbListBases(vaultPath));
@@ -66,10 +74,41 @@ export async function runMerge(
 	const out = await callApi(() =>
 		commands.kbMerge(kbDir, s.rscript || null, s.decider || null, request),
 	);
-	if (out.code !== 0 && !opts.allowFail) {
-		const tail = (out.stderr || out.stdout).trim().split("\n").slice(-6);
-		throw new MergeFailed(tail.join("\n") || `exit ${out.code}`, out);
-	}
+	if (out.code !== 0 && !opts.allowFail)
+		throw new MergeFailed(failTail(out), out);
+	return out;
+}
+
+function failTail(out: MergeOutput): string {
+	const tail = (out.stderr || out.stdout).trim().split("\n").slice(-6);
+	return tail.join("\n") || `exit ${out.code}`;
+}
+
+/** Run kb_audit.R (spot checks of auto-merged proposals). */
+export async function runAudit(
+	kbDir: string,
+	request: AuditRequest,
+	opts: { allowFail?: boolean } = {},
+): Promise<MergeOutput> {
+	const s = reviewSettings();
+	const out = await callApi(() =>
+		commands.kbAudit(kbDir, s.rscript || null, s.decider || null, request),
+	);
+	if (out.code !== 0 && !opts.allowFail)
+		throw new MergeFailed(failTail(out), out);
+	return out;
+}
+
+/** Run kb_dedupe.R (duplicate scan, manual merge proposal). */
+export async function runDedupe(
+	kbDir: string,
+	request: DedupeRequest,
+): Promise<MergeOutput> {
+	const s = reviewSettings();
+	const out = await callApi(() =>
+		commands.kbDedupe(kbDir, s.rscript || null, request),
+	);
+	if (out.code !== 0) throw new MergeFailed(failTail(out), out);
 	return out;
 }
 

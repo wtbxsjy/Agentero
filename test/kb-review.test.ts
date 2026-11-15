@@ -15,12 +15,19 @@ import {
 import {
 	compareForReview,
 	groupBatches,
+	parseAuditList,
+	parseAuditStats,
+	parseDedupe,
 	parseFreshList,
 	parseMergeReport,
 	parseProposal,
+	parseReasons,
+	parseRoutePreview,
+	parseRouteRun,
 	serializeEdited,
 	summarizeBatch,
 } from "@/features/kb/review/model";
+import { EMPTY_FILTER, filterProposals } from "@/features/kb/review/store";
 
 function proposalJson(over: Record<string, unknown> = {}): string {
 	return JSON.stringify({
@@ -253,5 +260,151 @@ describe("kb review frontmatter", () => {
 		const set = fieldRows(fm, { sources: ["s1", "s2"] }, false);
 		expect(set.map((r) => r.key)).toEqual(["sources"]);
 		expect(set[0].changed).toBe(true);
+	});
+});
+
+// Shapes below are real kb-template P3 output (kb_merge.R / kb_audit.R / kb_dedupe.R --json).
+describe("domain profile outputs", () => {
+	it("reads routing previews and route runs, with log lines around the JSON", () => {
+		const list = `[
+  {"id": "p-20261115-032348-19c799", "kind": "merge_entity", "fresh": true,
+   "route": {"mode": "inbox", "why": "实体合并，被并入页不在别名表里"}},
+  {"id": "p-20261115-032349-aaaaaa", "fresh": true,
+   "route": {"mode": "auto", "rule": "link", "why": "只补 2 条链接"}},
+  {"id": "p-20261115-032350-bbbbbb", "fresh": false}
+]`;
+		const routes = parseRoutePreview(list);
+		expect(routes.size).toBe(2);
+		expect(routes.get("p-20261115-032349-aaaaaa")).toEqual({
+			mode: "auto",
+			rule: "link",
+			why: "只补 2 条链接",
+		});
+		expect(routes.get("p-20261115-032348-19c799")?.rule).toBeNull();
+
+		const run = parseRouteRun(`  ✓ route: 1 auto\n[
+  {"id": "p-1", "kind": "link", "target": "wiki/a.md", "mode": "auto", "rule": "link",
+   "why": "w", "result": "accepted", "commit": "abc1234"},
+  {"id": "p-2", "mode": "inbox", "why": "置信度低"}
+] `);
+		expect(run.map((r) => [r.id, r.mode, r.result, r.commit])).toEqual([
+			["p-1", "auto", "accepted", "abc1234"],
+			["p-2", "inbox", null, null],
+		]);
+	});
+
+	it("filters by route, falling back to the stored route", () => {
+		const a = parseProposal(proposalJson(), "a.json");
+		const b = parseProposal(
+			proposalJson({
+				id: "p-20261115-021001-abc124",
+				route: { mode: "auto", rule: "format", why: "x", at: "t" },
+			}),
+			"b.json",
+		);
+		expect(b.route?.mode).toBe("auto");
+		const auto = { ...EMPTY_FILTER, route: "auto" as const };
+		expect(filterProposals([a, b], auto).map((p) => p.id)).toEqual([b.id]);
+		const live = new Map([
+			[a.id, { mode: "auto" as const, rule: "link", why: null }],
+		]);
+		expect(filterProposals([a, b], auto, live)).toHaveLength(2);
+		const inbox = { ...EMPTY_FILTER, route: "inbox" as const };
+		expect(filterProposals([a, b], inbox).map((p) => p.id)).toEqual([a.id]);
+	});
+
+	it("reads reject reasons", () => {
+		const r = parseReasons(`[
+  {"code": "unsupported", "label": "证据不支持论断", "label_en": "Evidence does not support the claim", "feeds": "prompt"},
+  {"code": "duplicate", "label": "与已有页重复", "label_en": "Duplicates an existing page", "feeds": "aliases"},
+  {"label": "no code"}
+]`);
+		expect(r.map((x) => [x.code, x.feeds])).toEqual([
+			["unsupported", "prompt"],
+			["duplicate", "aliases"],
+		]);
+		expect(r[1].labelEn).toBe("Duplicates an existing page");
+	});
+
+	it("reads the audit report with null rates", () => {
+		const st = parseAuditStats(`{
+  "rules": [
+    {"rule": "alias", "auto_merged": 0, "audited": 0, "wrong": 0, "error_rate": null, "upper95": null, "disabled": false},
+    {"rule": "link", "auto_merged": 30, "audited": 21, "wrong": 3, "error_rate": 0.1429, "upper95": 0.3,
+     "unaudited": 9, "disabled": true, "paused": false},
+    {"rule": "format", "auto_merged": 60, "audited": 0, "wrong": 0, "error_rate": null, "upper95": null,
+     "unaudited": 60, "disabled": false, "paused": true}
+  ],
+  "target": 0.05, "min_audited": 20, "audited": 21, "wrong": 3, "max_unaudited": 50,
+  "error_rate": 0.1429, "upper95": 0.3, "queued": 4, "disabled": ["link"], "paused": ["format"]
+}`);
+		expect(st?.rules[2]).toMatchObject({ unaudited: 60, paused: true });
+		expect(st?.rules[0].unaudited).toBe(0);
+		expect(st?.paused).toEqual(["format"]);
+		expect(st?.maxUnaudited).toBe(50);
+		expect(st?.rules[0].errorRate).toBeNull();
+		expect(st?.rules[1]).toMatchObject({ autoMerged: 30, disabled: true });
+		expect(st?.disabled).toEqual(["link"]);
+		expect(st?.queued).toBe(4);
+		expect(parseAuditStats("no json")).toBeNull();
+	});
+
+	it("reads the audit queue", () => {
+		const q =
+			parseAuditList(`[{"id": "p-1", "kind": "link", "target": "wiki/a.md",
+  "rule": "link", "why": "w", "decided_at": "2026-11-15T03:00:00", "rationale": "r", "commit": "abc"}]`);
+		expect(q[0]).toMatchObject({
+			id: "p-1",
+			rule: "link",
+			decidedAt: "2026-11-15T03:00:00",
+			commit: "abc",
+		});
+		expect(parseAuditList("[] ")).toEqual([]);
+	});
+
+	it("reads duplicate candidates", () => {
+		const d = parseDedupe(`[
+  {"from": "entity-acme-b", "into": "entity-acme-a", "basis": "title",
+   "from_title": "Acme Corp", "into_title": "Acme Corp", "pending": true}
+]`);
+		expect(d).toEqual([
+			{
+				from: "entity-acme-b",
+				into: "entity-acme-a",
+				basis: "title",
+				fromTitle: "Acme Corp",
+				intoTitle: "Acme Corp",
+				pending: true,
+			},
+		]);
+	});
+
+	it("reads merge_entity proposals", () => {
+		const p = parseProposal(
+			proposalJson({
+				kind: "merge_entity",
+				target: "wiki/entities/entity-acme-a.md",
+				patch: {},
+				merge: {
+					from: [
+						{
+							path: "wiki/entities/entity-acme-b.md",
+							id: "entity-acme-b",
+							title: "Acme Corp",
+							base_hash: "h",
+						},
+					],
+					aliases: ["Acme"],
+					basis: "title",
+				},
+				reason_code: "duplicate",
+				duplicate_of: "entity-acme-a",
+			}),
+			"m.json",
+		);
+		expect(p.merge?.from.map((f) => f.id)).toEqual(["entity-acme-b"]);
+		expect(p.merge?.aliases).toEqual(["Acme"]);
+		expect(p.reasonCode).toBe("duplicate");
+		expect(p.duplicateOf).toBe("entity-acme-a");
 	});
 });
