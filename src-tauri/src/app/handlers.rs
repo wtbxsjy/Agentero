@@ -212,6 +212,13 @@ pub fn attach_handlers(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<ta
             crate::features::jobs::commands::job_jev_smart_highlights_enqueue,
             #[cfg(not(any(target_os = "ios", target_os = "android")))]
             crate::features::jev::commands::jev_probe_health,
+            crate::features::kb::commands::kb_list_bases,
+            crate::features::kb::commands::kb_describe_base,
+            crate::features::kb::commands::kb_read_proposals,
+            crate::features::kb::commands::kb_write_proposal,
+            crate::features::kb::commands::kb_read_file,
+            crate::features::kb::commands::kb_merge,
+            crate::features::kb::commands::kb_resolve_evidence,
         ])
     }
 }

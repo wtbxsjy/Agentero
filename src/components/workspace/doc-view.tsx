@@ -39,6 +39,13 @@ const ExcalidrawViewer = lazy(() =>
 	})),
 );
 
+// The KB review inbox is a feature module; load it on first open.
+const KbReviewView = lazy(() =>
+	import("@/features/kb/review").then((m) => ({
+		default: m.KbReviewView,
+	})),
+);
+
 const TextEditor = lazy(() =>
 	import("@/components/viewer/text-editor").then((m) => ({
 		default: m.TextEditor,
@@ -195,6 +202,7 @@ function docViewPropsEqual(prev: DocViewProps, next: DocViewProps): boolean {
 	const tab = next.tab;
 	if (!tab.loaded) return true;
 	if (tab.kind === "library") return prev.library === next.library;
+	if (tab.kind === "kb-review") return true;
 	if (tab.kind === "trash") {
 		return (
 			prev.onTrashChanged === next.onTrashChanged &&
@@ -285,6 +293,13 @@ const DocumentContent = memo(function DocumentContent({
 				rescanning={library.rescanning}
 				className="bg-background"
 			/>
+		);
+	}
+	if (tab.kind === "kb-review") {
+		return (
+			<Suspense fallback={<TabLoadingSkeleton />}>
+				<KbReviewView vaultPath={vaultPath} active={active} />
+			</Suspense>
 		);
 	}
 	if (tab.kind === "trash") {

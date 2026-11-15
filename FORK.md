@@ -101,9 +101,45 @@ Still open after step 2:
 `src/features/kb/` holds the knowledge rail (kb-rag HTTP client, source kinds, own zh/en
 strings), wired in from `src/components/shell/right-sidebar.tsx`. Tests: `test/kb-sources.test.ts`.
 
+## Review inbox (P2)
+
+The HITL core: kb-template's pipeline (`kb_compile.R`, `kb_link.R`) writes every wiki change as a
+proposal JSON in `<kb>/proposals/pending/` (contract `schema/proposal.schema.json`), and
+`R/kb_merge.R` is the only writer of `wiki/`. The inbox is the desktop front end of that contract.
+
+- **Where**: a center tab (virtual path `agentero:kb-review`, kind `kb-review`) with the list on
+  the left and the detail on the right, plus an "Inbox" tab next to search in the KB rail that
+  shows what is waiting and opens the center tab. Front end in `src/features/kb/review/`.
+- **Plan cards**: proposals are grouped by pipeline run (same `created_by.tool` + `pass`, created
+  within 10 minutes of each other). Each card summarizes kinds, risk and sources, can be ticked as a
+  whole, and offers "accept all low-risk" (skipping proposals already known to be stale).
+- **Diff**: field-by-field frontmatter comparison plus a side-by-side body diff (Myers, with
+  word / CJK-character highlights and folded context), computed in the webview. A second view
+  shows `kb_merge.R --show`, the merger's exact output.
+- **Evidence**: each `{source, locator}` resolves (Rust) to the paragraph text from
+  `<wiki>/evidence/evidence-<id>.md` (or the raw body, numbered like `kb_number_paragraphs`), then
+  to the raw record's `source_path` PDF, where the PDFium text locator finds the paragraph. Clicking
+  opens the paper / PDF tab and flashes the paragraph rect; without a PDF it falls back to the
+  evidence page block anchor `#^pN`.
+- **Decisions**: accept, reject (with a preset or free-text reason) and edit (the patch is
+  rewritten in the pending JSON; the merger records it as `edited` and marks the page
+  `human_edited`). All decisions run `Rscript R/kb_merge.R` inside the base, so base-hash checks,
+  raw status write-back and one-commit-per-decision stay in one place. "Close stale" runs
+  `--check`. Freshness (`--list --json`) marks proposals whose target changed.
+- **Keys** (center tab): `j`/`k` move, `x` select, `Shift+A` select all, `a` accept, `e` edit, `r`
+  reject, `1`–`9` open evidence N, `o` open the target page, `Esc` clear / leave edit.
+- **Settings** (per machine, localStorage): Rscript path (default `Rscript` on PATH; on Windows the
+  newest `C:\Program Files\R\R-*\bin\Rscript.exe`), reviewer name for `--by`.
+- **Rust**: `crates/agentero-core/src/features/kb/` (config parsing, proposal IO, evidence
+  resolution, the `kb_merge.R` runner with a fixed action set) and the `kb_*` commands in
+  `src-tauri/src/features/kb/commands.rs`.
+- **Needs**: R with kb-template's packages, and a base whose `R/` has the proposal channel
+  (kb-template PR #2). Without `R/kb_merge.R` the inbox is read-only.
+- Tests: `test/kb-review.test.ts`, `cargo test -p agentero-core features::kb`.
+
 ## Design constraints
 
-- No Tauri commands, no `bindings.ts` changes: the panel calls kb-rag's loopback HTTP mode
+- Retrieval needs no Tauri commands: the search panel calls kb-rag's loopback HTTP mode
   (`kb-template/mcp/run.sh --http 127.0.0.1:8766`) with `fetch`. Agentero's CSP is `null`, so the
   webview can reach loopback. If upstream ever sets a CSP, add `http://127.0.0.1:*` to `connect-src`.
 - Strings live in `src/features/kb/i18n.ts`, not `src/i18n/locales/`, so locale edits upstream never conflict.

@@ -600,6 +600,23 @@ export const commands = {
 	htmlPreviewGrant: (args: HtmlPreviewGrantArgs) => typedError<ApiResult<HtmlPreviewGrant>, string>(__TAURI_INVOKE("html_preview_grant", { args })),
 	jobJevSmartHighlightsEnqueue: (args: JobEnqueueArgs) => typedError<ApiResult<JobSnapshot>, string>(__TAURI_INVOKE("job_jev_smart_highlights_enqueue", { args })),
 	jevProbeHealth: () => typedError<ApiResult<null>, string>(__TAURI_INVOKE("jev_probe_health")),
+	/**  Knowledge bases of the open vault (`<vault>/kb/<topic>/kb.config.yaml`). */
+	kbListBases: (vaultPath: string) => __TAURI_INVOKE<ApiResult<KbBase[]>>("kb_list_bases", { vaultPath }),
+	/**  One knowledge base by root (for a base outside the vault). */
+	kbDescribeBase: (kbDir: string) => __TAURI_INVOKE<ApiResult<KbBase>>("kb_describe_base", { kbDir }),
+	/**  Proposal JSON files, verbatim. `limit` keeps the newest N (for `decided`). */
+	kbReadProposals: (kbDir: string, state: ProposalState, limit: number | null) => __TAURI_INVOKE<ApiResult<ProposalFile[]>>("kb_read_proposals", { kbDir, state, limit }),
+	/**  Save a reviewer-edited pending proposal (accepted later as `edited`). */
+	kbWriteProposal: (kbDir: string, id: string, text: string) => __TAURI_INVOKE<ApiResult<boolean>>("kb_write_proposal", { kbDir, id, text }),
+	/**  Read a base-relative text file; `null` when it does not exist. */
+	kbReadFile: (kbDir: string, rel: string) => __TAURI_INVOKE<ApiResult<string | null>>("kb_read_file", { kbDir, rel }),
+	/**  Run `R/kb_merge.R` (list / show / accept / reject / check) in the base. */
+	kbMerge: (kbDir: string, rscript: string | null, by: string | null, request: MergeRequest) => __TAURI_INVOKE<ApiResult<MergeOutput>>("kb_merge", { kbDir, rscript, by, request }),
+	/**
+	 *  Evidence entry → paragraph text, raw record, original PDF and the rect of
+	 *  that paragraph in the PDF (desktop PDFium).
+	 */
+	kbResolveEvidence: (kbDir: string, source: string, locator: string | null, quote: string | null) => __TAURI_INVOKE<ApiResult<EvidenceTarget>>("kb_resolve_evidence", { kbDir, source, locator, quote }),
 };
 
 /** Events */
@@ -2846,6 +2863,38 @@ export type ErrorBody = {
 	message: string,
 };
 
+export type EvidenceRect = {
+	/**  0-based page index. */
+	pageIndex: number,
+	/**  Normalized (0–1) bbox on that page. */
+	x: number | null,
+	y: number | null,
+	w: number | null,
+	h: number | null,
+	/**  Which quote matched (debugging aid shown as a tooltip). */
+	matched: string,
+};
+
+export type EvidenceTarget = {
+	/**  Raw record id the evidence cites. */
+	source: string,
+	/**  Paragraph number parsed from a `¶N` locator. */
+	paragraph: number | null,
+	/**  Page number (1-based) parsed from a `p.N` / `page=N` locator. */
+	page: number | null,
+	/**  Paragraph text from the evidence page (anchor suffix stripped). */
+	text: string | null,
+	/**  Absolute path of `<wiki>/evidence/evidence-<source>.md` when present. */
+	evidencePath: string | null,
+	/**  Absolute raw record path. */
+	rawPath: string | null,
+	rawTitle: string | null,
+	/**  Absolute path of the original PDF when the raw record has one. */
+	pdfPath: string | null,
+	/**  Located rect inside `pdf_path`. */
+	pdfHit: EvidenceRect | null,
+};
+
 /**
  *  Where a job's business logic executes: in a Rust runner ([`ExecHost::Host`])
  *  or in the renderer through the `job:offer` / `job_report` protocol
@@ -3299,6 +3348,22 @@ Json[] |
 /**  JSON object. */
 { [key in string]: Json };
 
+export type KbBase = {
+	/**  Absolute knowledge-base root (the folder holding `kb.config.yaml`). */
+	dir: string,
+	/**  `name:` from the config, else the folder name. */
+	name: string,
+	wikiDir: string,
+	rawDir: string,
+	proposalsDir: string,
+	/**
+	 *  `R/kb_merge.R` exists in the base (bases created before the proposal
+	 *  channel need their `R/` refreshed from kb-template).
+	 */
+	hasMerge: boolean,
+	pending: number,
+};
+
 export type LayoutModelStatus = {
 	ready: boolean,
 	path: string,
@@ -3656,6 +3721,27 @@ export type McpTunnelStatusEvent = McpTunnelStatus;
 export type MenuInvokedEvent = {
 	action: string,
 };
+
+export type MergeOutput = {
+	/**  Process exit code (-1 when killed by a signal). */
+	code: number,
+	stdout: string,
+	stderr: string,
+	/**  The Rscript program that ran, for error messages. */
+	program: string,
+};
+
+export type MergeRequest = 
+/**  `--list --json`: pending proposals with `fresh` (base hash still matches). */
+{ action: "list" } | 
+/**  `--show ID`: rationale, evidence and the unified diff as the merger sees it. */
+{ action: "show"; id: string } | 
+/**  `--accept ID…` */
+{ action: "accept"; ids: string[] } | 
+/**  `--reject ID… --reason R` */
+{ action: "reject"; ids: string[]; reason: string } | 
+/**  `--check`: move proposals whose target changed to stale. */
+{ action: "check" };
 
 /**  Progress event streamed to the UI while a migration runs. */
 export type MigrateProgress = {
@@ -4340,6 +4426,20 @@ export type PropertyOption_Serialize = {
 	name: string,
 	color?: string | null,
 };
+
+export type ProposalFile = {
+	/**  File stem (`p-YYYYMMDD-HHMMSS-xxxxxx`). */
+	id: string,
+	/**  Absolute path of the JSON file. */
+	path: string,
+	/**  Raw JSON text, unparsed. */
+	text: string,
+	/**  Modification time, ms since epoch (0 when unknown). */
+	modifiedMs: number | null,
+};
+
+/**  Proposal state directory. */
+export type ProposalState = "pending" | "decided";
 
 /**
  *  Minimal activity point mirrored by `ReadingActivityPoint` in

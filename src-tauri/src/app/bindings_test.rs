@@ -204,6 +204,13 @@ pub(crate) fn export_typescript_bindings() {
             crate::features::web::commands::html_preview_grant,
             crate::features::jobs::commands::job_jev_smart_highlights_enqueue,
             crate::features::jev::commands::jev_probe_health,
+            crate::features::kb::commands::kb_list_bases,
+            crate::features::kb::commands::kb_describe_base,
+            crate::features::kb::commands::kb_read_proposals,
+            crate::features::kb::commands::kb_write_proposal,
+            crate::features::kb::commands::kb_read_file,
+            crate::features::kb::commands::kb_merge,
+            crate::features::kb::commands::kb_resolve_evidence,
         ])
         // Desktop event surface (see `app::events_contract`): emit sites keep
         // using `app.emit("<literal>", payload)`; the wrappers/mirrors there

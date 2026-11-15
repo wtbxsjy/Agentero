@@ -19,7 +19,7 @@ import { useNativeSelectAllGuard } from "@/hooks/use-native-select-all-guard";
 import { useAnyModalOverlayOpen } from "@/hooks/use-overlay-registration";
 import { useVaultFileEvents } from "@/hooks/use-vault-file-events";
 import { isMacOS } from "@/lib/core/tauri";
-import { isLibraryVirtualPath, isTrashVirtualPath } from "@/lib/paper/api";
+import { isVirtualDocPath } from "@/lib/paper/api";
 import { refreshLibrary } from "@/lib/paper/library-store";
 import { applyDocumentChrome, resolveFontFamilyCss } from "@/lib/settings";
 import { closeCurrentWindow } from "@/lib/shell/close-window";
@@ -110,7 +110,7 @@ export function DocWindowRoot() {
 				setReady(true);
 				return;
 			}
-			if (isLibraryVirtualPath(path) || isTrashVirtualPath(path)) {
+			if (isVirtualDocPath(path)) {
 				setError(t("windows.docUnsupported"));
 				setReady(true);
 				return;
