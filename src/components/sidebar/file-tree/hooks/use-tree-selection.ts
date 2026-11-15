@@ -4,11 +4,6 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { LIBRARY_VIRTUAL_PATH, TRASH_VIRTUAL_PATH } from "@/lib/paper/api";
-import {
-	isPlazaVirtualPath,
-	type PlazaSource,
-	plazaSourceForPath,
-} from "@/lib/plaza";
 import type { FileNode } from "@/lib/vault";
 import { isVirtualTreePath, normalizeTreeSelection } from "../tree-helpers";
 import type { TreeCreateDraft, TreeRenameDraft } from "../types";
@@ -42,9 +37,7 @@ export function useTreeSelection({
 	onSelectFile,
 	onSelectLibrary,
 	onSelectTrash,
-	onSelectPlazaSource,
 	onOpenZoteroCollectionPaper,
-	onTogglePath,
 	onDeletePath,
 	onDeletePaths,
 	onCutPaths,
@@ -60,10 +53,8 @@ export function useTreeSelection({
 	onSelectFile: (node: FileNode) => void;
 	onSelectLibrary?: () => void;
 	onSelectTrash?: () => void;
-	onSelectPlazaSource?: (source: PlazaSource) => void;
 	/** Open the real paper behind a read-only Zotero collection reference. */
 	onOpenZoteroCollectionPaper?: (relPath: string) => void;
-	onTogglePath?: (path: string) => void;
 	onDeletePath?: (path: string) => void | Promise<void>;
 	onDeletePaths?: (paths: string[]) => void | Promise<void>;
 	onCutPaths?: (paths: string[]) => void;
@@ -112,14 +103,6 @@ export function useTreeSelection({
 				onSelectTrash?.();
 				return;
 			}
-			// Plaza paths are virtual: they have no FileNode to fall through to.
-			// The root node is a plain folder — it only expands/collapses.
-			if (isPlazaVirtualPath(path)) {
-				const source = plazaSourceForPath(path);
-				if (source) onSelectPlazaSource?.(source);
-				else onTogglePath?.(path);
-				return;
-			}
 			if (isZoteroCollectionReferencePath(path)) {
 				const paperRel = zoteroCollectionReferenceRelPath(path);
 				if (paperRel) onOpenZoteroCollectionPaper?.(paperRel);
@@ -136,9 +119,7 @@ export function useTreeSelection({
 			onSelectFile,
 			onSelectLibrary,
 			onSelectTrash,
-			onSelectPlazaSource,
 			onOpenZoteroCollectionPaper,
-			onTogglePath,
 		],
 	);
 

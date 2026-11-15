@@ -49,7 +49,7 @@ Host `features/web/proxy.rs`(agentero-web scheme)
 | 方向 | type | 载荷 | 语义 |
 |---|---|---|---|
 | frame → app | `selection` | `{text(≤4000), rect\|null, url, side?, cursorX?}` | 选区(视口坐标矩形)、手势结束侧(`above` / `below`)与光标端点 x;空文本即清菜单。带 rect 时帧内已 `execCommand("copy")`(焦点在 frame,应用侧剪贴板写入可能被拒的降级) |
-| frame → app | `scroll` | — | 页内滚动,隐藏工具栏(plaza 同款语义) |
+| frame → app | `scroll` | — | 页内滚动,隐藏工具栏 |
 | frame → app | `escape` | — | 非输入元素上的 Escape（window 捕获阶段转发，站点 `stopPropagation` / `preventDefault` 不影响）；父窗口转交共享选区宿主关闭工具栏 / 批注 / 结果卡。桥不拦截按键,站点自身的 Escape 行为保留 |
 | frame → app | `ready` | — | 桥完成监听后请求当前快捷键配置；每次文档导航重新握手 |
 | frame → app | `shortcut` | `{event: {key, code, metaKey, ctrlKey, altKey, shiftKey}}` | 仅转发匹配的配置；应用以 `resolveShortcutId` 再校验。可编辑元素、IME 与普通输入不转发 |

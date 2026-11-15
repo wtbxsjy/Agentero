@@ -17,7 +17,6 @@ pub const AGENTS_DIR_README: &str =
 pub const SKILLS_DIR_README: &str =
     include_str!("../../../../../templates/vault/.agents/skills/README.md");
 
-
 // Onboarding notes and bundled skill package files are discovered by build.rs
 // and embedded here.
 include!(concat!(env!("OUT_DIR"), "/onboarding_templates.rs"));

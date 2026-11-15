@@ -10,11 +10,8 @@ pub mod markdown;
 pub mod open_request;
 pub mod paper;
 pub mod pdf;
-pub mod research_table;
-pub mod sync;
 pub mod translate;
 pub mod vault;
-pub mod zhihu;
 
 // Stable historical `features::` paths, backed by the semantic module tree.
 pub use markdown::wiki;
@@ -31,5 +28,4 @@ pub use pdf::layout_index;
 #[cfg(not(any(target_os = "ios", target_os = "android")))]
 pub use pdf::locate as pdf_locate;
 
-pub use paper::discovery::feeds;
 pub use paper::import::sources::zotero;

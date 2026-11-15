@@ -987,12 +987,6 @@ async fn clear_parse_results_core(
     app: &tauri::AppHandle,
     center: &JobCenter,
 ) -> Result<(u32, u32, Vec<String>), AppError> {
-    if crate::core::remote::parse_remote_handle(vault_path).is_some() {
-        return Err(AppError::message(
-            "clearing parse results is only supported for local vaults",
-        ));
-    }
-
     let vault = crate::core::fs::resolve_vault(vault_path)?;
     center.refresh_layout_backend().await;
     cancel_related_parse_jobs(app, center, &vault, scope).await;

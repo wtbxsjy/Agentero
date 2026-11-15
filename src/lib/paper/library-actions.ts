@@ -48,7 +48,6 @@ import {
 } from "@/lib/paper/reader";
 import type { FileNode } from "@/lib/vault";
 import { joinVaultPath, readVaultFile } from "@/lib/vault";
-import { isRemoteVaultHandle } from "@/lib/vault/remote/remote-vault";
 import { getVaultPath, refreshTree, vaultStore } from "@/lib/vault/store";
 import { toVaultRelative } from "@/lib/wiki";
 import { rebuildWikiAndNotify } from "@/lib/wiki/store";
@@ -68,7 +67,7 @@ export function currentLookupParentDir(): string {
 /** Open the metadata edit dialog for the paper folder right-clicked in the tree. */
 export function editPaperMetaFromTree(paperDir: string): void {
 	const vaultPath = getVaultPath();
-	if (!vaultPath || isRemoteVaultHandle(vaultPath)) return;
+	if (!vaultPath) return;
 	const rel = toVaultRelative(vaultPath, paperDir);
 	const meta = rel
 		? libraryStore.getState().paperMetaByRelPath.get(rel)
@@ -254,10 +253,6 @@ export async function copyLibraryPapersTo(
 ): Promise<void> {
 	const vaultPath = getVaultPath();
 	if (!vaultPath) return;
-	if (isRemoteVaultHandle(vaultPath)) {
-		notifyError(i18n.t("sidebar:fileTree.copyDesktopOnly"));
-		return;
-	}
 	const rels = papers
 		.map((paper) => paper.path?.replace(/\\/g, "/").replace(/^\/+|\/+$/g, ""))
 		.filter((rel): rel is string => Boolean(rel));
@@ -505,7 +500,7 @@ export async function syncLibraryPublication(
 	vaultPath: string | null | undefined,
 	targets: PaperMetadata[],
 ): Promise<void> {
-	if (!vaultPath || isRemoteVaultHandle(vaultPath)) return;
+	if (!vaultPath) return;
 	const papers = targets
 		.map((p) => ({
 			path: p.path ?? "",
@@ -562,7 +557,7 @@ export async function refreshPaperMetadata(
 	vaultPath: string | null | undefined,
 	paper: PaperMetadata,
 ): Promise<void> {
-	if (!vaultPath || isRemoteVaultHandle(vaultPath)) return;
+	if (!vaultPath) return;
 	if (!paper.path) return;
 	const text =
 		paper.doi?.trim() || paper.arxiv_id?.trim() || paper.title?.trim();

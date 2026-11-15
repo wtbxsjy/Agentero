@@ -6,7 +6,6 @@ pub(crate) mod bindings_test;
 // of the private payload structs and reference the mirrors from here. Test
 // builds only — the module does not exist otherwise.
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
-mod account;
 pub(crate) mod command_util;
 #[cfg(any(test, feature = "bindings-export"))]
 pub(crate) mod events_contract;
@@ -35,8 +34,6 @@ use crate::integration::connector::ConnectorController;
 use crate::integration::mcp::tunnel::McpTunnelController;
 #[cfg(not(target_os = "ios"))]
 use crate::integration::mcp::McpController;
-#[cfg(not(target_os = "ios"))]
-use crate::integration::remote::RemoteRegistry;
 // Used on every platform: the exit handler shuts down the agent warm pool.
 use std::sync::Arc;
 #[cfg(not(target_os = "ios"))]
@@ -83,21 +80,6 @@ pub fn run() {
                 request, responder,
             );
         })
-        .register_asynchronous_uri_scheme_protocol(
-            "agentero-coolpapers",
-            |_ctx, request, responder| {
-                crate::features::paper::discovery::coolpapers::proxy::handle(request, responder);
-            },
-        )
-        .register_asynchronous_uri_scheme_protocol(
-            "agentero-modelscope",
-            |_ctx, request, responder| {
-                crate::features::paper::discovery::proxy::modelscope::handle(request, responder);
-            },
-        )
-        .register_asynchronous_uri_scheme_protocol("agentero-pwc", |_ctx, request, responder| {
-            crate::features::paper::discovery::proxy::pwc::handle(request, responder);
-        })
         .register_asynchronous_uri_scheme_protocol("agentero-web", |_ctx, request, responder| {
             crate::features::web::proxy::handle(request, responder);
         })
@@ -117,9 +99,6 @@ pub fn run() {
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
         builder = builder
-            .plugin(account::plugin())
-            .plugin(tauri_plugin_updater::Builder::new().build())
-            .plugin(tauri_plugin_process::init())
             // Only the main window remembers geometry; settings / feature /
             // doc popouts keep their own fixed sizes.
             .plugin(
@@ -150,8 +129,6 @@ pub fn run() {
         .manage(crate::features::agent::ElicitationGate::new())
         .manage(crate::features::agent::AskUserGate::new())
         .manage(crate::features::agent::delegate::DelegateBridge::new())
-        .manage(crate::integration::bridge::BridgeController::new())
-        .manage(crate::integration::bridge::BridgeClientController::new())
         .manage(
             crate::features::jobs::JobCenter::with_layout_backend(&layout_backend)
                 .with_import_concurrency(import_concurrency)
@@ -162,34 +139,22 @@ pub fn run() {
         .manage(WikiIndexState::new())
         .manage(crate::features::vault::doctor::DoctorDirtyPathsState::default())
         .manage(ExternalRenameRepairStore::new())
-        .manage(crate::integration::sync::SyncService::default())
         .manage(crate::app::open_request::PendingVaultOpen::new())
         .manage(crate::app::open_request::PendingUiRequest::new())
         .manage(crate::features::web::html_preview::HtmlPreviewGrants::default());
 
     #[cfg(not(target_os = "ios"))]
     {
-        // Remote vault sessions are consumed by features (agent / import /
-        // trash) through inversion traits defined in the features themselves;
-        // register the registry both concretely (integration commands) and as
-        // each trait object (feature commands).
-        let remote_registry = Arc::new(RemoteRegistry::new());
         builder = builder
             .manage(FsWatchController::new())
             .manage(crate::features::paper::ingest::IngestQueue::default())
             .manage(Arc::new(ConnectorController::new()))
-            .manage(crate::integration::word::WordController::default())
             .manage(Arc::new(McpController::new()))
             .manage(Arc::new(McpTunnelController::new()))
-            .manage(remote_registry.clone())
-            .manage(remote_registry.clone() as Arc<dyn crate::features::agent::RemoteAgentHosts>)
-            .manage(
-                remote_registry.clone() as Arc<dyn crate::features::paper::import::RemoteImportOps>
-            )
-            .manage(
-                remote_registry
-                    as Arc<dyn crate::features::vault::trash::remote_ops::RemoteTrashOps>,
-            );
+            // The agent feature still threads an optional remote launch
+            // target; with remote vaults removed it always resolves to local.
+            .manage(Arc::new(crate::features::agent::remote_host::NoRemoteHosts)
+                as Arc<dyn crate::features::agent::RemoteAgentHosts>);
     }
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -215,17 +180,13 @@ pub fn run() {
         });
     }
 
-    #[cfg(not(any(target_os = "ios", target_os = "android")))]
-    {
-        builder = builder.manage(crate::integration::plugins::PluginManager::default());
-    }
-
     builder = builder.setup(|app| {
         // Bundled ACP adapter tier (offline fallback): record the packaged
         // adapters root before any catalog scan / spawn path can consult it.
         crate::features::agent::registry::bundled::init(app.handle());
-        app.state::<std::sync::Arc<crate::features::agent::delegate::DelegateBridge>>()
-            .start(app.handle().clone());
+        // Agentero KB: the delegate hub is not started. It only forwards work to
+        // remote vaults, which this fork removed, so `mcp_server` returns `None`
+        // and no ACP session gets the `agentero-delegate` tools.
         // JobCenter runner registry: business domains own their executors and
         // register them here at assembly time (P2 runner-registry refactor).
         // JobCenter itself lives in features/jobs, alongside the domains it
@@ -396,8 +357,6 @@ pub fn run() {
         {
             let connector = app.state::<Arc<ConnectorController>>();
             connector.set_app_handle(app.handle().clone());
-            let remote = app.state::<Arc<RemoteRegistry>>();
-            connector.set_remote_registry(Arc::clone(&remote));
         }
         #[cfg(not(target_os = "ios"))]
         {
@@ -484,10 +443,6 @@ pub fn run() {
             });
         }
 
-        // Auto sync: resume background schedulers for configured vaults.
-        app.state::<crate::integration::sync::SyncService>()
-            .start_all(app.handle());
-
         Ok(())
     });
 
@@ -543,10 +498,6 @@ pub fn run() {
                 let drained = window
                     .state::<vault_session::VaultHolders>()
                     .drain_window(window.label());
-                #[cfg(not(any(target_os = "ios", target_os = "android")))]
-                window
-                    .state::<crate::integration::plugins::PluginManager>()
-                    .unload(window.label(), None, None);
                 if !drained.is_empty() {
                     let app = window.app_handle().clone();
                     tauri::async_runtime::spawn(async move {
@@ -612,20 +563,9 @@ pub fn run() {
                     app.state::<Arc<McpController>>().stop_server();
                     app.state::<Arc<McpTunnelController>>().stop();
                 }
-                // Close the mobile relay rather than letting the socket die with
-                // the process, so paired clients see a clean shutdown. `stop`
-                // takes the runtime, so the second call in this arm is a no-op.
-                let _ = app
-                    .state::<crate::integration::bridge::BridgeController>()
-                    .stop();
                 #[cfg(not(any(target_os = "android", target_os = "ios")))]
                 app.state::<Arc<crate::core::telemetry::Telemetry>>()
                     .shutdown();
-            }
-            // Best-effort final push (bounded); only on Exit so it runs once.
-            if matches!(event, tauri::RunEvent::Exit) {
-                app.state::<crate::integration::sync::SyncService>()
-                    .flush_on_exit(app);
             }
         });
 }

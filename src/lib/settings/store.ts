@@ -51,7 +51,6 @@ import {
 	type PaperReaderSettings,
 	type PdfAskSettings,
 } from "@/lib/settings/types";
-import { surfaces } from "@/lib/surfaces";
 import { DEFAULT_TRANSLATE_SETTINGS } from "@/lib/translate/defaults";
 import { stripUnknownTranslatePlaceholders } from "@/lib/translate/prompt";
 import {
@@ -330,11 +329,6 @@ function normalizePartial(
 	} else {
 		merged.easyScholarKey = parsed.easyScholarKey.trim();
 	}
-	if (typeof parsed.zhihuAccessSecret !== "string") {
-		merged.zhihuAccessSecret = DEFAULT_SETTINGS.zhihuAccessSecret;
-	} else {
-		merged.zhihuAccessSecret = parsed.zhihuAccessSecret.trim();
-	}
 	if (typeof parsed.networkProxyEnabled !== "boolean") {
 		merged.networkProxyEnabled = DEFAULT_SETTINGS.networkProxyEnabled;
 	}
@@ -422,21 +416,6 @@ function normalizePartial(
 	}
 	if (typeof parsed.telemetryEnabled !== "boolean") {
 		merged.telemetryEnabled = DEFAULT_SETTINGS.telemetryEnabled;
-	}
-	if (typeof parsed.plazaEnabled !== "boolean") {
-		merged.plazaEnabled = DEFAULT_SETTINGS.plazaEnabled;
-	}
-	if (!surfaces.plaza) merged.plazaEnabled = false;
-	if (!Array.isArray(parsed.plazaHiddenSources)) {
-		merged.plazaHiddenSources = DEFAULT_SETTINGS.plazaHiddenSources;
-	} else {
-		merged.plazaHiddenSources = [
-			...new Set(
-				parsed.plazaHiddenSources.filter(
-					(id): id is string => typeof id === "string",
-				),
-			),
-		];
 	}
 	if (typeof parsed.onboardingDone !== "boolean") {
 		merged.onboardingDone = DEFAULT_SETTINGS.onboardingDone;

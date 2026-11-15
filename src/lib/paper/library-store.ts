@@ -186,7 +186,6 @@ export async function refreshLibrary(): Promise<void> {
 
 /**
  * Replace a paper's tags in catalog and update the local library row.
- * Works for both local and remote vaults.
  */
 export async function setLibraryPaperTags(
 	vaultPath: string,

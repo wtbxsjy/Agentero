@@ -7,7 +7,6 @@ import {
 } from "@/lib/agent";
 import { errorText } from "@/lib/agent/chat-state";
 import { notifyError } from "@/lib/core/notify";
-import { isRemoteVaultHandle } from "@/lib/vault/remote/remote-vault";
 
 /**
  * Trust can be granted outside Agentero (Pi's own TUI prompt or a settings
@@ -39,7 +38,7 @@ export function usePiProjectTrust({
 	template: AgentTemplate | null | undefined;
 }) {
 	const key =
-		template === "pi" && agentId && vaultPath && !isRemoteVaultHandle(vaultPath)
+		template === "pi" && agentId && vaultPath
 			? `${agentId}\0${vaultPath}`
 			: null;
 	const [status, setStatus] = useState<Status | null>(null);

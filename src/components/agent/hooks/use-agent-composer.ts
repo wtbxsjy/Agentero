@@ -17,7 +17,6 @@ import {
 } from "react";
 import type { ComposerInlineInputHandle } from "@/components/agent/composer/composer-inline-input";
 import type { AgentPanelRefs } from "@/components/agent/hooks/use-agent-panel-context";
-import { usePlazaMentionSource } from "@/components/agent/hooks/use-plaza-mention-source";
 import {
 	useSelectionStore,
 	useVisualContextStore,
@@ -65,7 +64,6 @@ import {
 	mentionPathHasChildren,
 	pushRecentMentionPath,
 } from "@/lib/agent/mention";
-import { isPlazaCollectionPath } from "@/lib/agent/plaza-mention";
 import { stripPromptEnvelopeForDisplay } from "@/lib/agent/prompt-display";
 import {
 	removeSelection,
@@ -94,7 +92,6 @@ import {
 } from "@/lib/core/file-accept";
 import { isImeKeyboardEvent } from "@/lib/core/ime";
 import { toSafeDisposer } from "@/lib/core/tauri-events";
-import { draggedFeedMentionPath, isFeedItemDrag } from "@/lib/plaza/feed-drag";
 import {
 	collectUserPromptTexts,
 	nextHistoryIndexOnDown,
@@ -387,33 +384,18 @@ export function useAgentComposer({
 	const mentionQueryRaw = mentionMatch?.[2] ?? "";
 	const mentionQuery = mentionQueryRaw.toLocaleLowerCase();
 
-	const plazaMentionEntries = usePlazaMentionSource(vaultPath);
+	const mentionCandidates = useMemo(
+		() =>
+			buildMentionCandidatePaths({
+				markdownPaths: vaultMarkdownPaths,
+				directoryPaths: vaultDirectoryPaths,
+				paperPaths: vaultPaperPaths,
+			}),
+		[vaultDirectoryPaths, vaultMarkdownPaths, vaultPaperPaths],
+	);
 
-	const mentionCandidates = useMemo(() => {
-		const vaultPaths = buildMentionCandidatePaths({
-			markdownPaths: vaultMarkdownPaths,
-			directoryPaths: vaultDirectoryPaths,
-			paperPaths: vaultPaperPaths,
-		});
-		// Plaza entries are virtual leaves (arXiv Daily / Feeds); they surface
-		// on typed title queries or as recents, never in the shallow tree.
-		return [...vaultPaths, ...plazaMentionEntries.map((entry) => entry.path)];
-	}, [
-		plazaMentionEntries,
-		vaultDirectoryPaths,
-		vaultMarkdownPaths,
-		vaultPaperPaths,
-	]);
-
-	/** Vault paper titles + plaza titles/sources, both searchable via `@`. */
-	const mentionSearchLabels = useMemo(() => {
-		if (plazaMentionEntries.length === 0) return mentionLabelsByPath;
-		const map = new Map(mentionLabelsByPath);
-		for (const entry of plazaMentionEntries) {
-			map.set(entry.path, `${entry.title} ${entry.sourceLabel}`);
-		}
-		return map;
-	}, [mentionLabelsByPath, plazaMentionEntries]);
+	/** Vault paper titles, searchable via `@`. */
+	const mentionSearchLabels = mentionLabelsByPath;
 
 	const [recentMentionPaths, setRecentMentionPaths] = useState<string[]>(() => {
 		try {
@@ -456,14 +438,6 @@ export function useAgentComposer({
 		}
 	}, [composerMenuDismissed, mentionMatch]);
 
-	/** Whole-list entries (the arXiv Daily collection) stay visible at `@`. */
-	const pinnedMentionPaths = useMemo(() => {
-		const pinned = plazaMentionEntries
-			.map((entry) => entry.path)
-			.filter(isPlazaCollectionPath);
-		return pinned.length ? pinned : null;
-	}, [plazaMentionEntries]);
-
 	const mentionOptions = useMemo(() => {
 		if (!mentionMatch) return [];
 		return filterMentionOptions({
@@ -473,7 +447,6 @@ export function useAgentComposer({
 			recent: recentMentionPaths,
 			labelsByPath: mentionSearchLabels,
 			browseRoot: mentionBrowseRoot,
-			pinned: pinnedMentionPaths,
 			limit: 8,
 		});
 	}, [
@@ -483,7 +456,6 @@ export function useAgentComposer({
 		mentionMatch,
 		mentionQuery,
 		mentionSearchLabels,
-		pinnedMentionPaths,
 		recentMentionPaths,
 	]);
 
@@ -665,13 +637,6 @@ export function useAgentComposer({
 	 * (those are FileUIPart blobs; ACP context is path-based).
 	 */
 	const handleComposerDragOver = useCallback((e: ReactDragEvent) => {
-		// Plaza feed cards carry a mention path, never a Vault path; taking the
-		// drop here turns the card into the same chip "add to chat" produces.
-		if (isFeedItemDrag(e.dataTransfer)) {
-			e.preventDefault();
-			e.dataTransfer.dropEffect = "copy";
-			return;
-		}
 		const types = dataTransferTypes(e.dataTransfer);
 		if (!types.length) return;
 		const hasText = types.includes("text/plain") || types.includes("Text");
@@ -689,13 +654,6 @@ export function useAgentComposer({
 
 	const handleComposerDrop = useCallback(
 		(e: ReactDragEvent) => {
-			const feedPath = draggedFeedMentionPath(e.dataTransfer);
-			if (feedPath) {
-				e.preventDefault();
-				e.stopPropagation();
-				attachContextPaths([feedPath]);
-				return;
-			}
 			// PDF drops belong to the app-wide importer, even when the composer
 			// receives a text/plain path alongside the file payload.
 			if (

@@ -24,7 +24,6 @@ pub mod paths;
 pub mod perf;
 pub mod plugins;
 pub mod process;
-pub mod remote;
 pub mod sqlite;
 pub mod time;
 pub mod usage;

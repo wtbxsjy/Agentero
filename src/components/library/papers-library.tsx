@@ -60,7 +60,6 @@ import {
 import { allowsNativeSelectAll } from "@/lib/shell/native-select-all";
 import { joinVaultPath } from "@/lib/vault";
 import { trashPathsAndNotify } from "@/lib/vault/actions";
-import { isRemoteVaultHandle } from "@/lib/vault/remote/remote-vault";
 
 export type PapersLibraryProps = {
 	/** Full catalog list (or pre-scoped); further filtered by `scopePath`. */
@@ -191,8 +190,7 @@ export function PapersLibrary({
 		onOpenPaper,
 	});
 
-	const canEditMeta =
-		Boolean(vaultPath) && !isRemoteVaultHandle(vaultPath ?? "");
+	const canEditMeta = Boolean(vaultPath);
 
 	/** Folder scope first (cheap path-prefix filter on in-memory catalog). */
 	const scopedPapers = useMemo(
@@ -264,8 +262,7 @@ export function PapersLibrary({
 		[columns, onColumnsChange],
 	);
 
-	const canSyncPublication =
-		Boolean(vaultPath) && !isRemoteVaultHandle(vaultPath);
+	const canSyncPublication = Boolean(vaultPath);
 	const handleSyncPublication = useCallback(() => {
 		void syncLibraryPublication(vaultPath, scopedPapers);
 	}, [vaultPath, scopedPapers]);

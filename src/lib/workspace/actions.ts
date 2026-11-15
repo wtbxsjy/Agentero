@@ -10,7 +10,6 @@
 
 export {
 	activatePaperWithNotes,
-	closePlazaTabs,
 	closeTab,
 	closeTabOrWindow,
 	closeTabsUnderPath,
@@ -24,8 +23,6 @@ export {
 	openPaper,
 	openPaperNotes,
 	openPath,
-	openPlazaSource,
-	openRemoteArxivPaper,
 	openTab,
 	openTabNotes,
 	rehydrateMisclassifiedPaperTabs,

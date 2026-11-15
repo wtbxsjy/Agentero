@@ -1,69 +1,34 @@
-//! Tauri commands for arXiv daily recommendation.
+//! Liveness probe for the user's embedding endpoint (Settings → Agent).
+//!
+//! The endpoint itself backs semantic features such as citing-paper ranking.
 
-use super::{
-    last_result, probe_embedding_endpoint, recommend, ProbeEmbeddingResult, RecommendResult,
-    ERR_NO_EMBEDDING,
-};
-use crate::app::command_util::try_vault;
-use crate::core::blocking::run_blocking;
 use crate::core::error::{map_err, ApiResult, AppError};
+use crate::core::http;
+use crate::features::paper::discovery::embeddings;
 use crate::features::system::settings::AppSettingsStore;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use std::time::Duration;
 use tauri::{AppHandle, Manager};
 
-#[derive(Debug, Deserialize, specta::Type)]
+/// Shorter than a real embed because the probe only needs the response shape.
+const PROBE_TIMEOUT: Duration = Duration::from_secs(15);
+
+/// Marker error the UI turns into "configure an embedding model first".
+pub const ERR_NO_EMBEDDING: &str = "recommend.no_embedding";
+/// Marker error the UI turns into "embedding endpoint is unreachable".
+pub const ERR_PROBE_FAILED: &str = "recommend.probe_failed";
+
+/// Single token sent for a liveness probe — cheap, and any real embedding
+/// provider must accept an input of this length.
+const PROBE_INPUT: &str = "hi";
+
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct RecommendArxivArgs {
-    pub vault_path: String,
-    /// Categories to fetch; falls back to the last run, then the defaults.
-    #[serde(default)]
-    pub categories: Option<Vec<String>>,
-    #[serde(default)]
-    pub top_n: Option<usize>,
-    /// Recompute even when today's stored run covers the same categories.
-    #[serde(default)]
-    pub force: bool,
-}
-
-/// Rank today's arXiv papers against the Vault library.
-///
-/// Reuses the stored same-day run unless `force` is set, so the vault-open
-/// prewarm and repeated page opens stay free.
-#[tauri::command]
-#[specta::specta]
-pub async fn recommend_arxiv(
-    app: AppHandle,
-    args: RecommendArxivArgs,
-) -> ApiResult<RecommendResult> {
-    let vault = try_vault!(&args.vault_path);
-    // Read managed state before awaiting: the guard must not cross an await.
-    let embedding = app.state::<AppSettingsStore>().embedding_config();
-    match recommend(&vault, args.categories, args.top_n, args.force, embedding).await {
-        Ok(result) => ApiResult::ok(result),
-        Err(e) => map_err(e),
-    }
-}
-
-#[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct RecommendArxivLastArgs {
-    pub vault_path: String,
-}
-
-/// Stored recommendation run, if any — lets the page render before refreshing.
-#[tauri::command]
-#[specta::specta]
-pub async fn recommend_arxiv_last(
-    args: RecommendArxivLastArgs,
-) -> ApiResult<Option<RecommendResult>> {
-    run_blocking(move || {
-        let vault = try_vault!(&args.vault_path);
-        match last_result(&vault) {
-            Ok(result) => ApiResult::ok(result),
-            Err(e) => map_err(e),
-        }
-    })
-    .await
+pub struct ProbeEmbeddingResult {
+    /// Dimensionality reported by the embedding endpoint for the probe input.
+    pub dim: usize,
+    /// Wall-clock latency of the probe request in milliseconds.
+    pub latency_ms: u64,
 }
 
 #[derive(Debug, Default, Deserialize, specta::Type)]
@@ -79,6 +44,43 @@ pub struct ProbeEmbeddingArgs {
     /// Override the stored model. Empty / missing keeps the stored value.
     #[serde(default)]
     pub model: Option<String>,
+}
+
+/// Liveness probe: POST one tiny input, confirm the endpoint actually serves
+/// `/embeddings`, and report the returned dimensionality + latency.
+///
+/// Returns `AppError::message(ERR_PROBE_FAILED)` for any failure so the
+/// settings pane can show the endpoint as unreachable.
+pub async fn probe_embedding_endpoint(
+    base_url: &str,
+    api_key: Option<&str>,
+    model: &str,
+) -> Result<ProbeEmbeddingResult, AppError> {
+    let endpoint = embeddings::resolve_endpoint(base_url);
+    if endpoint.is_empty() {
+        return Err(AppError::message(format!(
+            "{ERR_PROBE_FAILED}: empty base URL"
+        )));
+    }
+    let client = http::client_builder()
+        .timeout(PROBE_TIMEOUT)
+        .build()
+        .map_err(|e| AppError::message(format!("{ERR_PROBE_FAILED}: {e}")))?;
+    let inputs = [PROBE_INPUT.to_string()];
+    let started = std::time::Instant::now();
+    let vectors = embeddings::embed_batch(&client, &endpoint, api_key, model, &inputs)
+        .await
+        .map_err(|e| AppError::message(format!("{ERR_PROBE_FAILED}: {e}")))?;
+    let dim = vectors.first().map(Vec::len).unwrap_or(0);
+    if dim == 0 {
+        return Err(AppError::message(format!(
+            "{ERR_PROBE_FAILED}: response has no embedding"
+        )));
+    }
+    Ok(ProbeEmbeddingResult {
+        dim,
+        latency_ms: started.elapsed().as_millis() as u64,
+    })
 }
 
 /// Liveness check for the user's configured embedding endpoint.

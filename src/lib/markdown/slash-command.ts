@@ -14,7 +14,6 @@ import {
 } from "platejs";
 import { COLUMN_GROUP_KEY, COLUMN_KEY } from "@/lib/markdown/columns";
 import { insertEditorLinkTemplate } from "@/lib/markdown/editor-context-menu";
-import { surfaces } from "@/lib/surfaces";
 import { findWikiCompletionTrigger } from "@/lib/wiki/completion";
 
 export type SlashCommandId =
@@ -30,13 +29,11 @@ export type SlashCommandId =
 	| "internalLink"
 	| "externalLink"
 	| "callout"
-	| "columns"
-	| "researchTable";
+	| "columns";
 
 export type SlashCommand = {
 	id: SlashCommandId;
 	labelKey:
-		| "researchTable.insert"
 		| "slashCommand.commands.heading1"
 		| "slashCommand.commands.heading2"
 		| "slashCommand.commands.heading3"
@@ -68,11 +65,6 @@ export function isSlashCommandSubmitKey(key: string): key is "Enter" | "Tab" {
 }
 
 const SLASH_COMMANDS: readonly SlashCommand[] = [
-	{
-		id: "researchTable",
-		labelKey: "researchTable.insert",
-		keywords: ["table", "data", "result", "eln", "表格", "数据", "实验"],
-	},
 	{
 		id: "heading1",
 		labelKey: "slashCommand.commands.heading1",
@@ -184,9 +176,6 @@ export function filterSlashCommands(
 ): SlashCommand[] {
 	const normalized = query.trim().toLocaleLowerCase();
 	return SLASH_COMMANDS.filter((command) => {
-		if (command.id === "researchTable" && !surfaces.researchTable) {
-			return false;
-		}
 		if (command.id === "callout" && options.allowCallout === false) {
 			return false;
 		}
@@ -386,12 +375,6 @@ export function executeSlashCommand(
 	consumeSlashCommand(editor, live.trigger);
 
 	switch (commandId) {
-		case "researchTable":
-			editor.tf.replaceNodes(
-				{ type: "research_table", tablePath: "", children: [{ text: "" }] },
-				{ at: live.blockPath },
-			);
-			return true;
 		case "heading1":
 			applyBlockType(editor, editor.getType(KEYS.h1));
 			break;

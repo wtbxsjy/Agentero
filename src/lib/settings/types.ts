@@ -155,8 +155,6 @@ export type AppSettings = {
 	// General
 	/** EasyScholar key for journal ranking and impact-factor lookups. */
 	easyScholarKey: string;
-	/** 知乎开放平台 Access Secret（内置「知乎」Agent 的直答 / 检索凭证）。 */
-	zhihuAccessSecret: string;
 	/** EZProxy/WebVPN prefix for paywalled PDF fallback ("" disables). */
 	institutionProxyPrefix: string;
 	/** Session cookie for institution proxy requests. */
@@ -267,16 +265,6 @@ export type AppSettings = {
 	 * Default **on**; takes effect from the next launch.
 	 */
 	telemetryEnabled: boolean;
-	/**
-	 * Plaza discovery sources (Cool Papers, feeds, Skill picks) in the sidebar.
-	 * Default **on**. Off hides the node and does not mount Plaza panels.
-	 */
-	plazaEnabled: boolean;
-	/**
-	 * Plaza source ids hidden from the sidebar tree (e.g. `"cool-papers"`).
-	 * Right-click the Plaza parent row to toggle sources. Empty = show all.
-	 */
-	plazaHiddenSources: string[];
 	/**
 	 * First-run setup wizard completed (welcome → theme → agent →
 	 * translate/layout → create vault / Zotero import). `false` shows the

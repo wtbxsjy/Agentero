@@ -10,7 +10,6 @@ mod doctor;
 mod interaction;
 mod pi;
 mod registry;
-mod remote;
 mod session;
 
 use serde::Serialize;
@@ -27,5 +26,4 @@ pub use doctor::*;
 pub use interaction::*;
 pub use pi::*;
 pub use registry::*;
-pub use remote::*;
 pub use session::*;

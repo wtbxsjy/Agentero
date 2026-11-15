@@ -2,7 +2,7 @@
 
 ## 布局
 
-- **左栏**：文件树 + Paper Info（选中论文时显示，或在 Library 中悬停某行时预览该论文；切换到非论文文档时自动隐藏；无卡片容器、常驻 collapsible，点标题行即可折叠，高度 200ms 过渡；上边缘可拖拽调整高度，`preserve-pixel-size`；内容区可滚动但不显示滚动条；文件树多选时复用固定高度标题栏显示批量操作，不压缩或遮挡树；arXiv 论文在资源按钮区显示两行外链：首行 arXiv PDF、alphaXiv、魔搭论文解读与知乎提问入口，次行 GitHub（填写 `code_repo` 时）、Hugging Face 论文页（由 arXiv 标识派生）与 OpenReview；窄宽度下资源按钮退化为仅图标；元信息修改入口位于 Info 底部）。Cool Papers / Kimi 解析入口在论文 `NOTES.md` 的 Markdown 工具栏，不在 Paper Info。左右栏共用 `bg-sidebar` 材质，与中间内容区分层。
+- **左栏**：文件树 + Paper Info（选中论文时显示，或在 Library 中悬停某行时预览该论文；切换到非论文文档时自动隐藏；无卡片容器、常驻 collapsible，点标题行即可折叠，高度 200ms 过渡；上边缘可拖拽调整高度，`preserve-pixel-size`；内容区可滚动但不显示滚动条；文件树多选时复用固定高度标题栏显示批量操作，不压缩或遮挡树；arXiv 论文在资源按钮区显示两行外链：首行 arXiv PDF、alphaXiv 与魔搭论文解读，次行 GitHub（填写 `code_repo` 时）、Hugging Face 论文页（由 arXiv 标识派生）与 OpenReview；窄宽度下资源按钮退化为仅图标；元信息修改入口位于 Info 底部）。Cool Papers / Kimi 解析入口在论文 `NOTES.md` 的 Markdown 工具栏，不在 Paper Info。左右栏共用 `bg-sidebar` 材质，与中间内容区分层。
 - **中间**：无 Vault 欢迎页；有 Vault 时为全局 Dockview（见 [workspace.md](workspace.md)）。Dock 页签条略软于实色 muted，活动页签用 `background` 抬起；页签按下有轻 opacity 反馈。
 - **右栏**（可选）：Agent / 批注（`bg-sidebar`，与左栏同色）。
   - 参考文献与版面解析已移入 PDF 阅读器左侧浮层面板（见 [pdf.md](pdf.md)），不再占用右栏。
@@ -100,8 +100,6 @@ macOS 原生菜单在启动及设置保存后读取 `shortcutOverrides`，菜单
 上表列出默认绑定；「设置 → 快捷键」支持修改、清除与恢复，工具栏提示及原生菜单随配置更新。
 
 前端快捷键绑定：`src/lib/shell/shortcuts.ts`；macOS 原生全屏由 `src-tauri/src/app/menu.rs` 的预定义菜单项处理。PDF、Markdown 编辑器及查找替换栏共用 `isFindShortcut`，macOS 仅 `⌘F`（不含 Ctrl / Shift / Alt）触发搜索，避免 `⌃⌘F` 误打开搜索或抢走搜索栏焦点；Windows/Linux 保留 `Ctrl+F`。Markdown 源码视图由 CodeMirror 处理查找与替换。文案 i18n 见 [settings.md](settings.md)。
-
-桌面设置里的「插件」入口、命令面板里的开发插件加载，以及打开 Vault 后的自动激活目前先隐藏。开关在 `src/lib/plugins/visibility.ts` 的 `pluginsSurfaceEnabled`；设置页、命令和宿主启动代码都还在，后端安装与执行路径未删。改回 `true` 后，「设置 → 插件」继续管理本地安装、按 Vault 授权及配置。插件通过命令 registry 和三个菜单贡献位接入；菜单点击传入对象上下文，切换 Vault 时撤销注册和在途调用。开发版另提供临时只读目录加载。详见 [本地插件系统](../backend/plugins.md)。
 
 命令与菜单共享的 `MenuContext` 定义在 `src/lib/shell/commands/types.ts`，菜单模块保留类型再导出供现有调用方使用。类型模块不引用菜单实现，避免与命令 registry 形成循环依赖；`pnpm deps:check` 会检查这类依赖环。
 

@@ -113,7 +113,6 @@ const handlers = vi.hoisted(() => ({
 	lookupBatch: vi.fn(async () => undefined),
 	skill: vi.fn(async () => undefined),
 	localPdf: vi.fn(async () => undefined),
-	plaza: vi.fn(async () => undefined),
 	coolNotes: vi.fn(async () => undefined),
 }));
 
@@ -122,10 +121,6 @@ vi.mock("@/lib/paper/import-actions", () => ({
 	runLookupBatchImportJob: handlers.lookupBatch,
 	runSkillImportJob: handlers.skill,
 	runLocalPdfImportJob: handlers.localPdf,
-}));
-
-vi.mock("@/lib/plaza/import", () => ({
-	runPlazaImportJob: handlers.plaza,
 }));
 
 vi.mock("@/lib/paper/coolpapers", () => ({
@@ -180,17 +175,17 @@ describe("import job executor", () => {
 		startJobCenterExecutorListener();
 		await flush();
 
-		offer("job-import-plaza", "import", { mode: "plaza", id: "abc" });
+		offer("job-import-coolnotes", "import", { mode: "coolNotes", id: "abc" });
 		await flush();
 
-		expect(handlers.plaza).toHaveBeenCalledTimes(1);
+		expect(handlers.coolNotes).toHaveBeenCalledTimes(1);
 		expect(handlers.lookup).not.toHaveBeenCalled();
-		const ctx = handlers.plaza.mock.calls[0]?.[0];
-		expect(ctx.jobId).toBe("job-import-plaza");
+		const ctx = handlers.coolNotes.mock.calls[0]?.[0];
+		expect(ctx.jobId).toBe("job-import-coolnotes");
 		expect(ctx.paperPath).toBe("papers");
-		expect(reportCalls("job-import-plaza")).toEqual([
+		expect(reportCalls("job-import-coolnotes")).toEqual([
 			{
-				jobId: "job-import-plaza",
+				jobId: "job-import-coolnotes",
 				progress: 100,
 				phase: null,
 				error: null,

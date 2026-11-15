@@ -20,9 +20,10 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { commands } from "@/lib/core/bindings";
+import { callApi } from "@/lib/core/ipc";
 import { isSecretMask } from "@/lib/core/secret-mask";
 import { cn } from "@/lib/core/utils";
-import { probeEmbedding } from "@/lib/recommend";
 import type { AppSettings, EmbeddingSettings } from "@/lib/settings";
 
 export function AgentEmbeddingBlock({
@@ -85,11 +86,15 @@ export function AgentEmbeddingBlock({
 			// Skip the apiKey override when the user has not typed a new key
 			// (empty or Host `*` mask) so the Host falls back to the stored secret.
 			const apiKey = embDraft.apiKey.trim();
-			await probeEmbedding({
-				baseUrl,
-				apiKey: apiKey && !isSecretMask(apiKey) ? apiKey : undefined,
-				model,
-			});
+			await callApi(
+				() =>
+					commands.probeEmbedding({
+						baseUrl,
+						apiKey: apiKey && !isSecretMask(apiKey) ? apiKey : null,
+						model,
+					}),
+				{ fallback: "recommend.probe_failed" },
+			);
 			setEmbProbeStatus("ok");
 		} catch {
 			setEmbProbeStatus("failed");
@@ -117,7 +122,7 @@ export function AgentEmbeddingBlock({
 
 	return (
 		<>
-			{/* Embedding endpoint (BYOK) for arxiv daily recommendation & semantic features. */}
+			{/* Embedding endpoint (BYOK) for semantic features such as citing-paper ranking. */}
 			<div className="mb-1.5 mt-4 flex items-center justify-between gap-2">
 				<SettingsSectionLabel className="mb-0 px-0">
 					{t("agent.embedding.section")}

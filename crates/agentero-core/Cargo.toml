@@ -32,13 +32,11 @@ specta = { version = "2.0.0-rc.22", features = ["derive", "chrono"] }
 # Search hit DTOs are returned both over Tauri IPC (specta) and MCP (schemars).
 schemars = "1"
 which = "7"
-# Migrated domain features (import asset unpack, feeds body extraction,
+# Migrated domain features (import asset unpack,
 # wiki/vault walks, citation fingerprints, scholar API queries, …).
-feed-rs = "2.3"
 flate2 = "1.1.9"
 tar = "0.4.46"
 htmd = "0.5.4"
-dom_smoothie = "0.18"
 pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
 bitflags = "2"
 sha2 = "0.11.0"
@@ -52,9 +50,6 @@ url = "2"
 uuid = { version = "1", features = ["v4", "serde"] }
 # Used by lookup batch import (all platforms).
 futures-util = "0.3.33"
-# Cross-process sync-pass lock in `features::sync::lock` (desktop Host + CLI
-# on the same vault). flock / LockFileEx; no stale-lock recovery needed.
-fs2 = "0.4"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt", "fs"] }

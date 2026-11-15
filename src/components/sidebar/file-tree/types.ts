@@ -1,8 +1,7 @@
 import type { PaperLibraryRow } from "@/lib/paper";
-import type { PlazaSource } from "@/lib/plaza";
 import type { FileNode } from "@/lib/vault";
 
-export type TreeCreateKind = "file" | "folder" | "table" | "experiment";
+export type TreeCreateKind = "file" | "folder";
 
 export type TreeCreateDraft = {
 	kind: TreeCreateKind;
@@ -20,8 +19,6 @@ export type TreeRenameDraft = {
 /** One flattened, windowable tree row in display order. */
 export type FlatRow =
 	| { key: string; kind: "trash" }
-	| { key: string; kind: "plaza" }
-	| { key: string; kind: "plazaSource"; source: PlazaSource }
 	| {
 			key: string;
 			kind: "zoteroCollectionReference";

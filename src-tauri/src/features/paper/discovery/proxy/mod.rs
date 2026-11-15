@@ -1,4 +1,4 @@
-//! Shared plumbing for the 广场 site proxies.
+//! Shared plumbing for the site proxies (arXiv reader).
 //!
 //! Each embedded source is served under its own private URI scheme so the panel
 //! frame is same-origin with it: only then can links be retargeted to navigate in
@@ -11,10 +11,6 @@
 
 #[cfg(feature = "desktop")]
 pub mod arxiv;
-#[cfg(feature = "desktop")]
-pub mod modelscope;
-#[cfg(feature = "desktop")]
-pub mod pwc;
 
 use tauri::http::{header, Response, StatusCode};
 

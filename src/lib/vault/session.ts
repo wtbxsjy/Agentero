@@ -4,7 +4,6 @@ import { callResult } from "@/lib/core/ipc";
 import { perfActive } from "@/lib/core/perf";
 import { readJsonStorage, writeJsonStorage } from "@/lib/core/storage";
 import { isTauri } from "@/lib/core/tauri";
-import { isRemoteVaultHandle } from "@/lib/vault/remote/remote-vault";
 
 /** Per-window vault (sessionStorage — isolated across ⌘N windows). */
 const SESSION_VAULT_KEY = "agentero-vault-path";
@@ -36,7 +35,6 @@ export function getLastVaultPath(): string | null {
 	try {
 		const last = localStorage.getItem(LAST_VAULT_KEY);
 		// Drop stale remote handles left by older builds (session no longer exists).
-		if (last && isRemoteVaultHandle(last)) return null;
 		return last;
 	} catch {
 		return null;
@@ -57,7 +55,7 @@ export function getSavedVaultPath(opts?: {
 	if (session) return session;
 	if (isFreshWindow()) return null;
 	if (opts?.allowRestore === false) return null;
-	// Cross-launch restore: local path only (remote needs SSH re-connect).
+	// Cross-launch restore of the last vault path.
 	return getLastVaultPath();
 }
 
@@ -70,8 +68,7 @@ export function getRecentVaults(): string[] {
 	}
 	if (!Array.isArray(parsed)) return [];
 	const list = parsed.filter(
-		(p): p is string =>
-			typeof p === "string" && p.length > 0 && !isRemoteVaultHandle(p),
+		(p): p is string => typeof p === "string" && p.length > 0,
 	);
 	// Self-heal: strip remote handles written by older builds.
 	if (list.length !== parsed.length) {
@@ -82,7 +79,7 @@ export function getRecentVaults(): string[] {
 
 export function rememberRecentVault(path: string): void {
 	const normalized = path.replace(/[\\/]+$/, "");
-	if (!normalized || isRemoteVaultHandle(normalized)) return;
+	if (!normalized) return;
 	const next = [
 		normalized,
 		...getRecentVaults().filter((p) => p.replace(/[\\/]+$/, "") !== normalized),
@@ -106,10 +103,8 @@ export function saveVaultPath(path: string | null): void {
 			// A perf run must not replace the user's last-opened vault.
 			if (perfActive()) return;
 			// Durable "last / recent local" only for real filesystem roots.
-			if (!isRemoteVaultHandle(path)) {
-				localStorage.setItem(LAST_VAULT_KEY, path);
-				rememberRecentVault(path);
-			}
+			localStorage.setItem(LAST_VAULT_KEY, path);
+			rememberRecentVault(path);
 		} else {
 			sessionStorage.removeItem(SESSION_VAULT_KEY);
 		}

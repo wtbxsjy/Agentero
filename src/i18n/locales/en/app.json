@@ -57,9 +57,7 @@
 		"tabNextInGroup": "Next Tab in Group",
 		"tabPrevInGroup": "Previous Tab in Group",
 		"exportAnnotatedPdf": "Export Annotated PDF",
-		"wandOpen": "Magic Wand (Import by ID)",
-		"pluginsLoadDevelopment": "Load development plugin…",
-		"pluginsUnloadDevelopment": "Unload development plugins"
+		"wandOpen": "Magic Wand (Import by ID)"
 	},
 	"titlebar": {
 		"showLeftSidebar": "Show left sidebar",
@@ -151,7 +149,6 @@
 	},
 	"vault": {
 		"openDesktopOnly": "Open vault is only available in the Tauri app.",
-		"remoteNoAutoLinkRepair": "Automatic link repair is unavailable for remote vaults.",
 		"externalRename": {
 			"title": "Repair links after external rename?",
 			"reviewTitle": "Review external rename repair",
@@ -188,20 +185,7 @@
 		"restoredVaultMissing": "The last vault no longer exists, please reopen it: {{path}}",
 		"switchVault": "Switch vault",
 		"openVaultButton": "Open vault…",
-		"openRemoteVaultButton": "Open remote…",
 		"createVaultButton": "Create vault",
-		"remoteDialogTitle": "Open remote vault (SSH)",
-		"remoteHostLabel": "SSH host",
-		"remoteHostPlaceholder": "gpu01 or user@host",
-		"remotePathLabel": "Remote vault path",
-		"remotePathPlaceholder": "/home/you/research-vault",
-		"remoteConnect": "Connect",
-		"remoteCancel": "Cancel",
-		"remoteConnecting": "Connecting…",
-		"remoteConnectFailed": "Failed to open remote vault",
-		"remoteBadge": "Remote",
-		"remoteNoFinder": "Reveal in Finder is not available for remote vaults.",
-		"remoteNoTerminal": "Open in Terminal is not available for remote vaults.",
 		"runTauriPrefix": "Run the app with",
 		"runTauriSuffix": "to open a vault.",
 		"skillsSeeded": "Installed {{count}} new skill(s): {{names}}",
@@ -218,15 +202,6 @@
 		"notFound": "Paper not found on Cool Papers; no notes were written",
 		"alreadyInNotes": "NOTES.md already contains this analysis; nothing was appended",
 		"appended": "Cool Papers analysis appended to NOTES.md"
-	},
-	"plazaImport": {
-		"taskTitle": "Import into library",
-		"failed": "Import failed",
-		"imported": "Imported: {{name}}",
-		"importedNoPdf": "Imported (no PDF retrieved): {{name}}",
-		"duplicate": "Already in the library: {{name}}",
-		"needsVault": "Open a vault first",
-		"missingId": "This paper has no source identifier and cannot be imported"
 	},
 	"tasks": {
 		"title": "Background Tasks",
@@ -289,12 +264,5 @@
 			"description": "If access is restricted, configure a proxy in settings and try again.",
 			"openSettings": "Open network settings"
 		}
-	},
-	"plugins": {
-		"chooseDirectory": "Load plugin — allow reading the current vault",
-		"failed": "Plugin operation failed",
-		"loaded": "Development plugin loaded",
-		"commandTitle": "{{title}}",
-		"suspended": "{{name}} was stopped after repeated failures. Re-enable it in Settings."
 	}
 }

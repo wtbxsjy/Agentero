@@ -189,14 +189,13 @@ const PROJECTED_JOB_KINDS: ReadonlySet<JobKind> = new Set([
 ]);
 
 /**
- * Import rows keep the icon their legacy row had (`search` for the magic wand
- * and 广场, `layout` for Cool Papers notes).
+ * Import rows keep the icon their legacy row had (`search` for the magic wand,
+ * `layout` for Cool Papers notes).
  */
 function importRowIcon(params: unknown): BackgroundTaskIcon {
 	switch (jobParams(params).mode) {
 		case "lookup":
 		case "lookupBatch":
-		case "plaza":
 			return "search";
 		case "coolNotes":
 			return "layout";
@@ -304,8 +303,6 @@ function importPanelTitle(params: unknown): string {
 			return i18n.t("sidebar:lookup.skillImportTask");
 		case "localPdf":
 			return i18n.t("app:tasks.importPdf");
-		case "plaza":
-			return i18n.t("app:plazaImport.taskTitle");
 		case "coolNotes":
 			return i18n.t("app:coolPapers.fetchTask");
 		case "lookupBatch":
@@ -329,8 +326,6 @@ function importPanelDetail(job: JobChangedSnapshot): string | undefined {
 				p.title?.trim().slice(0, 80) ||
 				(p.texts ? `${p.texts.length}` : undefined)
 			);
-		case "plaza":
-			return (p.title?.trim() || "").slice(0, 80) || undefined;
 		case "coolNotes":
 			return (
 				(p.title?.trim() || paperTaskLabel(job.paperPath) || "").slice(0, 80) ||

@@ -8,7 +8,6 @@ import { remarkObsidianCallout } from "@/lib/markdown/callout";
 import { remarkColumns } from "@/lib/markdown/columns";
 import { remarkPreserveHtml } from "@/lib/markdown/html";
 import { remarkImageGroup } from "@/lib/markdown/image-group";
-import { remarkResearchTable } from "@/lib/research-table/markdown";
 import { remarkWikiLinkLiteralPaths } from "@/lib/wiki/wikilink-model";
 
 /**
@@ -28,7 +27,6 @@ export const MARKDOWN_REMARK_PLUGINS = [
 	remarkObsidianCallout,
 	remarkImageGroup,
 	remarkDirective,
-	remarkResearchTable,
 	remarkColumns,
 	remarkPreserveHtml,
 ];
@@ -74,10 +72,7 @@ export function selectMarkdownRemarkPluginsForDeserialize(
 	if (source.includes("@")) plugins.push(remarkMention);
 	if (source.includes("[!")) plugins.push(remarkObsidianCallout);
 	if (source.includes("!")) plugins.push(remarkImageGroup);
-	if (hasColon) {
-		plugins.push(remarkDirective);
-		plugins.push(remarkResearchTable);
-	}
+	if (hasColon) plugins.push(remarkDirective);
 	if (source.includes("::")) plugins.push(remarkColumns);
 	plugins.push(remarkPreserveHtml);
 	return plugins as RemarkPluginList;

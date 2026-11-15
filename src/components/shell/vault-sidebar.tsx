@@ -5,7 +5,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { registerFileTreeHandle } from "@/components/shell/file-tree-registry";
 import {
 	FileTree,
@@ -46,7 +45,6 @@ import {
 	rescanLibraryPapers,
 } from "@/lib/paper/library-actions";
 import { setZoteroOpen, setZoteroSyncOpen } from "@/lib/shell/ui-store";
-import { surfaces } from "@/lib/surfaces";
 import {
 	joinVaultPath,
 	treeFindNode,
@@ -64,7 +62,6 @@ import {
 	emptyTrash,
 	movePathsTo,
 	openRecentVault,
-	openRemoteVault,
 	openVault,
 	pasteCutPaths,
 	removeRecent,
@@ -72,12 +69,10 @@ import {
 	startRenamePath,
 	trashPathsAndNotify,
 } from "@/lib/vault/actions";
-import { isRemoteVaultHandle } from "@/lib/vault/remote/remote-vault";
 import { loadDirChildren } from "@/lib/vault/store";
 import {
 	openPaper,
 	openPaperNotes,
-	openPlazaSource,
 	selectFileNode,
 	selectLibrary,
 	selectTrash,
@@ -103,11 +98,6 @@ const onImportLocalPdf = () => void importLocalPdf();
 const onOpenRecent = (p: string) => void openRecentVault(p);
 const onOpenVaultClick = () => void openVault();
 const onCreateVaultClick = () => void createNewVault();
-const onOpenRemoteVaultClick = (args: {
-	host: string;
-	user?: string;
-	remotePath: string;
-}) => void openRemoteVault(args);
 const onMigrateZotero = () => setZoteroOpen(true);
 const onSyncZotero = () => setZoteroSyncOpen(true);
 const onConfirmCreate = (name: string) => void confirmCreate(name);
@@ -140,7 +130,6 @@ export function VaultSidebar() {
 		registerFileTreeHandle(fileTreeRef.current);
 		return () => registerFileTreeHandle(null);
 	});
-	const { t } = useTranslation(["app", "sidebar"]);
 	const vaultPath = useVaultStore((s) => s.vaultPath);
 	const tree = useVaultStore((s) => s.tree);
 	const treeLoading = useVaultStore((s) => s.treeLoading);
@@ -253,11 +242,7 @@ export function VaultSidebar() {
 		<>
 			<div className="shrink-0">
 				<VaultSidebarHeader
-					title={
-						vaultPath && isRemoteVaultHandle(vaultPath)
-							? `${vaultDisplayName(vaultPath)} · ${t("app:vault.remoteBadge")}`
-							: vaultDisplayName(vaultPath)
-					}
+					title={vaultDisplayName(vaultPath)}
 					selection={treeSelectionHeader}
 					lookupParentDir={lookupParentDir}
 					onLookupSubmit={onLookupSubmit}
@@ -275,9 +260,6 @@ export function VaultSidebar() {
 					onRemoveRecent={removeRecent}
 					onOpenVault={onOpenVaultClick}
 					onCreateVault={onCreateVaultClick}
-					onOpenRemoteVault={
-						surfaces.remoteVault ? onOpenRemoteVaultClick : undefined
-					}
 					onMigrateZotero={onMigrateZotero}
 					onSyncZotero={onSyncZotero}
 				/>
@@ -309,7 +291,6 @@ export function VaultSidebar() {
 						onSelectFile={selectFileNode}
 						onSelectLibrary={selectLibrary}
 						onSelectTrash={selectTrash}
-						onSelectPlazaSource={openPlazaSource}
 						zoteroCollectionPapers={papers}
 						onOpenZoteroCollectionPaper={onOpenZoteroCollectionPaper}
 						onEmptyTrash={onEmptyTrash}
@@ -327,11 +308,7 @@ export function VaultSidebar() {
 						paperTreeSortMode={paperTreeSortMode}
 						onReadPaper={readPaper}
 						onOpenPaperNotes={openPaperNotes}
-						onEditPaperMeta={
-							vaultPath && !isRemoteVaultHandle(vaultPath)
-								? editPaperMetaFromTree
-								: undefined
-						}
+						onEditPaperMeta={vaultPath ? editPaperMetaFromTree : undefined}
 						onLoadDirChildren={loadDirChildren}
 					/>
 				</div>

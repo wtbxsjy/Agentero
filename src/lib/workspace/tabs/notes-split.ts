@@ -261,8 +261,7 @@ const SEED_SPECS: Record<SeedKind, SeedSpec> = {
 	},
 	text: {
 		owns: (tab, norm) =>
-			normalizeTabPath(tab.path) === norm &&
-			(tab.mode === "text" || tab.mode === "research-table"),
+			normalizeTabPath(tab.path) === norm && tab.mode === "text",
 		seed: "textSeed",
 		dirty: "textDirty",
 		key: "textKey",

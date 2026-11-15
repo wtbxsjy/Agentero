@@ -45,7 +45,6 @@ import {
 	pickCreateVaultDirectory,
 	pickVaultDirectory,
 	planVaultRename,
-	readVaultFile,
 	removeRecentVault,
 	removeTreeNode,
 	removeVaultPath,
@@ -57,15 +56,6 @@ import {
 	writeVaultFile,
 } from "@/lib/vault";
 import { normalizePathKey as pathKey } from "@/lib/vault/path";
-import {
-	clearRemoteSessionMeta,
-	isRemoteVaultHandle,
-	rememberRecentRemoteVault,
-	remoteConnect,
-	remoteDisconnect,
-	remoteSessionIdFromHandle,
-	saveRemoteSessionMeta,
-} from "@/lib/vault/remote/remote-vault";
 import { openInTerminal, revealInFileManager } from "@/lib/vault/reveal";
 import type { TreeCreateKind } from "@/lib/vault/store";
 import {
@@ -104,15 +94,6 @@ import { basenameOf } from "@/lib/workspace/tabs";
 import { isExcalidrawPath } from "@/lib/workspace/viewer";
 
 export async function activateVault(path: string): Promise<void> {
-	// Tear down previous remote session so work catalogs are flushed.
-	const prev = getVaultPath();
-	if (prev && isRemoteVaultHandle(prev) && prev !== path) {
-		const prevId = remoteSessionIdFromHandle(prev);
-		if (prevId) {
-			await remoteDisconnect(prevId);
-		}
-		clearRemoteSessionMeta();
-	}
 	bumpTreeGeneration();
 	setTree([]);
 	setTreeLoading(true);
@@ -132,10 +113,7 @@ export async function activateVault(path: string): Promise<void> {
 	clearVisualDrafts();
 	clearSelections();
 	refreshRecentVaults();
-	// Wiki rebuild needs local fs watcher semantics; remote is best-effort.
-	if (!isRemoteVaultHandle(path)) {
-		await rebuildWikiAndNotify(path);
-	}
+	await rebuildWikiAndNotify(path);
 }
 
 export async function openVault(): Promise<void> {
@@ -150,41 +128,6 @@ export async function openVault(): Promise<void> {
 		await activateVault(path);
 	} catch (e) {
 		notifyError(errorText(e));
-	} finally {
-		setVaultBusy(false);
-	}
-}
-
-export async function openRemoteVault(args: {
-	host: string;
-	user?: string;
-	remotePath: string;
-}): Promise<void> {
-	try {
-		if (!isTauri()) {
-			notifyError(i18n.t("app:errors.openVaultDesktopOnly"));
-			return;
-		}
-		setVaultBusy(true);
-		const info = await remoteConnect(args);
-		try {
-			await activateVault(info.vaultHandle);
-		} catch (error) {
-			await remoteDisconnect(info.sessionId);
-			throw error;
-		}
-		saveRemoteSessionMeta(info);
-		rememberRecentRemoteVault({
-			kind: "remote",
-			host: args.host,
-			user: args.user,
-			remotePath: args.remotePath,
-			label: info.displayName,
-		});
-	} catch (e) {
-		notifyError(
-			e instanceof Error ? e.message : i18n.t("app:vault.remoteConnectFailed"),
-		);
 	} finally {
 		setVaultBusy(false);
 	}
@@ -260,9 +203,7 @@ export function refreshAll(): void {
 	void (async () => {
 		await refreshTree(vaultPath);
 		// Wiki rebuild needs local fs semantics; a remote handle always fails.
-		if (!isRemoteVaultHandle(vaultPath)) {
-			await rebuildWikiAndNotify(vaultPath);
-		}
+		await rebuildWikiAndNotify(vaultPath);
 		await refreshLibrary();
 	})();
 }
@@ -278,10 +219,8 @@ export function seedVaultSkills(path: string): void {
 		try {
 			// A restored vault may have been moved/deleted since the path was
 			// persisted; never seed (and thus scaffold) a missing local path.
-			if (!isRemoteVaultHandle(path)) {
-				const { exists } = await import("@tauri-apps/plugin-fs");
-				if (!(await exists(path))) return;
-			}
+			const { exists } = await import("@tauri-apps/plugin-fs");
+			if (!(await exists(path))) return;
 			const result = await ensureVault(path, i18n.language);
 			const installed = seededSkillIdsFromCreated(result.created);
 			const updated = seededSkillIdsFromCreated(result.updated);
@@ -314,13 +253,9 @@ export function seedVaultSkills(path: string): void {
 
 /** ⌥⌘R — reveal selected vault path in Finder / Explorer. */
 export function revealSelectedInFinder(): void {
-	const { treeSelectedPath, vaultPath } = vaultStore.getState();
+	const { treeSelectedPath } = vaultStore.getState();
 	const path = treeSelectedPath;
 	if (!path || isLibraryVirtualPath(path) || isTrashVirtualPath(path)) return;
-	if (isRemoteVaultHandle(vaultPath) || isRemoteVaultHandle(path)) {
-		notifyWarning(i18n.t("app:vault.remoteNoFinder"));
-		return;
-	}
 	if (!isTauri()) {
 		notifyError(i18n.t("sidebar:fileTree.revealDesktopOnly"));
 		return;
@@ -336,13 +271,9 @@ export function revealSelectedInFinder(): void {
 
 /** ⌥⌘T — open system terminal at selected path (dir = self, file = parent). */
 export function openSelectedInTerminal(): void {
-	const { treeSelectedPath, vaultPath } = vaultStore.getState();
+	const { treeSelectedPath } = vaultStore.getState();
 	const path = treeSelectedPath;
 	if (!path || isLibraryVirtualPath(path) || isTrashVirtualPath(path)) return;
-	if (isRemoteVaultHandle(vaultPath) || isRemoteVaultHandle(path)) {
-		notifyWarning(i18n.t("app:vault.remoteNoTerminal"));
-		return;
-	}
 	if (!isTauri()) {
 		notifyError(i18n.t("sidebar:fileTree.openInTerminalDesktopOnly"));
 		return;
@@ -375,7 +306,6 @@ export async function trashPathsAndNotify(absPaths: string[]): Promise<void> {
 				p.startsWith(`${rootNorm}/`),
 		);
 	if (valid.length === 0) return;
-	if (!(await confirmEmbeddedTableDelete(vaultPath, valid))) return;
 	setVaultBusy(true);
 	trackInternalRenamePaths(valid, Number.POSITIVE_INFINITY);
 	try {
@@ -402,9 +332,7 @@ export async function trashPathsAndNotify(absPaths: string[]): Promise<void> {
 			setTreeSelectedPath(null);
 		}
 		await refreshTree(vaultPath);
-		if (!isRemoteVaultHandle(vaultPath)) {
-			await rebuildWikiAndNotify(vaultPath);
-		}
+		await rebuildWikiAndNotify(vaultPath);
 		await refreshLibrary();
 	} catch (e) {
 		notifyError(
@@ -432,9 +360,7 @@ export async function handleTrashChanged(): Promise<void> {
 	setTreeSelectedPath(null);
 	await refreshTree(vaultPath);
 	// Wiki rebuild needs local fs semantics; a remote handle always fails.
-	if (!isRemoteVaultHandle(vaultPath)) {
-		await rebuildWikiAndNotify(vaultPath);
-	}
+	await rebuildWikiAndNotify(vaultPath);
 	await refreshLibrary();
 }
 
@@ -552,10 +478,6 @@ export function cutSelectedPaths(rawPaths: string[]): void {
 	}
 	if (!isTauri()) {
 		notifyError(i18n.t("sidebar:fileTree.cutDesktopOnly"));
-		return;
-	}
-	if (isRemoteVaultHandle(vaultPath)) {
-		notifyWarning(i18n.t("sidebar:fileTree.remoteCutPasteDisabled"));
 		return;
 	}
 	const rootKey = pathKey(vaultPath);
@@ -755,10 +677,6 @@ export async function pasteCutPaths(
 		notifyError(i18n.t("sidebar:fileTree.pasteDesktopOnly"));
 		return [];
 	}
-	if (isRemoteVaultHandle(vaultPath)) {
-		notifyWarning(i18n.t("sidebar:fileTree.remoteCutPasteDisabled"));
-		return [];
-	}
 
 	const { cutPaths } = vaultStore.getState();
 	if (cutPaths.length === 0) return [];
@@ -785,9 +703,7 @@ export async function pasteCutPaths(
 		setCutPaths([...failed, ...blocked]);
 		await refreshTree(vaultPath);
 		await refreshLibrary();
-		if (!isRemoteVaultHandle(vaultPath)) {
-			await rebuildWikiAndNotify(vaultPath);
-		}
+		await rebuildWikiAndNotify(vaultPath);
 		if (failed.length > 0 || blocked.length > 0) {
 			notifyWarning(
 				i18n.t("sidebar:fileTree.pastedWithErrors", {
@@ -819,10 +735,6 @@ export async function dropMovePaths(
 		notifyError(i18n.t("sidebar:fileTree.moveDesktopOnly"));
 		return;
 	}
-	if (isRemoteVaultHandle(vaultPath)) {
-		notifyWarning(i18n.t("sidebar:fileTree.remoteCutPasteDisabled"));
-		return;
-	}
 
 	const { tree } = vaultStore.getState();
 	const dest = resolvePasteDestination(vaultPath, tree, targetPath);
@@ -841,9 +753,7 @@ export async function dropMovePaths(
 		);
 		await refreshTree(vaultPath);
 		await refreshLibrary();
-		if (!isRemoteVaultHandle(vaultPath)) {
-			await rebuildWikiAndNotify(vaultPath);
-		}
+		await rebuildWikiAndNotify(vaultPath);
 		if (failed.length > 0 || blocked.length > 0) {
 			notifyWarning(
 				i18n.t("sidebar:fileTree.movedWithErrors", {
@@ -863,10 +773,7 @@ export async function dropMovePaths(
 /** Start inline rename for a tree path. */
 export function startRenamePath(path: string): void {
 	const vaultPath = getVaultPath();
-	if (!vaultPath || isRemoteVaultHandle(vaultPath)) {
-		notifyWarning(i18n.t("app:vault.remoteNoAutoLinkRepair"));
-		return;
-	}
+	if (!vaultPath) return;
 	const fromRel = vaultRelativePath(vaultPath, path);
 	if (!fromRel) return;
 	setRenameDraft({ path, currentName: basenameOf(path) });
@@ -961,106 +868,6 @@ export async function confirmRenamePath(
 	}
 }
 
-async function tableIdOf(absPath: string): Promise<string | null> {
-	try {
-		const text = await readVaultFile(absPath);
-		const id = (JSON.parse(text) as { id?: unknown }).id;
-		return typeof id === "string" && id.trim() ? id : null;
-	} catch {
-		return null;
-	}
-}
-
-/**
- * Confirm before deleting a research table that notes embed.
- * A failed lookup reports the error and still allows the delete.
- */
-async function confirmEmbeddedTableDelete(
-	vaultPath: string,
-	absPaths: string[],
-): Promise<boolean> {
-	const { isResearchTablePath } = await import("@/lib/research-table/model");
-	const tables = absPaths.filter((path) => isResearchTablePath(path));
-	if (tables.length === 0) return true;
-	const { researchTableBacklinks } = await import(
-		"@/lib/research-table/catalog"
-	);
-	let count = 0;
-	for (const abs of tables) {
-		const rel = vaultRelativePath(vaultPath, abs);
-		if (!rel) continue;
-		try {
-			const id = await tableIdOf(abs);
-			const notes = await researchTableBacklinks({
-				vaultPath,
-				path: rel,
-				id: id ?? undefined,
-			});
-			count += notes.length;
-		} catch (error) {
-			notifyError(errorText(error));
-		}
-	}
-	if (count < 1) return true;
-	return window.confirm(
-		i18n.t("sidebar:fileTree.deleteTableConfirm", { count }),
-	);
-}
-
-async function writeExperimentPair(
-	vaultPath: string,
-	parent: string,
-	name: string,
-): Promise<void> {
-	const { createResearchTable, TABLE_SUFFIX } = await import(
-		"@/lib/research-table/model"
-	);
-	const { experimentFileStem, experimentNoteMarkdown } = await import(
-		"@/lib/markdown/experiment"
-	);
-	const stem = experimentFileStem(name);
-	const tableName = `${stem}${TABLE_SUFFIX}`;
-	const noteName = `${stem}.md`;
-	if (
-		!stem ||
-		!isValidVaultEntryName(tableName) ||
-		!isValidVaultEntryName(noteName)
-	) {
-		notifyError(i18n.t("sidebar:fileTree.invalidName"));
-		return;
-	}
-	const tableAbs = joinVaultPath(parent, tableName);
-	const noteAbs = joinVaultPath(parent, noteName);
-	if (await vaultPathExists(tableAbs)) {
-		notifyError(i18n.t("sidebar:fileTree.alreadyExists", { name: tableName }));
-		return;
-	}
-	if (await vaultPathExists(noteAbs)) {
-		notifyError(i18n.t("sidebar:fileTree.alreadyExists", { name: noteName }));
-		return;
-	}
-	const rel = vaultRelativePath(vaultPath, tableAbs);
-	if (!rel) {
-		notifyError(i18n.t("sidebar:fileTree.invalidName"));
-		return;
-	}
-	const table = createResearchTable(stem);
-	table.fields[0].name = i18n.t("editor:researchTable.name");
-	await writeVaultFile(tableAbs, `${JSON.stringify(table, null, 2)}\n`);
-	try {
-		await writeVaultFile(noteAbs, experimentNoteMarkdown(table.id, rel));
-	} catch (error) {
-		try {
-			await removeVaultPath(tableAbs);
-		} catch {
-			// The note error is the one the caller should see.
-		}
-		throw error;
-	}
-	await refreshTree(vaultPath);
-	openPath(noteAbs);
-}
-
 export function startCreate(kind: TreeCreateKind, parentPath: string): void {
 	if (!getVaultPath() || !isTauri()) {
 		notifyError(i18n.t("sidebar:fileTree.needsVault"));
@@ -1092,33 +899,21 @@ export async function confirmCreate(name: string): Promise<void> {
 	setCreateDraft(null);
 	try {
 		setVaultBusy(true);
-		if (kind === "experiment") {
-			await writeExperimentPair(vaultPath, createDraft.parentPath, trimmed);
-			return;
-		}
 		// Use vault-aware exists: local FS plugin cannot see `remote:<id>/…`.
 		if (await vaultPathExists(full)) {
 			notifyError(i18n.t("sidebar:fileTree.alreadyExists", { name: trimmed }));
 			return;
 		}
 		if (kind !== "folder") {
-			const { createResearchTable, isResearchTablePath, researchTableStem } =
-				await import("@/lib/research-table/model");
-			const table = isResearchTablePath(trimmed)
-				? createResearchTable(researchTableStem(trimmed))
-				: null;
-			if (table) table.fields[0].name = i18n.t("editor:researchTable.name");
-			const initialContent = table
-				? `${JSON.stringify(table, null, 2)}\n`
-				: isExcalidrawPath(trimmed)
-					? JSON.stringify({
-							type: "excalidraw",
-							version: 2,
-							source: "https://excalidraw.com",
-							elements: [],
-							appState: { collaborators: [] },
-						})
-					: "";
+			const initialContent = isExcalidrawPath(trimmed)
+				? JSON.stringify({
+						type: "excalidraw",
+						version: 2,
+						source: "https://excalidraw.com",
+						elements: [],
+						appState: { collaborators: [] },
+					})
+				: "";
 			await writeVaultFile(full, initialContent);
 			await refreshTree(vaultPath);
 			openPath(full);
@@ -1192,7 +987,7 @@ export async function migrateZoteroFromWelcome(): Promise<void> {
  */
 export function validateRestoredVault(): Promise<void> {
 	const restoredPath = getVaultPath();
-	if (!isTauri() || !restoredPath || isRemoteVaultHandle(restoredPath)) {
+	if (!isTauri() || !restoredPath) {
 		return Promise.resolve();
 	}
 	return ensureLocalFsScope(restoredPath)

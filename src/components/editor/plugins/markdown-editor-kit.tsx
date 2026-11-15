@@ -102,7 +102,6 @@ import { HtmlBlockPlugin } from "@/components/editor/plugins/html-plugin";
 import { ImageGroupPlugin } from "@/components/editor/plugins/image-group-plugin";
 import { LinkPlugin } from "@/components/editor/plugins/link-plugin";
 import { MarkdownKit } from "@/components/editor/plugins/markdown-kit";
-import { ResearchTablePlugin } from "@/components/editor/plugins/research-table-plugin";
 import { WikiBlockIdPlugin } from "@/components/editor/plugins/wiki-block-id-plugin";
 import { WikiLinkPlugin } from "@/components/editor/plugins/wikilink-plugin";
 import { insertBreakAfterHorizontalRule } from "@/lib/markdown/block-selection";
@@ -165,7 +164,6 @@ export const MarkdownEditorKit = [
 	ColumnGroupPlugin,
 	ColumnPlugin,
 	HtmlBlockPlugin,
-	ResearchTablePlugin,
 	HorizontalRulePlugin.configure({
 		inputRules: [
 			HorizontalRuleRules.markdown({ variant: "-" }),

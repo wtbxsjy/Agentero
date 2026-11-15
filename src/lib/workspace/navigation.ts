@@ -18,9 +18,6 @@ import {
 	notesPathForPaper,
 	type PaperMetadata,
 	paperDirFromPath,
-	type RemotePaperItem,
-	remoteArxivPath,
-	stageRemoteArxivPaper,
 } from "@/lib/paper";
 import {
 	isLibraryVirtualPath,
@@ -35,11 +32,6 @@ import {
 	removeTabAnnotations,
 } from "@/lib/pdf/annotations-store";
 import { cancelPdfNavigationForTab } from "@/lib/pdf/pending-pdf-page";
-import {
-	isPlazaVirtualPath,
-	type PlazaSource,
-	plazaSourceForPath,
-} from "@/lib/plaza";
 import { loadSettings } from "@/lib/settings";
 import { closeCurrentWindow } from "@/lib/shell/close-window";
 import { setLayoutMode, uiStore } from "@/lib/shell/ui-store";
@@ -526,22 +518,6 @@ export function reopenClosedTab(): void {
 	}
 }
 
-/** Close every Plaza overview / source tab. */
-export function closePlazaTabs(): void {
-	let removedIds: string[] = [];
-	setTabs((prev) => {
-		const removed = prev.filter(
-			(tab) => tab.kind === "plaza" || isPlazaVirtualPath(tab.path),
-		);
-		if (!removed.length) return prev;
-		for (const tab of removed) revokeTabMediaSources(tab);
-		removedIds = removed.map((tab) => tab.id);
-		const tabs = prev.filter((tab) => !removedIds.includes(tab.id));
-		return withLibraryPresent(tabs);
-	});
-	if (removedIds.length) removeTabAnnotations(removedIds);
-}
-
 /**
  * Preserve mounted workspace state when a filesystem path changes identity.
  * Works for a single file and for a tree (a paper folder and everything under
@@ -787,12 +763,6 @@ export function openPaper(
 	openTab(abs, { preferMode: "pdf" });
 }
 
-/** Open an arXiv Daily recommendation as a remote PDF preview (no local files). */
-export function openRemoteArxivPaper(item: RemotePaperItem): void {
-	stageRemoteArxivPaper(item);
-	openTab(remoteArxivPath(item.arxivId), { preferMode: "pdf" });
-}
-
 /** Open any path with the mode inferred from its extension. */
 export function openPath(absoluteOrDemoPath: string): void {
 	const preferMode = preferredModeForPath(absoluteOrDemoPath);
@@ -893,11 +863,7 @@ export function rehydrateMisclassifiedPaperTabs(): void {
 	const ids: string[] = [];
 	for (const tab of getTabs()) {
 		if (!tab.loaded || tab.kind !== "library") continue;
-		if (
-			isLibraryVirtualPath(tab.path) ||
-			isTrashVirtualPath(tab.path) ||
-			isPlazaVirtualPath(tab.path)
-		) {
+		if (isLibraryVirtualPath(tab.path) || isTrashVirtualPath(tab.path)) {
 			continue;
 		}
 		if (!isUnderPapers(tab.path)) continue;
@@ -923,13 +889,6 @@ export function selectLibrary(): void {
 export function selectTrash(): void {
 	setTreeSelectedPath(TRASH_VIRTUAL_PATH);
 	openTab(TRASH_VIRTUAL_PATH);
-}
-
-/** Open one Plaza source panel (from its tree child row). */
-export function openPlazaSource(source: PlazaSource): void {
-	if (!loadSettings().plazaEnabled) return;
-	setTreeSelectedPath(source.path);
-	openTab(source.path);
 }
 
 /**
@@ -965,7 +924,6 @@ registerDecision<{ node: FileNode }>({
 	rules: [
 		({ node }) => (isLibraryVirtualPath(node.path) ? "select-library" : null),
 		({ node }) => (isTrashVirtualPath(node.path) ? "select-trash" : null),
-		({ node }) => (isPlazaVirtualPath(node.path) ? "select-plaza" : null),
 		({ node }) =>
 			node.kind === "directory" && isPaperDirectory(node.path, node.children)
 				? "open-paper"
@@ -980,7 +938,7 @@ registerDecision<{ node: FileNode }>({
 	],
 });
 
-/** File-tree click dispatch: Library / Trash / Plaza / paper dir / org dir / file. */
+/** File-tree click dispatch: Library / Trash / paper dir / org dir / file. */
 export function selectFileNode(node: FileNode): void {
 	selectFileNodeNormally(node);
 }
@@ -993,13 +951,6 @@ function selectFileNodeNormally(node: FileNode): void {
 		case "select-trash":
 			selectTrash();
 			return;
-		case "select-plaza": {
-			if (!loadSettings().plazaEnabled) return;
-			// The Plaza root is a plain folder; only source children open a tab.
-			const source = plazaSourceForPath(node.path);
-			if (source) openPlazaSource(source);
-			return;
-		}
 		case "open-paper":
 			openPaper(node.path);
 			return;

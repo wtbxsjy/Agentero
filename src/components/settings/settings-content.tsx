@@ -1,6 +1,5 @@
 import {
 	Bot,
-	CloudUpload,
 	Compass,
 	FlaskConical,
 	Info,
@@ -8,11 +7,8 @@ import {
 	Languages,
 	LayoutTemplate,
 	Paintbrush,
-	Puzzle,
 	SlidersHorizontal,
-	Smartphone,
 	Stethoscope,
-	UserRound,
 	Wand2,
 	X,
 } from "lucide-react";
@@ -30,27 +26,16 @@ import {
 	useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import type {
-	SettingsHostContext,
-	SettingsSection,
-} from "@/components/settings/types";
+import type { SettingsSection } from "@/components/settings/types";
 import { Button } from "@/components/ui/button";
-import { accountSurfaceEnabled } from "@/features/account/visibility";
 import { scrollBehavior } from "@/lib/core/motion";
 import { cn } from "@/lib/core/utils";
 import {
 	broadcastOnboardingRequest,
 	broadcastTourRequest,
 } from "@/lib/onboarding/api";
-import { pluginsSurfaceEnabled } from "@/lib/plugins/visibility";
 import type { AppSettings } from "@/lib/settings";
 import { closeSettingsWindow } from "@/lib/shell/settings-window";
-import { surfaces } from "@/lib/surfaces";
-import {
-	getRemoteSessionMeta,
-	isRemoteVaultHandle,
-	remoteSessionIdFromHandle,
-} from "@/lib/vault/remote/remote-vault";
 
 // Panes load per section instead of riding along with the settings shell:
 // importing them statically pulled the whole surface (agent pane + model picker
@@ -58,8 +43,6 @@ import {
 // the shell (see `preloadSettingsPane`), so only the sections you actually visit
 // pay for a chunk — a lazy default pane would just move the stall after render.
 const PANE_LOADERS = {
-	account: () => import("@/components/settings/panes/account-pane"),
-	plugins: () => import("@/components/settings/panes/plugins-pane"),
 	general: () => import("@/components/settings/panes/general-pane"),
 	appearance: () => import("@/components/settings/panes/appearance-pane"),
 	agent: () => import("@/components/settings/panes/agent-pane"),
@@ -68,9 +51,6 @@ const PANE_LOADERS = {
 	experimental: () => import("@/components/settings/panes/experimental-pane"),
 	doctor: () => import("@/components/settings/panes/doctor-pane"),
 	keyboard: () => import("@/components/settings/panes/keyboard-pane"),
-	"remote-access": () =>
-		import("@/components/settings/panes/remote-access-pane"),
-	sync: () => import("@/components/settings/panes/sync-pane"),
 	about: () => import("@/components/settings/panes/about-pane"),
 } satisfies Record<SettingsSection, () => Promise<unknown>>;
 
@@ -79,11 +59,7 @@ const PANE_LOADERS = {
  * cached, so the matching `lazy()` below resolves without a second request.
  */
 function sectionVisible(id: SettingsSection): boolean {
-	if (!pluginsSurfaceEnabled && id === "plugins") return false;
-	if (!accountSurfaceEnabled && id === "account") return false;
-	if (!surfaces.sync && id === "sync") return false;
-	if (!surfaces.remoteAccess && id === "remote-access") return false;
-	return true;
+	return id in PANE_LOADERS;
 }
 
 export function preloadSettingsPane(section: string): Promise<unknown> {
@@ -97,12 +73,6 @@ export function preloadSettingsPane(section: string): Promise<unknown> {
 
 // memo(): visited panes stay mounted across section switches; without this
 // every switch re-rendered ALL mounted panes (agent pane is ~1.5k lines).
-const PluginsPane = memo(
-	lazy(() => PANE_LOADERS.plugins().then((m) => ({ default: m.PluginsPane }))),
-);
-const AccountPane = memo(
-	lazy(() => PANE_LOADERS.account().then((m) => ({ default: m.AccountPane }))),
-);
 const GeneralPane = memo(
 	lazy(() => PANE_LOADERS.general().then((m) => ({ default: m.GeneralPane }))),
 );
@@ -113,11 +83,6 @@ const AppearancePane = memo(
 );
 const AgentPane = memo(
 	lazy(() => PANE_LOADERS.agent().then((m) => ({ default: m.AgentPane }))),
-);
-const RemoteAgentPane = memo(
-	lazy(() =>
-		PANE_LOADERS.agent().then((m) => ({ default: m.RemoteAgentPane })),
-	),
 );
 const TranslatePane = memo(
 	lazy(() =>
@@ -142,16 +107,6 @@ const KeyboardPane = memo(
 		PANE_LOADERS.keyboard().then((m) => ({ default: m.KeyboardPane })),
 	),
 );
-const RemoteAccessPane = memo(
-	lazy(() =>
-		PANE_LOADERS["remote-access"]().then((m) => ({
-			default: m.RemoteAccessPane,
-		})),
-	),
-);
-const SyncPane = memo(
-	lazy(() => PANE_LOADERS.sync().then((m) => ({ default: m.SyncPane }))),
-);
 const AboutPane = memo(
 	lazy(() => PANE_LOADERS.about().then((m) => ({ default: m.AboutPane }))),
 );
@@ -161,15 +116,11 @@ const NAV: {
 	icon: typeof Bot;
 	dividerBefore?: boolean;
 }[] = [
-	{ id: "account", icon: UserRound },
 	{ id: "general", icon: SlidersHorizontal },
 	{ id: "appearance", icon: Paintbrush },
 	{ id: "agent", icon: Bot, dividerBefore: true },
 	{ id: "translate", icon: Languages },
 	{ id: "layout", icon: LayoutTemplate },
-	{ id: "remote-access", icon: Smartphone },
-	{ id: "sync", icon: CloudUpload },
-	{ id: "plugins", icon: Puzzle },
 	{ id: "experimental", icon: FlaskConical },
 	{ id: "doctor", icon: Stethoscope, dividerBefore: true },
 	{ id: "keyboard", icon: Keyboard },
@@ -190,7 +141,7 @@ type SettingsContentProps = {
 	onClose?: () => void;
 	/** aria-labelledby id supplied by a dialog wrapper. */
 	titleId?: string;
-	/** Active vault path — remote handles switch Agent settings to the SSH host. */
+	/** Active vault path. */
 	vaultPath?: string | null;
 };
 
@@ -297,36 +248,6 @@ export function SettingsContent({
 			window.removeEventListener("resize", measureNavIndicator);
 		};
 	}, [measureNavIndicator]);
-
-	const hostContext = useMemo((): SettingsHostContext => {
-		if (vaultPath && isRemoteVaultHandle(vaultPath)) {
-			const sessionId = remoteSessionIdFromHandle(vaultPath);
-			const meta = getRemoteSessionMeta();
-			if (sessionId && meta && meta.sessionId === sessionId) {
-				const label =
-					meta.host.trim() ||
-					meta.displayName.split(":")[0]?.trim() ||
-					t("host.remote");
-				return {
-					kind: "remote",
-					label,
-					sessionId,
-					host: meta.host,
-					remotePath: meta.remotePath,
-				};
-			}
-			if (sessionId) {
-				return {
-					kind: "remote",
-					label: t("host.remote"),
-					sessionId,
-					host: "",
-					remotePath: "",
-				};
-			}
-		}
-		return { kind: "local" };
-	}, [vaultPath, t]);
 
 	const patch = useCallback(
 		(partial: Partial<AppSettings>) => onChange({ ...settings, ...partial }),
@@ -511,7 +432,6 @@ export function SettingsContent({
 								<GeneralPane
 									settings={settings}
 									patch={patch}
-									hostContext={hostContext}
 									vaultPath={vaultPath}
 								/>
 							</Suspense>
@@ -549,19 +469,11 @@ export function SettingsContent({
 							hidden={activeSection !== "agent"}
 						>
 							<Suspense fallback={<PaneFallback />}>
-								{hostContext.kind === "remote" ? (
-									<RemoteAgentPane
-										settings={settings}
-										patch={patch}
-										hostContext={hostContext}
-									/>
-								) : (
-									<AgentPane
-										settings={settings}
-										patch={patch}
-										onOpenDiagnostics={() => onSectionChange("doctor")}
-									/>
-								)}
+								<AgentPane
+									settings={settings}
+									patch={patch}
+									onOpenDiagnostics={() => onSectionChange("doctor")}
+								/>
 							</Suspense>
 						</div>
 					)}
@@ -591,7 +503,6 @@ export function SettingsContent({
 									settings={settings}
 									patch={patch}
 									vaultPath={vaultPath}
-									hostContext={hostContext}
 								/>
 							</Suspense>
 						</div>
@@ -603,7 +514,7 @@ export function SettingsContent({
 							hidden={activeSection !== "doctor"}
 						>
 							<Suspense fallback={<PaneFallback />}>
-								<DoctorPane vaultPath={vaultPath} hostContext={hostContext} />
+								<DoctorPane vaultPath={vaultPath} />
 							</Suspense>
 						</div>
 					)}
@@ -622,39 +533,6 @@ export function SettingsContent({
 							</Suspense>
 						</div>
 					)}
-					{visitedSections.includes("remote-access") && (
-						<div
-							data-settings-pane
-							data-active={activeSection === "remote-access" ? "true" : "false"}
-							hidden={activeSection !== "remote-access"}
-						>
-							<Suspense fallback={<PaneFallback />}>
-								<RemoteAccessPane vaultPath={vaultPath} />
-							</Suspense>
-						</div>
-					)}
-					{visitedSections.includes("sync") && (
-						<div
-							data-settings-pane
-							data-active={activeSection === "sync" ? "true" : "false"}
-							hidden={activeSection !== "sync"}
-						>
-							<Suspense fallback={<PaneFallback />}>
-								<SyncPane vaultPath={vaultPath} />
-							</Suspense>
-						</div>
-					)}
-					{pluginsSurfaceEnabled && visitedSections.includes("plugins") && (
-						<div
-							data-settings-pane
-							data-active={activeSection === "plugins" ? "true" : "false"}
-							hidden={activeSection !== "plugins"}
-						>
-							<Suspense fallback={<PaneFallback />}>
-								<PluginsPane vaultPath={vaultPath} />
-							</Suspense>
-						</div>
-					)}
 					{visitedSections.includes("experimental") && (
 						<div
 							data-settings-pane
@@ -663,17 +541,6 @@ export function SettingsContent({
 						>
 							<Suspense fallback={<PaneFallback />}>
 								<ExperimentalPane settings={settings} patch={patch} />
-							</Suspense>
-						</div>
-					)}
-					{visitedSections.includes("account") && (
-						<div
-							data-settings-pane
-							data-active={activeSection === "account" ? "true" : "false"}
-							hidden={activeSection !== "account"}
-						>
-							<Suspense fallback={<PaneFallback />}>
-								<AccountPane />
 							</Suspense>
 						</div>
 					)}

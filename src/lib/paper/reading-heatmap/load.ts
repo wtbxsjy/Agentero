@@ -23,7 +23,7 @@ export type ReadingHeatmapBatch = {
  * One-IPC batch read of `marks/*.json` reading activity for many papers
  * (Host `paper_reading_activity_batch`). Replaces the per-paper
  * highlights/asks/translates fan-out (3 IPC × N papers).
- * Non-Tauri and remote vaults resolve to empty activity (same as the old
+ * Non-Tauri resolves to empty activity (same as the old
  * per-paper reads, which also returned nothing there).
  */
 async function fetchReadingActivityBatch(
@@ -31,10 +31,6 @@ async function fetchReadingActivityBatch(
 	rels: string[],
 ): Promise<Record<string, ReadingActivityPoint[]>> {
 	if (!isTauri() || !rels.length) return {};
-	const { isRemoteVaultHandle } = await import(
-		"@/lib/vault/remote/remote-vault"
-	);
-	if (isRemoteVaultHandle(vaultPath)) return {};
 	try {
 		// Wire points type `y`/`weight` as nullable; JS arithmetic in the
 		// aggregator treats `null` as 0 (unchanged from the pre-binding cast).

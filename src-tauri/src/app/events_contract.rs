@@ -13,11 +13,7 @@
 //! natural `XEvent` name (agent ACP payloads), the wrapper is named `XEvt` to
 //! keep specta type names unique.
 //!
-//! Coverage: every event emitted on desktop. iOS-only bridge client events
-//! (`bridge:status`, `bridge:progress`, `bridge:pair-pending` and the
-//! dynamically re-emitted forwarded agent events in
-//! `integration::bridge::client`) are intentionally excluded — they exist only
-//! in the iOS branch, mirroring the command exclusion in `bindings_test.rs`.
+//! Coverage: every event emitted on desktop.
 //!
 //! `job:progress` is emitted from several sites with structurally compatible
 //! payloads (`AssetDownloadProgress`, model-assets `ProgressEvent`,
@@ -220,15 +216,6 @@ pub struct AgentStreamEvt(pub crate::features::agent::models::AgentStreamEvent);
 #[tauri_specta(event_name = "agent:completed")]
 pub struct AgentCompletedEvent(pub crate::features::agent::models::AgentResultPayload);
 
-/// Desktop bridge host online flag (`bridge:host-status`, payload `bool`).
-#[derive(specta::Type, tauri_specta::Event)]
-#[tauri_specta(event_name = "bridge:host-status")]
-pub struct BridgeHostStatusEvent(pub bool);
-
-#[derive(specta::Type, tauri_specta::Event)]
-#[tauri_specta(event_name = "bridge:pair-request")]
-pub struct BridgePairRequestEvent(pub crate::integration::bridge::PairingRequest);
-
 #[derive(specta::Type, tauri_specta::Event)]
 #[tauri_specta(event_name = "connector:status")]
 pub struct ConnectorStatusEvent(pub crate::integration::connector::ConnectorStatus);
@@ -258,38 +245,6 @@ pub struct McpStatusEvent(pub crate::integration::mcp::McpStatus);
 #[derive(specta::Type, tauri_specta::Event)]
 #[tauri_specta(event_name = "mcp:tunnel-status")]
 pub struct McpTunnelStatusEvent(pub crate::integration::mcp::tunnel::McpTunnelStatus);
-
-#[derive(specta::Type, tauri_specta::Event)]
-#[tauri_specta(event_name = "plugins:changed")]
-pub struct PluginsChangedEvent(pub ());
-
-#[derive(specta::Type, tauri_specta::Event)]
-#[tauri_specta(event_name = "plugins:data-changed")]
-pub struct PluginsDataChangedEvent(pub String);
-
-/// Owned mirror of the private borrowed `SyncStateEvent` in
-/// `integration::sync::commands`.
-#[derive(serde::Serialize, specta::Type, tauri_specta::Event)]
-#[serde(rename_all = "camelCase")]
-#[tauri_specta(event_name = "sync:state")]
-pub struct SyncStateEvent {
-    pub vault_path: String,
-    pub status: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
-}
-
-/// Owned mirror of the private borrowed `SyncProgressEvent` in
-/// `integration::sync::commands`.
-#[derive(serde::Serialize, specta::Type, tauri_specta::Event)]
-#[serde(rename_all = "camelCase")]
-#[tauri_specta(event_name = "sync:progress")]
-pub struct SyncProgressEvent {
-    pub vault_path: String,
-    pub phase: String,
-    pub current: usize,
-    pub total: usize,
-}
 
 /// Owned mirror of the private core `PaperEventPayload` envelope
 /// (`paper:imported` / `paper:assets-ready`).
@@ -413,9 +368,6 @@ fn event_names_match_emit_literals() {
 //   real Tauri emit happens inside them and is captured at that site.
 //
 // Excluded files (documented misses, see module header):
-// - `integration/bridge/client.rs`: iOS-only bridge client (`bridge:status`,
-//   `bridge:progress`, `bridge:pair-pending` + the dynamic `bridge:event:*`
-//   re-emits) — not part of the desktop contract;
 // - `app/bindings_test.rs` / `app/events_contract.rs`: test-only surfaces.
 // ---------------------------------------------------------------------------
 
@@ -439,7 +391,6 @@ fn registered_event_names() -> BTreeSet<String> {
         SettingsChangedEvent::NAME,
         SettingsSectionRequestedEvent::NAME,
         SettingsVaultRequestedEvent::NAME,
-        WordChangedEvent::NAME,
         JobProgressEvent::NAME,
         LayoutRemoteProgressEvent::NAME,
         AgentLifecycleProgressEvent::NAME,
@@ -460,18 +411,12 @@ fn registered_event_names() -> BTreeSet<String> {
         AgentStatusEvt::NAME,
         AgentStreamEvt::NAME,
         AgentCompletedEvent::NAME,
-        BridgeHostStatusEvent::NAME,
-        BridgePairRequestEvent::NAME,
         ConnectorStatusEvent::NAME,
         ConnectorItemSavedEvent::NAME,
         ConnectorProgressEvent::NAME,
         ConnectorErrorEvent::NAME,
         McpStatusEvent::NAME,
         McpTunnelStatusEvent::NAME,
-        PluginsChangedEvent::NAME,
-        PluginsDataChangedEvent::NAME,
-        SyncStateEvent::NAME,
-        SyncProgressEvent::NAME,
         PaperImportedEvent::NAME,
         PaperAssetsReadyEvent::NAME,
         PaperRenamedEventPayload::NAME,
@@ -851,11 +796,7 @@ fn scan_emit_event_names() -> BTreeSet<String> {
         .join("agentero-mcp")
         .join("src");
     // Relative to `src-tauri/src` (the shared crates have no exclusions).
-    let excluded = [
-        "integration/bridge/client.rs",
-        "app/bindings_test.rs",
-        "app/events_contract.rs",
-    ];
+    let excluded = ["app/bindings_test.rs", "app/events_contract.rs"];
     let mut files: Vec<PathBuf> = Vec::new();
     for root in [&host_root, &core_root, &mcp_root] {
         for entry in walkdir::WalkDir::new(root)
@@ -970,7 +911,6 @@ fn scanned_emit_event_names_match_registered_contract() {
 // payload by one of:
 // - serde shape equality tests in the *owning* module (private structs are
 //   only reachable there): `features::lifecycle` (JobTerminalPayload),
-//   `integration::sync::commands` (SyncState/SyncProgress),
 //   `features::paper::analyze::layout::{model_assets, hosted}`
 //   (LayoutModelTask/LayoutRemoteProgress), `features::agent::registry::
 //   lifecycle` (AgentLifecycleProgress), `app::window::commands`
@@ -1301,7 +1241,3 @@ fn paper_renamed_mirror_matches_core_emit_shape() {
          (vaultId + PaperRenamedEvent + timestamp, camelCase)"
     );
 }
-
-#[derive(specta::Type, tauri_specta::Event)]
-#[tauri_specta(event_name = "word:changed")]
-pub struct WordChangedEvent(pub ());
